@@ -4,6 +4,7 @@ from satisfactor_py.base import Purity, ResourceNode
 from satisfactor_py.buildings import MinerMk1, Smelter
 from satisfactor_py.conveyances import ConveyorBeltMk1
 from satisfactor_py.factories import Factory
+from satisfactor_py.items import IronOre
 from satisfactor_py.recipes import IronOreMk1, IronIngot
 from satisfactor_py.storages import StorageContainer
 
@@ -13,7 +14,8 @@ def build_test_factory():
     # Start with an iron resource node
     ironSource = ResourceNode(
         name='Normal Iron Source',
-        purity=Purity.NORMAL
+        purity=Purity.NORMAL,
+        item=IronOre
     )
 
     # Build a miner and hook it to the resource node

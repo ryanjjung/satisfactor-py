@@ -4,6 +4,7 @@ from satisfactor_py.base import (
     ConveyanceType,
     Dimension,
     Input,
+    Item,
     Output,
     Recipe
 )

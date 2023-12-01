@@ -341,6 +341,7 @@ class ResourceNode(Component):
 
     def __init__(self,
         purity: Purity,
+        item: Item,
         **kwargs
     ):
         super().__init__(
@@ -348,6 +349,7 @@ class ResourceNode(Component):
             **kwargs
         )
         self.purity = purity
+        self.item = item
         self.inputs = list()
         self.outputs = [Output(
             conveyance_type=ConveyanceType.RESOURCE_NODE,
@@ -388,7 +390,7 @@ class Building(Component):
         for input in self.inputs:
             ingredients.extend(input.ingredients)
         return [ingredient.item for ingredient in ingredients]
-
+    
     def can_process(self) -> bool:
         '''
         Determines if the conditions are met for the recipe to be processed.
