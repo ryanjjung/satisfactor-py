@@ -24,30 +24,30 @@ class Factory(Component):
     ):
         super().__init__(**kwargs)
         self._components = components
-    
+
     # By making this a read-only property, we can use Python's type hinting in the `add` function to
     # ensure we're only allowing Component types into the factory.
     @property
     def components(self):
         return self._components
-    
+
     @property
     def resource_nodes(self):
         return [component for component in self._components
                 if isinstance(component, ResourceNode)]
-    
+
     def add(self,
         components: list[Component]
     ):
         self._components.extend(components)
-    
+
     def get_buildings_by_type(self,
         building_type: BuildingType
     ) -> list[Building]:
         return [component for component in self._components
                 if isinstance(component, Building)
                 and component.building_type == building_type]
-    
+
     def get_component_by_id(self,
         id: str
     ) -> Component:
@@ -55,7 +55,7 @@ class Factory(Component):
             if component.id == id:
                 return component
         return None
-    
+
     def get_components_by_name(self,
         name: str
     ) -> list[Component]:
@@ -64,14 +64,14 @@ class Factory(Component):
             if component.name == name:
                 components.append(component)
         return components
-    
+
     def drain(self):
         '''
         Steps through each connection in the factory, clearing all ingredients out of each one. This
         process begins with any resource nodes in the factory.
         '''
         self.traverse_all(drain_component)
-    
+
     def simulate(self):
         '''
         Steps through each connection in the factory, simulating each building.
@@ -82,7 +82,7 @@ class Factory(Component):
         func: Callable
     ):
         components = self.resource_nodes
-        
+
         # Start up traversal threads.
         threads = list()
         for component in components:
@@ -90,7 +90,7 @@ class Factory(Component):
         for thread in threads:
             thread.start()
             thread.join()
-    
+
     def traverse(self,
         cursor: Component,
         func: Callable
@@ -102,7 +102,7 @@ class Factory(Component):
 
         # Run the function where the cursor is
         func(cursor)
-        
+
         # Advance the cursor
         if isinstance(cursor, Input):
             self.traverse(cursor.attached_to, func)
