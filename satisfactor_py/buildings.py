@@ -12,7 +12,7 @@ from satisfactor_py.base import (
 
 class Miner(Building):
     '''
-    A type of Building that takes input from a resource node and outputs items on a conveyor belt.
+    A type of Building that takes input from a ResourceNode and outputs Items on a Conveyor Belt.
     '''
 
     def __init__(self, **kwargs):
@@ -49,7 +49,7 @@ class MinerMk1(Miner):
 
 class Smelter(Building):
     '''
-    A Smelter building
+    A Smelter Building
     '''
 
     def __init__(self, **kwargs):

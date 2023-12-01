@@ -7,7 +7,7 @@ import math
 import random
 
 from enum import Enum
-from inspect import isfunction
+from inspect import isclass, isfunction
 
 
 WIKI_URL_BASE = 'https://satisfactory.fandom.com/wiki'
@@ -17,7 +17,7 @@ WIKI_URL_BASE = 'https://satisfactory.fandom.com/wiki'
 
 def generate_id():
     '''
-    Generates a random ID
+    Generates a random ID for the purpose of unique reference
     '''
 
     alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -52,16 +52,15 @@ class BuildingType(Enum):
 class ConveyanceType(Enum):
     '''
     A way that two factory components can be connected. There may be different degrees of
-    conveyance. For example, you may transport items with an Explorer, Tractor, Truck, or Factory
-    Cart. These affect the rate of transfer, but all four of these are GROUND type conveyances.
+    conveyance. For example, you may transport items with an Explorer, Tractor, Truck, Factory Cart,
+    or Drone. These affect the rate of transfer, but all four of these are VEHICLE type conveyances.
     '''
 
     BELT          = 1
-    DRONE         = 2
-    GROUND        = 3
-    PIPE          = 4
-    POWER_LINE    = 5
-    RESOURCE_NODE = 6
+    VEHICLE       = 2
+    PIPE          = 3
+    POWER_LINE    = 4
+    RESOURCE_NODE = 5
 
 
 class Dimension(object):
@@ -99,7 +98,12 @@ class Purity(Enum):
 
 class Base(object):
     '''
-    Base object from which to build all other objects
+    Base object from which to build all other objects.
+
+        - id: A unique ID used for reference; will be randomly generated if not supplied
+        - name: A user-friendly name for the object
+        - wiki_path: The URL path where the entry for this object can be found in the online wiki
+        - tags: A dictionary of arbitrary key:value pairs used as additional descriptors
     '''
 
     def __init__(self,
@@ -121,26 +125,55 @@ class Base(object):
         '''
         Return the item as a dict, stripping out all functions in the process so that the data can
         be represented as YAML. Additionally strip out any top-level keys matching those in the
-        provided "strip" list. The `wiki_path` values are represented as full URLs.
+        provided "strip" list. The `wiki_url` value is added as a full wiki URL.
         '''
 
+        # Start with all attributes of this class which are not functions
         d = { key: value \
             for key, value in self.__dict__.items() \
             if not isfunction(value) }
 
-        d['wiki_path'] = f'{WIKI_URL_BASE}{self.wiki_path}'
+        # Add an assembled and working URL to the object's wiki page
+        d['wiki_url'] = f'{WIKI_URL_BASE}{self.wiki_path}'
 
+        # Remove any keys matching the "strip" list (inheriting classes can "opt out" of fields
+        # rather than re-implement this function)
         for key in strip:
             if key in d:
                 del(d[key])
-        return d
 
+        # We refer to a lot of derived classes which may also have to_dict functions. Here we call
+        # those to expand as much of these into text as possible.
         for key in d:
             if hasattr(d[key], 'to_dict'):
                 d[key] = d[key].to_dict()
+        
+        # Remove any remaining unexpanded classes
+        d = { key: value \
+            for key, value in d.items() \
+            if not isclass(value)}
+
+        return d
 
     def __repr__(self):
         return f'<{type(self).__name__} {self.id} ({self.name})>'
+
+
+class ComponentErrorLevel(Enum):
+    '''
+    Different levels of problems that can arise when testing factories.
+
+        - DEBUG: Used only for emitting debugging information
+        - WARNING: Indicates a scenario that is possible to achieve in the game but which should be
+            considered misconfigured for the purposes of running a factory, such as a Building with
+            no assigned recipe.
+        - IMPOSSIBLE: Indicates a scenario that is not possible to achieve in the game but which
+            might be possible through the incorrect use of this library.
+    '''
+
+    DEBUG      = 0
+    WARNING    = 1
+    IMPOSSIBLE = 2
 
 
 class ComponentError(Exception):
@@ -149,7 +182,8 @@ class ComponentError(Exception):
     '''
 
     def __init__(self,
-        error_message: str,
+        level: ComponentErrorLevel,
+        message: str,
         **kwargs
     ):
         super().__init__(error_message, **kwargs)
@@ -157,7 +191,7 @@ class ComponentError(Exception):
 
 class Component(Base):
     '''
-    Anything that can be built as part of a Factory is a Component
+    Anything that can be built as part of a Factory is a Component.
     '''
 
     def __init__(self, **kwargs):
@@ -166,7 +200,8 @@ class Component(Base):
 
     def test(self):
         '''
-        In this base class, running `test` just ensures that the list of errors is cleared
+        In this base class, running `test` just ensures that the list of errors is cleared. Call
+        this function before running downstream test functions to prevent duplicate errors.
         '''
 
         self.errors = list()
@@ -193,9 +228,16 @@ class Component(Base):
 
 class Item(Base):
     '''
-    An Item is something which can be held in an inventory slot or used in a Recipe or factory
-    component. An item with None for a stack_size cannot be held in inventory. An item with None
-    for a sink_value cannot be consumed by the Awesome Sink.
+    An Item is something which can be held in an inventory slot, used in a Recipe, or used to build
+    a factory component. An item with `None` for a `stack_size` cannot be held in inventory. An item
+    with `None` for a `sink_value` cannot be consumed by the Awesome Sink.
+
+        - conveyance_type: The mechanism by which the item can be transported automatically. Used to
+            prevent, for example, a liquid material being transported on a conveyor belt.
+        - stack_size: The number of this item which can be held in one inventory slot. `None` means
+            it cannot be held in inventory (such as Power or Water).
+        - sink_value: The number of points this item generates when destroyed in the Awesome Sink.
+            `None` means it cannot be destroyed in the Awesome Sink.
     '''
 
     def __init__(self,
@@ -221,8 +263,9 @@ class Item(Base):
 
 class Ingredient(object):
     '''
-    This is a measure of an item, used to define Recipes. The `amount` is used when calculating
-    single recipe builds. The `rate` is used when building factories.
+    This is a measure of an Item, used to define Recipes. The `amount` is used when calculating
+    single recipe builds (such as building one item at a workbench). The `rate` is the amount of the
+    Item consumed per minute when the Recipe is processed in a factory.
     '''
 
     def __init__(self,
@@ -244,8 +287,13 @@ class Ingredient(object):
 
 class Recipe(Base):
     '''
-    When items are combined to produce a different set of items, you have a recipe for producing
-    those items. This class sets up a common interface for recipes.
+    When Items are combined to produce a different set of Items, you have a Recipe for producing
+    those Items. This class sets up a common interface for Recipes.
+
+        - building_type: The type of building that this Recipe can be built in (such as Iron Ingots
+            only being craftable in Smelters).
+        - consumes: A list of Ingredients that go into the Recipe
+        - produces: A list of Ingredients that come out of the Recipe
     '''
 
     def __init__(self,
@@ -262,7 +310,11 @@ class Recipe(Base):
 
 class ConveyanceRecipe(Recipe):
     '''
-    A special Recipe where the inputs and outputs are always identical.
+    A special Recipe where the inputs and outputs are always identical. This is used for Conveyances
+    like conveyor belts and pipelines which cannot transform their contents and are only used to
+    transport Items from one Building to another.
+
+        - ingredients: A list of Ingredients that must be consumed and produced at identical rates.
     '''
 
     def __init__(self,
@@ -281,13 +333,26 @@ class ConveyanceRecipe(Recipe):
 
 class Connection(Base):
     '''
-    A Connection represents a linkage between two connectable points. It is essentially a constraint
-    to ensure that we don't allow connections between incompatible parts and a way of determining
-    rate changes through a factory.
+    A Connection represents a linkage between two connectable points, such as the output of a
+    Smelter and the input of a ConveyorBelt. It is essentially a constraint to ensure that we don't
+    allow connections between incompatible parts and a way of determining rate changes through a
+    factory.
+
+    A Connection is not functional on its own, so you should not create an instance of this class.
+    Instead, create an instance of an Input or Output, both derived from this but specialized to
+    indicate direction. The properties defined here are universal to all Connections.
+
+        - attached_to: The Component this Connection is attached to. Used for factory traversal.
+        - conveyance_type: The type of conveyance this Connection represents. Used to prevent, say,
+            a Pipeline from being attached to a Smelter, since the Smelter only supports Conveyor
+            Belts.
+        - ingredients: A list of Ingredients passing through the Connection.
+        - source: The Connection on the incoming side
+        - target: The Connection on the outgoing side
     '''
 
     def __init__(self,
-        attached_to: Base = None,
+        attached_to: Component = None,
         conveyance_type: ConveyanceType = ConveyanceType.BELT,
         ingredients: list[Ingredient] = list(),
         source=None,
@@ -305,6 +370,11 @@ class Connection(Base):
         raise NotImplementedError
 
     def is_output(self):
+        '''
+        Downstream classes must implement `is_input`. This is a convenience function that simply
+        negates whatever that is so downstream classes don't also have to reimplement this.
+        '''
+
         return not self.is_input()
 
     def connect(self) -> bool:
@@ -377,6 +447,11 @@ class ResourceNode(Component):
     '''
     A ResourceNode is a place in the world which will produce Items if some kind of extraction
     Building is placed on it. That Building's production rate will vary based on the purity.
+
+        - purity: A multiplicative factor applied to the rate of production in Miners.
+        - item: The type of Item that this produces. Used as a constraint to prevent, for example, a
+            Miner being placed on an iron resource node and then given a Recipe to produce Copper
+            Ore instead.
     '''
 
     def __init__(self,
@@ -398,7 +473,7 @@ class ResourceNode(Component):
 
     def test(self):
         '''
-        Detects problems with this ResourceNode
+        Detects errors with this ResourceNode
         '''
 
         super().test()
@@ -423,39 +498,55 @@ class ResourceNode(Component):
         '''
 
         output_ct = len(self.outputs)
-        if output_ct > 1:
+        if output_ct > 1 or output_ct < 1:
             self.add_error(ComponentError(
-                f'ResourceNodes cannot have more than one output, but this has {output_ct}.'
-            ))
-        elif output_ct < 1:
-            self.add_error(ComponentError(
-                f'ResourceNodes cannot have less than one output, but this has {output_ct}'
+                ComponentErrorLevel.IMPOSSIBLE,
+                f'ResourceNodes must have exactly one output, but this has {output_ct}.'
             ))
         else:
-            target_bldg = self.outputs[0].target.attached_to
-            if target_bldg.building_type != BuildingType.MINER:
+            if not self.outputs[0].target:
                 self.add_error(ComponentError(
-                    'ResourceNodes must be connected to miners, but this is connected to a '
-                    f'{target.building_type.name}'
+                    ComponentErrorLevel.WARNING,
+                    'This ResourceNode is not connected'
                 ))
             else:
-                if target_bldg.recipe is None:
+                target_bldg = self.outputs[0].target.attached_to
+                if target_bldg.building_type != BuildingType.MINER:
                     self.add_error(ComponentError(
-                        'The connected Miner has no recipe'
+                        ComponentErrorLevel.IMPOSSIBLE,
+                        'ResourceNodes must be connected to miners, but this is connected to a '
+                        f'{target.building_type.name}'
                     ))
                 else:
-                    if self.item not in target_bldg.recipe.produces:
+                    if target_bldg.recipe is None:
                         self.add_error(ComponentError(
-                            f'The connected Miner must produce {self.item.name}, but it does not.'
+                            ComponentErrorLevel.WARNING,
+                            'The connected Miner has no recipe'
                         ))
+                    else:
+                        if self.item not in target_bldg.recipe.produces:
+                            self.add_error(ComponentError(
+                                ComponentErrorLevel.IMPOSSIBLE,
+                                f'The connected Miner must produce {self.item.name}, but it does not.'
+                            ))
 
 
 class Building(Component):
     '''
     A Building is anything which can be built or installed in the world which processes a Recipe of
     some kind. A Smelter is a Building, as are a Constructor, an Assembler, a Manufacturer, etc.
-    Each one has a certain number of input and output connections which can be bound to the
+    Each one has a certain number of Input and Output Connections which can be bound to the
     consumer/producer flows of a factory.
+
+        - building_type: The type of building this is, such as a Miner or Constructor. Used to
+            ensure you can't load a recipe that can't be processed by this Building.
+        - recipe: The recipe set to be processed
+        - clock_rate: The multiplicative factor by which production is modified, as through reducing
+            the production rate or overclocking it with power cells.
+        - standby: Whether or not the machine is in standby mode.
+        - dimensions: The three-dimensional space this Building occupies.
+        - inputs: A list of Input Connections on the Building.
+        - outputs: A list of Output Connections on the Building.
     '''
 
     def __init__(self,
@@ -479,6 +570,10 @@ class Building(Component):
 
     @property
     def ingredients(self):
+        '''
+        A property representing the contents of the Building's Inputs.
+        '''
+
         ingredients = list()
         for input in self.inputs:
             ingredients.extend(input.ingredients)
@@ -514,7 +609,7 @@ class Building(Component):
 
     def process(self) -> bool:
         '''
-        Sets the ingredients of every output based on the settings for this Building.
+        Sets the ingredients of this Building's outputs based on its settings.
         '''
 
         if not self.can_process():
@@ -539,6 +634,11 @@ class Conveyance(Building):
     A Conveyance is anything that can move Items from one Connection to another without changing
     the contents being conveyed. They are essentially Buildings with added constraints on the inputs
     and outputs.
+
+        - conveyance_type: The kind of conveyance, preventing us from attaching, say, a Conveyor
+            Belt to a Pipeline.
+        - rate: The maximum rate at which the Conveyance can move Items on it.
+        - ingredients: The Items being conveyed.
     '''
 
     def __init__(self,
@@ -553,16 +653,21 @@ class Conveyance(Building):
         )
         self.conveyance_type = conveyance_type
         self.rate = rate
+        self.recipe = None
         self.set_ingredients(ingredients)
 
     def set_ingredients(self,
         ingredients: list[Ingredient]
     ):
+        '''
+        Special function that ensures we always load a special ConveyanceRecipe into Conveyances.
+        '''
+
         self.recipe = ConveyanceRecipe(ingredients)
 
     def process(self):
         '''
-        Ensures the recipe is set up correctly and that the outputs match the inputs.
+        Ensures the Recipe is set up correctly and that the outputs match the inputs.
         '''
 
         ingredients = list()
@@ -574,7 +679,12 @@ class Conveyance(Building):
 
 class Storage(Conveyance):
     '''
-    Any kind of building which has storage capacity and some amount of inputs.
+    Any kind of building, such as Industrial Storage or a Fluid Buffer, which is essentially a
+    Conveyance with added storage. Liquid storage is odd because it does not have inventory slots,
+    but instead a volume of storage. Since the functionality is otherwise identical, fluids have a
+    stack_size of 1 and buffers have a number of stacks equal to their volume.
+
+        - stacks: Number of inventory slots in the storage unit
     '''
 
     def __init__(self,

@@ -12,10 +12,11 @@ from satisfactor_py.base import (
     ResourceNode
 )
 
-class Factory(Component):
+class Factory(Base):
     '''
-    A Factory is a collection of interconnected Components. It is itself a Component, meaning that
-    Factories can be nested.
+    A Factory is a collection of interconnected Components.
+
+        - components: A list of Components in the factory.
     '''
 
     def __init__(self,
@@ -32,7 +33,11 @@ class Factory(Component):
         return self._components
 
     @property
-    def resource_nodes(self):
+    def resource_nodes(self) -> list[Component]:
+        '''
+        Quick access to all ResourceNodes in the factory.
+        '''
+
         return [component for component in self._components
                 if isinstance(component, ResourceNode)]
 
@@ -44,6 +49,10 @@ class Factory(Component):
     def get_buildings_by_type(self,
         building_type: BuildingType
     ) -> list[Building]:
+        '''
+        Returns a list of all Buildings in the factory of a particular type.
+        '''
+
         return [component for component in self._components
                 if isinstance(component, Building)
                 and component.building_type == building_type]
@@ -51,23 +60,46 @@ class Factory(Component):
     def get_component_by_id(self,
         id: str
     ) -> Component:
+        '''
+        Returns a specific single Component, given its unique ID.
+        '''
+
         for component in self._components:
             if component.id == id:
                 return component
         return None
 
     def get_components_by_name(self,
-        name: str
+        name: str,
+        fuzzy: False
     ) -> list[Component]:
+        '''
+        Returns a list of Components which match the name.
+
+            - name: The text to search for
+            - fuzzy: When True, returns names which are partial but not necessarily exact matches.
+        '''
+
         components = list()
         for component in self._components:
-            if component.name == name:
-                components.append(component)
+            if fuzzy:
+                if name in component.name:
+                    components.append(component)
+            else:
+                if component.name == name:
+                    components.append(component)
         return components
 
     def traverse_all(self,
         func: Callable
     ):
+        '''
+        Initiates factory traversal beginning at its ResourceNodes, running the `func` function on
+        each Component and Connection in the flow.
+
+            - func: A function to run on each Component and Connection in the flow
+        '''
+
         components = self.resource_nodes
 
         # Start up traversal threads.
@@ -85,6 +117,9 @@ class Factory(Component):
         '''
         Traverses factory pathways beginning at the given Component, passing each Component into the
         given function.
+
+            - cursor: The Component to start traversing the factory from
+            - func: A function to run on each Component and Connection in the flow
         '''
 
         # Run the function where the cursor is
