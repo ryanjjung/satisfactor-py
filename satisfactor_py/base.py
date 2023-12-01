@@ -76,17 +76,17 @@ class Dimension(object):
         self.width = width
         self.length = length
         self.height = height
-    
+
     def area(self) -> int:
         return self.width * self.length
-    
+
     def volume(self) -> int:
         return self.area() * self.height
 
 
 class Purity(Enum):
     '''
-    The game terms for purity line up with these multipliers applied to Miner production rates. 
+    The game terms for purity line up with these multipliers applied to Miner production rates.
     '''
 
     IMPURE = 0.5
@@ -115,7 +115,7 @@ class Base(object):
         self.name = name
         self.wiki_path = wiki_path
         self.tags = tags
-    
+
     def to_dict(self, strip: list[str] = list()):
         '''
         Return the item as a dict, stripping out all functions in the process so that the data can
@@ -157,7 +157,7 @@ class Item(Base):
     component. An item with None for a stack_size cannot be held in inventory. An item with None
     for a sink_value cannot be consumed by the Awesome Sink.
     '''
-    
+
     def __init__(self,
         conveyance_type: ConveyanceType = ConveyanceType.BELT,
         stack_size: int = 0,
@@ -168,7 +168,7 @@ class Item(Base):
         self.conveyance_type = conveyance_type
         self.stack_size = stack_size
         self.sink_value = sink_value
-    
+
     def stacks(self,
         count: int
     ) -> int:
@@ -193,7 +193,7 @@ class Ingredient(object):
         self.item = item
         self.amount = amount
         self.rate = rate
-    
+
     def to_dict(self):
         return {
             'item': self.item.to_dict(),
@@ -230,7 +230,7 @@ class ConveyanceRecipe(Recipe):
     ):
         super().__init__(building_type=BuildingType.CONVEYANCE)
         self.set_ingredients(ingredients)
-    
+
     def set_ingredients(self,
         ingredients: list[Ingredient]
     ):
@@ -263,7 +263,7 @@ class Connection(Base):
 
     def is_input(self):
         raise NotImplementedError
-    
+
     def is_output(self):
         return not self.is_input()
 
@@ -278,7 +278,7 @@ class Input(Connection):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-    
+
     def is_input(self):
         return True
 
@@ -296,7 +296,7 @@ class Input(Connection):
         # The target end must be the opposite direction of this end
         if connection.is_input():
             raise TypeError(f'Cannot connect two inputs')
-        
+
         # Connect them
         self.source = connection
         connection.target = self
@@ -327,7 +327,7 @@ class Output(Connection):
         # The target end must be the opposite direction of this end
         if connection.is_output():
             raise TypeError(f'Cannot connect two outputs')
-        
+
         # Connect them
         self.target = connection
         connection.source = self
@@ -341,6 +341,7 @@ class ResourceNode(Component):
 
     def __init__(self,
         purity: Purity,
+        item: Item,
         **kwargs
     ):
         super().__init__(
@@ -348,6 +349,7 @@ class ResourceNode(Component):
             **kwargs
         )
         self.purity = purity
+        self.item = item
         self.inputs = list()
         self.outputs = [Output(
             conveyance_type=ConveyanceType.RESOURCE_NODE,
@@ -381,7 +383,7 @@ class Building(Component):
         self.dimensions = dimensions
         self.inputs = inputs
         self.outputs = outputs
-    
+
     @property
     def ingredients(self):
         ingredients = list()
@@ -393,7 +395,7 @@ class Building(Component):
         '''
         Determines if the conditions are met for the recipe to be processed.
         '''
-        
+
         # Can't process if there's no recipe to process
         if self.recipe is None:
             return False
@@ -406,7 +408,7 @@ class Building(Component):
         # recipes don't consume anything).
         if self.recipe.consumes and len(self.inputs) < len(self.recipe.consumes):
             return False
-        
+
         # Can't process if the contents of the building's inputs don't match the recipe's
         # ingredients.
         if self.recipe.consumes:
@@ -414,9 +416,9 @@ class Building(Component):
             for ingredient in requirements:
                 if ingredient not in self.ingredients:
                     return False
-        
+
         return True
-    
+
     def process(self) -> bool:
         '''
         Sets the ingredients of every output based on the settings for this Building.
@@ -424,7 +426,7 @@ class Building(Component):
 
         if not self.can_process():
             return False
-        
+
         for recipe_ingredient in self.recipe.produces:
             for output in self.outputs:
                 # If the output isn't already occupied and it has the right conveyance type, use it
@@ -459,12 +461,12 @@ class Conveyance(Building):
         self.conveyance_type = conveyance_type
         self.rate = rate
         self.set_ingredients(ingredients)
-    
+
     def set_ingredients(self,
         ingredients: list[Ingredient]
     ):
         self.recipe = ConveyanceRecipe(ingredients)
-    
+
     def process(self):
         '''
         Ensures the recipe is set up correctly and that the outputs match the inputs.
