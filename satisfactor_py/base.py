@@ -9,6 +9,7 @@ import random
 from enum import Enum
 from inspect import isfunction
 
+
 WIKI_URL_BASE = 'https://satisfactory.fandom.com/wiki'
 
 
@@ -142,6 +143,18 @@ class Base(object):
         return f'<{type(self).__name__} {self.id} ({self.name})>'
 
 
+class ComponentError(Exception):
+    '''
+    Base class for any kind of error in a factory
+    '''
+
+    def __init__(self,
+        error_message: str,
+        **kwargs
+    ):
+        super().__init__(error_message, **kwargs)
+
+
 class Component(Base):
     '''
     Anything that can be built as part of a Factory is a Component
@@ -149,6 +162,33 @@ class Component(Base):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._errors = list()
+
+    def test(self):
+        '''
+        In this base class, running `test` just ensures that the list of errors is cleared
+        '''
+
+        self.errors = list()
+
+    def add_error(self,
+        error: ComponentError
+    ):
+        '''
+        Simple helper to ensure that errors are of the right type
+        '''
+
+        self._errors.append(error)
+
+    @property
+    def errors(self):
+        return self._errors
+
+    @errors.setter
+    def errors(self,
+        value: list[ComponentError]
+    ):
+        self._errors = value
 
 
 class Item(Base):
@@ -355,6 +395,59 @@ class ResourceNode(Component):
             conveyance_type=ConveyanceType.RESOURCE_NODE,
             attached_to=self
         )]
+
+    def test(self):
+        '''
+        Detects problems with this ResourceNode
+        '''
+
+        super().test()
+        self.test_inputs()
+        self.test_outputs()
+
+    def test_inputs(self):
+        '''
+        Resource nodes cannot have inputs
+        '''
+
+        input_ct = len(self.inputs)
+        if input_ct > 0:
+            self.add_error(ComponentError(
+                f'ResourceNodes cannot have any inputs, but this has {input_ct}.'
+            ))
+
+    def test_outputs(self):
+        '''
+        ResourceNodes must be connected to Miners whose Recipes match the Item the ResourceNode
+        emits. They can also not have multiple outputs.
+        '''
+
+        output_ct = len(self.outputs)
+        if output_ct > 1:
+            self.add_error(ComponentError(
+                f'ResourceNodes cannot have more than one output, but this has {output_ct}.'
+            ))
+        elif output_ct < 1:
+            self.add_error(ComponentError(
+                f'ResourceNodes cannot have less than one output, but this has {output_ct}'
+            ))
+        else:
+            target_bldg = self.outputs[0].target.attached_to
+            if target_bldg.building_type != BuildingType.MINER:
+                self.add_error(ComponentError(
+                    'ResourceNodes must be connected to miners, but this is connected to a '
+                    f'{target.building_type.name}'
+                ))
+            else:
+                if target_bldg.recipe is None:
+                    self.add_error(ComponentError(
+                        'The connected Miner has no recipe'
+                    ))
+                else:
+                    if self.item not in target_bldg.recipe.produces:
+                        self.add_error(ComponentError(
+                            f'The connected Miner must produce {self.item.name}, but it does not.'
+                        ))
 
 
 class Building(Component):

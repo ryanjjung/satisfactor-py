@@ -4,10 +4,19 @@ from satisfactor_py.base import (
     Recipe
 )
 from satisfactor_py.items import (
+    CopperOre as iCopperOre,
     IronOre as iIronOre,
-    IronIngot as iIronIngot
+    IronIngot as iIronIngot,
 )
 
+
+CopperOreMk1 = Recipe(
+    name='Copper Ore',
+    wiki_path='/Copper_Ore',
+    building_type=BuildingType.MINER,
+    consumes=None,
+    produces=[Ingredient(iCopperOre, None, 60)]
+)
 
 IronOreMk1 = Recipe(
     name='Iron Ore',

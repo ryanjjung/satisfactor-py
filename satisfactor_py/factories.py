@@ -65,19 +65,6 @@ class Factory(Component):
                 components.append(component)
         return components
 
-    def drain(self):
-        '''
-        Steps through each connection in the factory, clearing all ingredients out of each one. This
-        process begins with any resource nodes in the factory.
-        '''
-        self.traverse_all(drain_component)
-
-    def simulate(self):
-        '''
-        Steps through each connection in the factory, simulating each building.
-        '''
-        self.traverse_all(simulate_component)
-
     def traverse_all(self,
         func: Callable
     ):
@@ -121,7 +108,7 @@ class Factory(Component):
             if len(cursor.outputs) < 1:
                 return
             # If there is only one output, traverse along it
-            elif len(cursor.outputs) == 1:
+            elif len(cursor.outputs) == 1 and cursor.recipe:
                 cursor.outputs[0].ingredients = cursor.recipe.produces
                 self.traverse(cursor.outputs[0], func)
             # If there are multiple outputs, we must split into threads to traverse them
@@ -133,6 +120,25 @@ class Factory(Component):
                     thread.start()
                     thread.join()
 
+    def drain(self):
+        '''
+        Steps through each connection in the factory, clearing all ingredients out of each one. This
+        process begins with any resource nodes in the factory.
+        '''
+        self.traverse_all(drain_component)
+
+    def simulate(self):
+        '''
+        Steps through each connection in the factory, simulating each building.
+        '''
+        self.traverse_all(simulate_component)
+
+    def test(self):
+        '''
+        Steps through each component of the factory, running tests
+        '''
+
+        self.traverse_all(test_component)
 
 def drain_component(component):
     '''
@@ -151,3 +157,12 @@ def simulate_component(component):
     if isinstance(component, Building):
         component.process()
     return
+
+def test_component(component):
+    '''
+    Instruct the component to run self-tests
+    '''
+
+    # During traversal, we will encounter non-components, such as Connections. Skip those.
+    if isinstance(component, Component):
+        component.test()

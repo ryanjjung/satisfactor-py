@@ -29,3 +29,10 @@ IronIngot = Item(
     stack_size=100,
     sink_value=2,
     wiki_path='/Iron_Ingot')
+
+CopperOre = Item(
+    name='Copper Ore',
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=100,
+    sink_value=1,
+    wiki_path='/Copper_Ore')
