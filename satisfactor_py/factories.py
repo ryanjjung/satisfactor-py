@@ -1,6 +1,7 @@
 from threading import Thread
 from typing import Callable
 from satisfactor_py.base import (
+    Base,
     Building,
     BuildingType,
     Component,
@@ -12,10 +13,11 @@ from satisfactor_py.base import (
     ResourceNode
 )
 
-class Factory(Component):
+class Factory(Base):
     '''
-    A Factory is a collection of interconnected Components. It is itself a Component, meaning that
-    Factories can be nested.
+    A Factory is a collection of interconnected Components.
+
+        - components: A list of Components in the factory.
     '''
 
     def __init__(self,
@@ -32,7 +34,11 @@ class Factory(Component):
         return self._components
 
     @property
-    def resource_nodes(self):
+    def resource_nodes(self) -> list[Component]:
+        '''
+        Quick access to all ResourceNodes in the factory.
+        '''
+
         return [component for component in self._components
                 if isinstance(component, ResourceNode)]
 
@@ -44,6 +50,10 @@ class Factory(Component):
     def get_buildings_by_type(self,
         building_type: BuildingType
     ) -> list[Building]:
+        '''
+        Returns a list of all Buildings in the factory of a particular type.
+        '''
+
         return [component for component in self._components
                 if isinstance(component, Building)
                 and component.building_type == building_type]
@@ -51,36 +61,46 @@ class Factory(Component):
     def get_component_by_id(self,
         id: str
     ) -> Component:
+        '''
+        Returns a specific single Component, given its unique ID.
+        '''
+
         for component in self._components:
             if component.id == id:
                 return component
         return None
 
     def get_components_by_name(self,
-        name: str
+        name: str,
+        fuzzy: False
     ) -> list[Component]:
+        '''
+        Returns a list of Components which match the name.
+
+            - name: The text to search for
+            - fuzzy: When True, returns names which are partial but not necessarily exact matches.
+        '''
+
         components = list()
         for component in self._components:
-            if component.name == name:
-                components.append(component)
+            if fuzzy:
+                if name in component.name:
+                    components.append(component)
+            else:
+                if component.name == name:
+                    components.append(component)
         return components
-
-    def drain(self):
-        '''
-        Steps through each connection in the factory, clearing all ingredients out of each one. This
-        process begins with any resource nodes in the factory.
-        '''
-        self.traverse_all(drain_component)
-
-    def simulate(self):
-        '''
-        Steps through each connection in the factory, simulating each building.
-        '''
-        self.traverse_all(simulate_component)
 
     def traverse_all(self,
         func: Callable
     ):
+        '''
+        Initiates factory traversal beginning at its ResourceNodes, running the `func` function on
+        each Component and Connection in the flow.
+
+            - func: A function to run on each Component and Connection in the flow
+        '''
+
         components = self.resource_nodes
 
         # Start up traversal threads.
@@ -98,6 +118,9 @@ class Factory(Component):
         '''
         Traverses factory pathways beginning at the given Component, passing each Component into the
         given function.
+
+            - cursor: The Component to start traversing the factory from
+            - func: A function to run on each Component and Connection in the flow
         '''
 
         # Run the function where the cursor is
@@ -121,7 +144,7 @@ class Factory(Component):
             if len(cursor.outputs) < 1:
                 return
             # If there is only one output, traverse along it
-            elif len(cursor.outputs) == 1:
+            elif len(cursor.outputs) == 1 and cursor.recipe:
                 cursor.outputs[0].ingredients = cursor.recipe.produces
                 self.traverse(cursor.outputs[0], func)
             # If there are multiple outputs, we must split into threads to traverse them
@@ -133,6 +156,25 @@ class Factory(Component):
                     thread.start()
                     thread.join()
 
+    def drain(self):
+        '''
+        Steps through each connection in the factory, clearing all ingredients out of each one. This
+        process begins with any resource nodes in the factory.
+        '''
+        self.traverse_all(drain_component)
+
+    def simulate(self):
+        '''
+        Steps through each connection in the factory, simulating each building.
+        '''
+        self.traverse_all(simulate_component)
+
+    def test(self):
+        '''
+        Steps through each component of the factory, running tests
+        '''
+
+        self.traverse_all(test_component)
 
 def drain_component(component):
     '''
@@ -151,3 +193,12 @@ def simulate_component(component):
     if isinstance(component, Building):
         component.process()
     return
+
+def test_component(component):
+    '''
+    Instruct the component to run self-tests
+    '''
+
+    # During traversal, we will encounter non-components, such as Connections. Skip those.
+    if isinstance(component, Component):
+        component.test()

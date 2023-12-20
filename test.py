@@ -5,10 +5,10 @@ from satisfactor_py.buildings import MinerMk1, Smelter
 from satisfactor_py.conveyances import ConveyorBeltMk1
 from satisfactor_py.factories import Factory
 from satisfactor_py.items import IronOre
-from satisfactor_py.recipes import IronOreMk1, IronIngot
+from satisfactor_py.recipes import CopperOreMk1, IronOreMk1, IronIngot
 from satisfactor_py.storages import StorageContainer
 
-def build_test_factory():
+def build_iron_ingot_factory():
     factory = Factory(name='Ironworks')
 
     # Start with an iron resource node
@@ -44,6 +44,27 @@ def build_test_factory():
 
     return factory
 
-factory = build_test_factory()
-factory.simulate()
-# factory.drain()
+def build_resource_node_test_factory():
+    '''
+    Builds a resource node and a miner so we can test the test framework
+    '''
+
+    factory = Factory(name='Iron Miner Test')
+
+    ironSource = ResourceNode(
+        name='Normal Iron Source',
+        purity=Purity.NORMAL,
+        item=IronOre
+    )
+
+    # Build a copper miner and put it on an iron ore source, expecting test failure
+    copperMiner = MinerMk1(recipe=CopperOreMk1)
+    ironSource.outputs[0].connect(copperMiner.inputs[0])
+
+    factory.add([ironSource, copperMiner])
+
+    return factory
+
+factory = build_resource_node_test_factory()
+factory.test()
+print(factory.resource_nodes[0].errors)

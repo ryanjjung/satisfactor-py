@@ -7,6 +7,10 @@ from satisfactor_py.base import (
 )
 
 class ConveyorBeltMk1(Conveyance):
+    '''
+    A first-tier conveyor belt carrying 60 Items per minute.
+    '''
+
     def __init__(self, **kwargs):
         super().__init__(
             conveyance_type=ConveyanceType.BELT,
