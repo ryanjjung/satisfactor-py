@@ -147,7 +147,7 @@ class Base(object):
         for key in d:
             if hasattr(d[key], 'to_dict'):
                 d[key] = d[key].to_dict()
-        
+
         # Remove any remaining unexpanded classes
         d = { key: value \
             for key, value in d.items() \
@@ -186,7 +186,7 @@ class ComponentError(Exception):
         message: str,
         **kwargs
     ):
-        super().__init__(error_message, **kwargs)
+        super().__init__(message, **kwargs)
 
 
 class Component(Base):

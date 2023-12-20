@@ -1,6 +1,7 @@
 from threading import Thread
 from typing import Callable
 from satisfactor_py.base import (
+    Base,
     Building,
     BuildingType,
     Component,
