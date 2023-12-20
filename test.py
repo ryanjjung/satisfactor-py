@@ -52,12 +52,12 @@ def build_resource_node_test_factory():
     factory = Factory(name='Iron Miner Test')
 
     ironSource = ResourceNode(
-        name='Normatl Iron Source',
+        name='Normal Iron Source',
         purity=Purity.NORMAL,
         item=IronOre
     )
 
-    #ironMiner = MinerMk1(recipe=IronOreMk1)
+    # Build a copper miner and put it on an iron ore source, expecting test failure
     copperMiner = MinerMk1(recipe=CopperOreMk1)
     ironSource.outputs[0].connect(copperMiner.inputs[0])
 
