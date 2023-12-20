@@ -91,6 +91,34 @@ class Factory(Base):
                     components.append(component)
         return components
 
+    def get_components_by_tag(self,
+        key: str,
+        value: str | None = None,
+        fuzzy: bool = True
+    ) -> list[Component]:
+        '''
+        Returns a list of Components with tags matching the specified inputs. If `value` is None, we
+        match any component containing the tag matching the `key`.
+        '''
+
+        matches = list()
+
+        for component in self.components:
+            for tagKey, tagValue in component.tags.items():
+                if key == tagKey:
+                    if value is None:
+                        matches.append(component)
+                    else:
+                        if fuzzy:
+                            if value in tagValue:
+                                matches.append(component)
+                        else:
+                            if value == tagValue:
+                                matches.append(component)
+
+        return matches
+
+
     def traverse_all(self,
         func: Callable
     ):

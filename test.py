@@ -15,11 +15,17 @@ def build_iron_ingot_factory():
     ironSource = ResourceNode(
         name='Normal Iron Source',
         purity=Purity.NORMAL,
-        item=IronOre
+        item=IronOre,
     )
 
     # Build a miner and hook it to the resource node
-    ironMiner = MinerMk1(recipe=IronOreMk1)
+    ironMiner = MinerMk1(
+        recipe=IronOreMk1,
+        tags={
+            'purpose': 'mining iron ore',
+            'name': 'Bob'
+        }
+    )
     ironSource.outputs[0].connect(ironMiner.inputs[0])
 
     # Keep adding these things to the factory as we go
@@ -28,15 +34,27 @@ def build_iron_ingot_factory():
     # Add a smelter and hook it up to the miner with a conveyor belt
     ironSmelter1 = Smelter(
         name='Iron Smelter #1',
-        recipe=IronIngot
+        recipe=IronIngot,
+        tags={
+            'purpose': 'screws'
+        }
     )
-    ironOreToSmelter1 = ConveyorBeltMk1()
+    ironOreToSmelter1 = ConveyorBeltMk1(
+        tags={
+            'purpose': 'screws'
+        }
+    )
     ironOreToSmelter1.inputs[0].connect(ironMiner.outputs[0])
     ironOreToSmelter1.outputs[0].connect(ironSmelter1.inputs[0])
     factory.add([ironOreToSmelter1, ironSmelter1])
 
     # Move the ingots into storage
-    ironIngotStorage = StorageContainer(id='storage')
+    ironIngotStorage = StorageContainer(
+        id='storage',
+        tags={
+            'purpose': 'bulk storage'
+        }
+    )
     ironIngotToStorage = ConveyorBeltMk1()
     ironIngotToStorage.inputs[0].connect(ironSmelter1.outputs[0])
     ironIngotToStorage.outputs[0].connect(ironIngotStorage.inputs[0])
@@ -65,6 +83,6 @@ def build_resource_node_test_factory():
 
     return factory
 
-factory = build_resource_node_test_factory()
-factory.test()
-print(factory.resource_nodes[0].errors)
+factory = build_iron_ingot_factory()
+components = factory.get_components_by_tag(key='purpose', value='screws')
+print(components)
