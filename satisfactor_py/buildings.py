@@ -24,7 +24,8 @@ class BiomassBurner(Building):
                 width=8,
                 length=8,
                 height=7
-            )
+            ),
+            **kwargs
         )
 
 
@@ -48,7 +49,8 @@ class Constructor(Building):
                 attached_to=self)],
             outputs=[Output(
                 conveyance_type=ConveyanceType.BELT,
-                attached_to=self)]
+                attached_to=self)],
+            **kwargs
         )
 
 
@@ -139,5 +141,6 @@ class SpaceElevator(Building):
             inputs=[Input(
                 attached_to=self,
                 conveyance_type=ConveyanceType.BELT) for i in range(0, 6)],
-            power_connections=0
+            power_connections=0,
+            **kwargs
         )

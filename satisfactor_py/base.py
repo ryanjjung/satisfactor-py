@@ -251,6 +251,7 @@ class Component(Base):
     def process(self):
         pass
 
+
 class Item(Base):
     '''
     An Item is something which can be held in an inventory slot, used in a Recipe, or used to build
@@ -471,6 +472,11 @@ class Input(Connection):
         self.source = connection
         connection.target = self
 
+    def process(self):
+        # If the input is attached (it should be), pass the ingredients along
+        if self.attached_to:
+            self.attached_to.ingredients = self.ingredients
+
 
 class Output(Connection):
     '''
@@ -503,10 +509,10 @@ class Output(Connection):
         connection.source = self
 
     def process(self):
-        super().process()
-        # Certain types of buildings don't output any ingredients
-        if type(self.attached_to) == ResourceNode:
-            pass
+        # An output can only connect to an input, so just pass the ingredients along
+        if self.target:
+            self.target.ingredients = self.ingredients
+
 
 class ResourceNode(Component):
     '''
@@ -633,6 +639,7 @@ class Building(Component):
         clock_rate: float = 1.0,
         standby: bool = False,
         dimensions: Dimension = Dimension(0, 0, 0),
+        ingredients: list[Ingredient] = list(),
         inputs: list[Input] = list(),
         outputs: list[Output] = list(),
         power_connections: int = 1,
@@ -664,17 +671,6 @@ class Building(Component):
         })
         return base
 
-    @property
-    def ingredients(self):
-        '''
-        A property representing the contents of the Building's Inputs.
-        '''
-
-        ingredients = list()
-        for input in self.inputs:
-            ingredients.extend(input.ingredients)
-        return [ingredient.item for ingredient in ingredients]
-
     def can_process(self) -> bool:
         '''
         Determines if the conditions are met for the recipe to be processed.
@@ -688,20 +684,22 @@ class Building(Component):
         if self.standby:
             return False
 
-        # Can't process if there aren't enough inputs to supply the recipe's ingredients (but some
-        # recipes don't consume anything).
-        if self.recipe.consumes and len(self.inputs) < len(self.recipe.consumes):
-            return False
-
-        # Can't process if the contents of the building's inputs don't match the recipe's
-        # ingredients.
+        # Make sure recipes which consume can be processed in this building
         if self.recipe.consumes:
-            requirements = [ingredient.item for ingredient in self.recipe.consumes]
-            for ingredient in requirements:
-                if ingredient not in self.ingredients:
-                    return False
+            # Can't process if there aren't enough inputs to supply the recipe's ingredients
+            if len(self.inputs) < len(self.recipe.consumes):
+                return False
 
-        return True
+            # Can't process if the inputs don't match the recipe
+            requirements = [ingredient.item for ingredient in self.recipe.consumes]
+            ing_items = [ingredient.item for ingredient in self.ingredients]
+            for ingredient in requirements:
+                if ingredient not in ing_items:
+                    return False
+            return True
+        # Some recipes don't consume; those can be processed without additional checks
+        else:
+            return True
 
     def process(self) -> bool:
         '''
@@ -811,8 +809,8 @@ class Conveyance(Building):
         )
         self.conveyance_type = conveyance_type
         self.rate = rate
+        self.ingredients = ingredients
         self.recipe = None
-        self.set_ingredients(ingredients)
 
     def to_dict(self):
         base = super().to_dict()
@@ -822,24 +820,14 @@ class Conveyance(Building):
         })
         return base
 
-    def set_ingredients(self,
-        ingredients: list[Ingredient]
-    ):
-        '''
-        Special function that ensures we always load a special ConveyanceRecipe into Conveyances.
-        '''
-
-        self.recipe = ConveyanceRecipe(ingredients)
-
     def process(self):
         '''
         Ensures the Recipe is set up correctly and that the outputs match the inputs.
         '''
 
-        ingredients = list()
-        for input in self.inputs:
-            ingredients.extend(input.ingredients)
-        self.set_ingredients(ingredients)
+        self.recipe = ConveyanceRecipe(self.ingredients)
+        if self.can_process():
+            self.outputs[0].ingredients = self.ingredients
         return True
 
 

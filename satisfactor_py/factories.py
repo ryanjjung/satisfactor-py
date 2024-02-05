@@ -169,10 +169,6 @@ class Factory(Base):
             self.traverse(cursor.attached_to, func)
         elif isinstance(cursor, Output):
             if cursor.target:
-                # Conveyances need to have their recipes set based on their inputs
-                # if isinstance(cursor.target.attached_to, Conveyance):
-                #     cursor.target.recipe = ConveyanceRecipe(cursor.ingredients)
-                # cursor.target.ingredients = cursor.ingredients
                 self.traverse(cursor.target, func)
         elif isinstance(cursor, ResourceNode):
             self.traverse(cursor.outputs[0], func)
@@ -235,9 +231,7 @@ def simulate_component(component):
     Simulate the component, determining if it can process, and what the contents of its outputs are
     '''
 
-    if isinstance(component, Building):
-        component.process()
-    return
+    component.process()
 
 def test_component(component):
     '''
