@@ -15,6 +15,7 @@ class StorageContainer(Storage):
 
     def __init__(self, name='Storage Container', **kwargs):
         super().__init__(
+            name=name,
             availability=Availability(0, 5),
             wiki_path='/Storage_Container',
             stacks=24,

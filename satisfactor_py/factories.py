@@ -79,7 +79,7 @@ class Factory(Base):
 
     def get_components_by_name(self,
         name: str,
-        fuzzy: False
+        fuzzy: bool = False
     ) -> list[Component]:
         '''
         Returns a list of Components which match the name.
