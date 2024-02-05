@@ -248,6 +248,8 @@ class Component(Base):
     ):
         self._errors = value
 
+    def process(self):
+        pass
 
 class Item(Base):
     '''
@@ -435,6 +437,9 @@ class Connection(Base):
     def connect(self) -> bool:
         raise NotImplementedError
 
+    def process(self):
+        raise NotImplementedError
+
 
 class Input(Connection):
     '''
@@ -497,6 +502,11 @@ class Output(Connection):
         self.target = connection
         connection.source = self
 
+    def process(self):
+        super().process()
+        # Certain types of buildings don't output any ingredients
+        if type(self.attached_to) == ResourceNode:
+            pass
 
 class ResourceNode(Component):
     '''

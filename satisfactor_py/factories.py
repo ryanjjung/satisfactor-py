@@ -170,9 +170,9 @@ class Factory(Base):
         elif isinstance(cursor, Output):
             if cursor.target:
                 # Conveyances need to have their recipes set based on their inputs
-                if isinstance(cursor.target.attached_to, Conveyance):
-                    cursor.target.recipe = ConveyanceRecipe(cursor.ingredients)
-                cursor.target.ingredients = cursor.ingredients
+                # if isinstance(cursor.target.attached_to, Conveyance):
+                #     cursor.target.recipe = ConveyanceRecipe(cursor.ingredients)
+                # cursor.target.ingredients = cursor.ingredients
                 self.traverse(cursor.target, func)
         elif isinstance(cursor, ResourceNode):
             self.traverse(cursor.outputs[0], func)
