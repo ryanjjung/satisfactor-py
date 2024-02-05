@@ -1,3 +1,6 @@
+import json
+import pdb
+
 from threading import Thread
 from typing import Callable
 from satisfactor_py.base import (
@@ -191,6 +194,13 @@ class Factory(Base):
                     thread.start()
                     thread.join()
 
+    def debug(self):
+        '''
+        Steps through each component, breaking with a debugger
+        '''
+
+        self.traverse_all(debug_component)
+
     def drain(self):
         '''
         Steps through each connection in the factory, clearing all ingredients out of each one. This
@@ -237,3 +247,14 @@ def test_component(component):
     # During traversal, we will encounter non-components, such as Connections. Skip those.
     if isinstance(component, Component):
         component.test()
+
+def debug_component(component):
+    '''
+    Break with a debugger prompt on every component
+    '''
+
+    # Threading makes this ugly. Print some output every time so the user understands what they're
+    # looking at.
+    print(f'''[DEBUG] Inspecting component "{component.id}" {type(component)}
+            {json.dumps(component.to_dict(), indent=2)}''')
+    pdb.set_trace()

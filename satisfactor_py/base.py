@@ -414,11 +414,12 @@ class Connection(Base):
         base = super().to_dict()
         base.update({
             'attached_to': self.attached_to.id,
-            'conveyance_type': self.conveyance_type.name,
+            'conveyance_type': self.conveyance_type.name if self.conveyance_type else None,
             'ingredients': ingredients,
-            'source': self.source.id,
-            'target': self.target.id
+            'source': self.source.id if self.source else None,
+            'target': self.target.id if self.target else None
         })
+        return base
 
     def is_input(self):
         raise NotImplementedError
