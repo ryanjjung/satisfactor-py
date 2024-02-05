@@ -19,13 +19,7 @@ def build_iron_ingot_factory():
     )
 
     # Build a miner and hook it to the resource node
-    ironMiner = MinerMk1(
-        recipe=IronOreMk1,
-        tags={
-            'purpose': 'mining iron ore',
-            'name': 'Bob'
-        }
-    )
+    ironMiner = MinerMk1(recipe=IronOreMk1)
     ironSource.outputs[0].connect(ironMiner.inputs[0])
 
     # Keep adding these things to the factory as we go

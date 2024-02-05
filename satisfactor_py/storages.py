@@ -1,4 +1,5 @@
 from satisfactor_py.base import (
+    Availability,
     BuildingType,
     ConveyanceType,
     Dimension,
@@ -12,8 +13,11 @@ class StorageContainer(Storage):
     A Storage Container with a single input and 24 inventory slots.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self, name='Storage Container', **kwargs):
         super().__init__(
+            name=name,
+            availability=Availability(0, 5),
+            wiki_path='/Storage_Container',
             stacks=24,
             dimensions=Dimension(
                 width=5,
@@ -28,6 +32,5 @@ class StorageContainer(Storage):
                 attached_to=self,
                 conveyance_type=ConveyanceType.BELT
             )],
-            wiki_path='/Storage_Container',
             **kwargs
         )
