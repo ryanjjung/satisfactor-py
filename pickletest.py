@@ -48,8 +48,10 @@ def create_tier_0_screw_factory():
     )
 
     # Connect it to a miner
-    #ironMiner = MinerMk1(recipe=rIronOreMk1)
-    ironMiner = MinerMk1(recipe=rCopperOreMk1)
+    ironMiner = MinerMk1(recipe=rIronOreMk1)
+
+    # Uncomment the next line to produce an error
+    #ironMiner = MinerMk1(recipe=rCopperOreMk1)
     ironSource.outputs[0].connect(ironMiner.inputs[0])
 
     # Connect the miner to a smelter
