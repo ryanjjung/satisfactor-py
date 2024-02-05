@@ -255,6 +255,6 @@ def debug_component(component):
 
     # Threading makes this ugly. Print some output every time so the user understands what they're
     # looking at.
-    print(f'''[DEBUG] Inspecting component "{component.id}" {type(component)}
+    print(f'''[DEBUG] Inspecting component "{component.id}" {type(component)})
             {json.dumps(component.to_dict(), indent=2)}''')
     pdb.set_trace()
