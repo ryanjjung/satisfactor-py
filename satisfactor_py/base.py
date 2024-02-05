@@ -277,9 +277,9 @@ class Item(Base):
     def to_dict(self):
         base = super().to_dict()
         base.update({
-            'conveyance_type': self.conveyance_type.name,
-            'stack_size': self.stack_size,
-            'sink_value': self.sink_value
+            'conveyance_type': self.conveyance_type.name if self.conveyance_type else None,
+            'stack_size': self.stack_size if self.stack_size else None,
+            'sink_value': self.sink_value if self.sink_value else None
         })
         return base
 
