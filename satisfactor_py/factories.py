@@ -1,3 +1,6 @@
+import json
+import pdb
+
 from threading import Thread
 from typing import Callable
 from satisfactor_py.base import (
@@ -166,10 +169,6 @@ class Factory(Base):
             self.traverse(cursor.attached_to, func)
         elif isinstance(cursor, Output):
             if cursor.target:
-                # Conveyances need to have their recipes set based on their inputs
-                if isinstance(cursor.target.attached_to, Conveyance):
-                    cursor.target.recipe = ConveyanceRecipe(cursor.ingredients)
-                cursor.target.ingredients = cursor.ingredients
                 self.traverse(cursor.target, func)
         elif isinstance(cursor, ResourceNode):
             self.traverse(cursor.outputs[0], func)
@@ -190,6 +189,13 @@ class Factory(Base):
                 for thread in threads:
                     thread.start()
                     thread.join()
+
+    def debug(self):
+        '''
+        Steps through each component, breaking with a debugger
+        '''
+
+        self.traverse_all(debug_component)
 
     def drain(self):
         '''
@@ -225,9 +231,7 @@ def simulate_component(component):
     Simulate the component, determining if it can process, and what the contents of its outputs are
     '''
 
-    if isinstance(component, Building):
-        component.process()
-    return
+    component.process()
 
 def test_component(component):
     '''
@@ -237,3 +241,14 @@ def test_component(component):
     # During traversal, we will encounter non-components, such as Connections. Skip those.
     if isinstance(component, Component):
         component.test()
+
+def debug_component(component):
+    '''
+    Break with a debugger prompt on every component
+    '''
+
+    # Threading makes this ugly. Print some output every time so the user understands what they're
+    # looking at.
+    print(f'''[DEBUG] Inspecting component "{component.id}" {type(component)})
+            {json.dumps(component.to_dict(), indent=2)}''')
+    pdb.set_trace()

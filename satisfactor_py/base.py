@@ -248,6 +248,9 @@ class Component(Base):
     ):
         self._errors = value
 
+    def process(self):
+        pass
+
 
 class Item(Base):
     '''
@@ -277,9 +280,9 @@ class Item(Base):
     def to_dict(self):
         base = super().to_dict()
         base.update({
-            'conveyance_type': self.conveyance_type.name,
-            'stack_size': self.stack_size,
-            'sink_value': self.sink_value
+            'conveyance_type': self.conveyance_type.name if self.conveyance_type else None,
+            'stack_size': self.stack_size if self.stack_size else None,
+            'sink_value': self.sink_value if self.sink_value else None
         })
         return base
 
@@ -414,11 +417,12 @@ class Connection(Base):
         base = super().to_dict()
         base.update({
             'attached_to': self.attached_to.id,
-            'conveyance_type': self.conveyance_type.name,
+            'conveyance_type': self.conveyance_type.name if self.conveyance_type else None,
             'ingredients': ingredients,
-            'source': self.source.id,
-            'target': self.target.id
+            'source': self.source.id if self.source else None,
+            'target': self.target.id if self.target else None
         })
+        return base
 
     def is_input(self):
         raise NotImplementedError
@@ -432,6 +436,9 @@ class Connection(Base):
         return not self.is_input()
 
     def connect(self) -> bool:
+        raise NotImplementedError
+
+    def process(self):
         raise NotImplementedError
 
 
@@ -465,6 +472,11 @@ class Input(Connection):
         self.source = connection
         connection.target = self
 
+    def process(self):
+        # If the input is attached (it should be), pass the ingredients along
+        if self.attached_to:
+            self.attached_to.ingredients = self.ingredients
+
 
 class Output(Connection):
     '''
@@ -495,6 +507,11 @@ class Output(Connection):
         # Connect them
         self.target = connection
         connection.source = self
+
+    def process(self):
+        # An output can only connect to an input, so just pass the ingredients along
+        if self.target:
+            self.target.ingredients = self.ingredients
 
 
 class ResourceNode(Component):
@@ -622,6 +639,7 @@ class Building(Component):
         clock_rate: float = 1.0,
         standby: bool = False,
         dimensions: Dimension = Dimension(0, 0, 0),
+        ingredients: list[Ingredient] = list(),
         inputs: list[Input] = list(),
         outputs: list[Output] = list(),
         power_connections: int = 1,
@@ -653,17 +671,6 @@ class Building(Component):
         })
         return base
 
-    @property
-    def ingredients(self):
-        '''
-        A property representing the contents of the Building's Inputs.
-        '''
-
-        ingredients = list()
-        for input in self.inputs:
-            ingredients.extend(input.ingredients)
-        return [ingredient.item for ingredient in ingredients]
-
     def can_process(self) -> bool:
         '''
         Determines if the conditions are met for the recipe to be processed.
@@ -677,20 +684,22 @@ class Building(Component):
         if self.standby:
             return False
 
-        # Can't process if there aren't enough inputs to supply the recipe's ingredients (but some
-        # recipes don't consume anything).
-        if self.recipe.consumes and len(self.inputs) < len(self.recipe.consumes):
-            return False
-
-        # Can't process if the contents of the building's inputs don't match the recipe's
-        # ingredients.
+        # Make sure recipes which consume can be processed in this building
         if self.recipe.consumes:
-            requirements = [ingredient.item for ingredient in self.recipe.consumes]
-            for ingredient in requirements:
-                if ingredient not in self.ingredients:
-                    return False
+            # Can't process if there aren't enough inputs to supply the recipe's ingredients
+            if len(self.inputs) < len(self.recipe.consumes):
+                return False
 
-        return True
+            # Can't process if the inputs don't match the recipe
+            requirements = [ingredient.item for ingredient in self.recipe.consumes]
+            ing_items = [ingredient.item for ingredient in self.ingredients]
+            for ingredient in requirements:
+                if ingredient not in ing_items:
+                    return False
+            return True
+        # Some recipes don't consume; those can be processed without additional checks
+        else:
+            return True
 
     def process(self) -> bool:
         '''
@@ -720,62 +729,56 @@ class Building(Component):
     ):
         '''
         Connect this Building to another by creating a Conveyance between them. Throw exceptions if
-        it cannot be done. Returns the conveyance created to connect the buildings.
+        it cannot be done. Returns the conveyance created to connect the buildings, or None if the
+        connection cannot be made.
+
+            - target: A Building to connect this Building to
+            - conveyance: A class representing the type of conveyance to build between the Buildings
+            - connect_output: When True, connects an output on this building to an input on the
+                target. When False, connects an input on this building to an output on the target.
         '''
+
+        # Python's type hinting can't be self-referential, so we have to test a couple things here
+        if not isinstance(target, Building):
+            raise TypeError
+        if not issubclass(conveyance, Conveyance):
+            raise TypeError
 
         output = None
         input = None
         connector = conveyance()
 
-        # If we're connecting the output of this building to the input of another, determine a valid
-        # output and input connection.
+        # If we're connecting the output of this building to the input of another...
         if connect_output:
-            # Find the first available, compatible output on this building
+            # ...find the first available, compatible output on this building...
             for o in self.outputs:
                 if not o.target and o.conveyance_type == connector.conveyance_type:
                     output = o
                     break
-            if not output:
-                raise ComponentError(
-                    ComponentErrorLevel.IMPOSSIBLE,
-                    message='Source building has no available compatible outputs.'
-                )
 
-            # Find the first available, compatible input on the target building
+            # ...then find the first available, compatible input on the target building.
             for i in target.inputs:
                 if not i.source and i.conveyance_type == connector.conveyance_type:
                     input = i
                     break
-            if not input:
-                raise ComponentError(
-                    ComponentErrorLevel.IMPOSSIBLE,
-                    message='Target building has no available compatible inputs.'
-                )
 
-        # If we're connecting the input of this building to the output of another, determine a valid
-        # output and input connection.
+        # If we're connecting the input of this building to the output of another...
         else:
-            # Find the first available, compatible output on the target building
+            # ...find the first available, compatible output on the target building...
             for o in target.outputs:
                 if not o.target and o.conveyance_type == connector.conveyance_type:
                     output = o
                     break
-            if not output:
-                raise ComponentError(
-                    ComponentErrorLevel.IMPOSSIBLE,
-                    message='Target building has no available compatible outputs.'
-                )
 
-            # Find the first available, compatible input on this building
+            # ...then find the first available, compatible input on this building.
             for i in self.inputs:
                 if not i.source and i.conveyance_type == connector.conveyance_type:
                     input = i
                     break
-            if not input:
-                raise ComponentError(
-                    ComponentErrorLevel.IMPOSSIBLE,
-                    message='Source building has no available compatible inputs.'
-                )
+
+        # We have to have a valid input and output to attach to this conveyance; fail otherwise
+        if not input or not output:
+            return False
 
         output.connect(connector.inputs[0])
         connector.outputs[0].connect(input)
@@ -806,8 +809,8 @@ class Conveyance(Building):
         )
         self.conveyance_type = conveyance_type
         self.rate = rate
+        self.ingredients = ingredients
         self.recipe = None
-        self.set_ingredients(ingredients)
 
     def to_dict(self):
         base = super().to_dict()
@@ -817,24 +820,14 @@ class Conveyance(Building):
         })
         return base
 
-    def set_ingredients(self,
-        ingredients: list[Ingredient]
-    ):
-        '''
-        Special function that ensures we always load a special ConveyanceRecipe into Conveyances.
-        '''
-
-        self.recipe = ConveyanceRecipe(ingredients)
-
     def process(self):
         '''
         Ensures the Recipe is set up correctly and that the outputs match the inputs.
         '''
 
-        ingredients = list()
-        for input in self.inputs:
-            ingredients.extend(input.ingredients)
-        self.set_ingredients(ingredients)
+        self.recipe = ConveyanceRecipe(self.ingredients)
+        if self.can_process():
+            self.outputs[0].ingredients = self.ingredients
         return True
 
 
