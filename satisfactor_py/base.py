@@ -27,6 +27,16 @@ def generate_id():
 
 # Enums and helper classes go here
 
+class Availability(object):
+    '''
+    A combo of tier and hub upgrade depicting when the resource becomes unlocked.
+    '''
+
+    def __init__(self, tier, upgrade):
+        self.tier = tier
+        self.upgrade = upgrade
+
+
 class BuildingType(Enum):
     '''
     A constraint for Recipes, which can only be built by certain types of Buildings.
@@ -34,19 +44,24 @@ class BuildingType(Enum):
 
     ASSEMBLER                 = 1
     BLENDER                   = 2
-    CONSTRUCTOR               = 3
-    CONVEYANCE                = 4
-    FOUNDRY                   = 5
-    MANUFACTURER              = 6
-    MINER                     = 7
-    OIL_EXTRACTOR             = 8
-    PACKAGER                  = 9
-    PARTICLE_ACCELERATOR      = 10
-    REFINERY                  = 11
-    RESOURCE_WELL_PRESSURIZER = 12
-    SMELTER                   = 13
-    STORAGE                   = 14
-    WATER_EXTRACTOR           = 15
+    BUILD_GUN                 = 3
+    CONSTRUCTOR               = 4
+    CONVEYANCE                = 5
+    FOUNDRY                   = 6
+    GENERATOR                 = 7
+    MANUFACTURER              = 8
+    MINER                     = 9
+    OIL_EXTRACTOR             = 10
+    PACKAGER                  = 11
+    PARTICLE_ACCELERATOR      = 12
+    POWER_POLE                = 13
+    REFINERY                  = 14
+    RESOURCE_WELL_PRESSURIZER = 15
+    SMELTER                   = 16
+    SPACE_ELEVATOR            = 17
+    STORAGE                   = 18
+    WATER_EXTRACTOR           = 19
+    WORKSHOP                  = 20
 
 
 class ConveyanceType(Enum):
@@ -69,9 +84,9 @@ class Dimension(object):
     '''
 
     def __init__(self,
-        width: int,
-        length: int,
-        height: int
+        width: float,
+        length: float,
+        height: float
     ):
         self.width = width
         self.length = length
@@ -102,6 +117,7 @@ class Base(object):
 
         - id: A unique ID used for reference; will be randomly generated if not supplied
         - name: A user-friendly name for the object
+        - availability: The point at which the resource is unlocked
         - wiki_path: The URL path where the entry for this object can be found in the online wiki
         - tags: A dictionary of arbitrary key:value pairs used as additional descriptors
     '''
@@ -109,6 +125,7 @@ class Base(object):
     def __init__(self,
         id: str = None,
         name: str = '',
+        availability: Availability = Availability(0, 0),
         wiki_path: str ='/',
         tags: dict[str, str] = dict(),
         **kwargs
@@ -355,8 +372,8 @@ class Connection(Base):
         attached_to: Component = None,
         conveyance_type: ConveyanceType = ConveyanceType.BELT,
         ingredients: list[Ingredient] = list(),
-        source=None,
-        target=None,
+        source: Connection = None,
+        target: Connection = None,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -552,11 +569,14 @@ class Building(Component):
     def __init__(self,
         building_type: BuildingType,
         recipe: Recipe = None,
+        overclockable: bool = True,
         clock_rate: float = 1.0,
         standby: bool = False,
         dimensions: Dimension = Dimension(0, 0, 0),
         inputs: list[Input] = list(),
         outputs: list[Output] = list(),
+        power_connections: int = 1,
+        base_power_usage: float = 0,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -567,6 +587,7 @@ class Building(Component):
         self.dimensions = dimensions
         self.inputs = inputs
         self.outputs = outputs
+        self.base_power_usage = base_power_usage
 
     @property
     def ingredients(self):
