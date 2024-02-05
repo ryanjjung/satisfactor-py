@@ -1,4 +1,5 @@
 from satisfactor_py.base import (
+    Availability,
     BuildingType,
     Ingredient,
     Recipe
@@ -282,7 +283,7 @@ DoubleWallOutletMk1 = Recipe(
     name='Double Wall Outlet Mk.1',
     availability=Availability(0, 3),
     wiki_path='/Power_Pole#Double_Wall_Outlets',
-    BuildingType=BuildingType.BUILD_GUN,
+    building_type=BuildingType.BUILD_GUN,
     consumes=[
         Ingredient(iWire, 8, None),
         Ingredient(iIronRod, 2, None)],
@@ -293,12 +294,7 @@ EquipmentWorkshop = Recipe(
     name='Equipment Workshop',
     availability=Availability(0, 1),
     wiki_path='/Equipment_Workshop',
-    BuildingType=BuildingType.BUILD_GUN,
-    dimensions=Dimension(
-        width=10,
-        length=7,
-        height=5
-    ),
+    building_type=BuildingType.BUILD_GUN,
     consumes=[
         Ingredient(iWire, 8, None),
         Ingredient(iIronRod, 2, None)],

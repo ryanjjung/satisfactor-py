@@ -1,4 +1,5 @@
 from satisfactor_py.base import (
+    Availability,
     Building,
     BuildingType,
     ConveyanceType,
@@ -81,9 +82,9 @@ class MinerMk1(Miner):
     A first-tier Miner
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self, name='Miner Mk.1', **kwargs):
         super().__init__(
-            name='Miner Mk. 1',
+            name=name,
             availability=Availability(0, 1),
             wiki_path='/Miner#Mk.1',
             base_power_usage=5,
@@ -96,9 +97,8 @@ class Smelter(Building):
     A Smelter Building
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self, name='Smelter', **kwargs):
         super().__init__(
-            name='Smelter',
             availability=Availability(0, 2),
             wiki_path='/Smelter',
             base_power_usage=4,
@@ -125,9 +125,9 @@ class SpaceElevator(Building):
     A Space Elevator Building
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self, name='Space Elevator', **kwargs):
         super().__init__(
-            name='Space Elevator',
+            name=name,
             availability=Availability(0, 6),
             wiki_path='/Space_Elevator',
             building_type=BuildingType.SPACE_ELEVATOR,

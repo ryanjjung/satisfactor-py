@@ -1,4 +1,5 @@
 from satisfactor_py.base import (
+    Availability,
     BuildingType,
     Conveyance,
     ConveyanceType,

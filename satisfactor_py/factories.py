@@ -27,6 +27,13 @@ class Factory(Base):
         super().__init__(**kwargs)
         self._components = components
 
+    def to_dict(self):
+        base = super().to_dict()
+        base.update({
+            'components': [component.to_dict() for component in self.components]
+        })
+        return base
+
     # By making this a read-only property, we can use Python's type hinting in the `add` function to
     # ensure we're only allowing Component types into the factory.
     @property

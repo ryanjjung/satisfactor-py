@@ -8,6 +8,7 @@ import random
 
 from enum import Enum
 from inspect import isclass, isfunction
+from typing import Type
 
 
 WIKI_URL_BASE = 'https://satisfactory.fandom.com/wiki'
@@ -35,6 +36,12 @@ class Availability(object):
     def __init__(self, tier, upgrade):
         self.tier = tier
         self.upgrade = upgrade
+
+    def to_dict(self):
+        return {
+            'tier': self.tier,
+            'upgrade': self.upgrade
+        }
 
 
 class BuildingType(Enum):
@@ -92,6 +99,13 @@ class Dimension(object):
         self.length = length
         self.height = height
 
+    def to_dict(self):
+        return {
+            'width': self.width,
+            'length': self.length,
+            'height': self.height
+        }
+
     def area(self) -> int:
         return self.width * self.length
 
@@ -135,42 +149,19 @@ class Base(object):
         else:
             self.id = id
         self.name = name
+        self.availability = availability
         self.wiki_path = wiki_path
         self.tags = tags
 
-    def to_dict(self, strip: list[str] = list()):
-        '''
-        Return the item as a dict, stripping out all functions in the process so that the data can
-        be represented as YAML. Additionally strip out any top-level keys matching those in the
-        provided "strip" list. The `wiki_url` value is added as a full wiki URL.
-        '''
-
-        # Start with all attributes of this class which are not functions
-        d = { key: value \
-            for key, value in self.__dict__.items() \
-            if not isfunction(value) }
-
-        # Add an assembled and working URL to the object's wiki page
-        d['wiki_url'] = f'{WIKI_URL_BASE}{self.wiki_path}'
-
-        # Remove any keys matching the "strip" list (inheriting classes can "opt out" of fields
-        # rather than re-implement this function)
-        for key in strip:
-            if key in d:
-                del(d[key])
-
-        # We refer to a lot of derived classes which may also have to_dict functions. Here we call
-        # those to expand as much of these into text as possible.
-        for key in d:
-            if hasattr(d[key], 'to_dict'):
-                d[key] = d[key].to_dict()
-
-        # Remove any remaining unexpanded classes
-        d = { key: value \
-            for key, value in d.items() \
-            if not isclass(value)}
-
-        return d
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'availability': self.availability.to_dict(),
+            'wiki_path': self.wiki_path,
+            'wiki_url': f'{WIKI_URL_BASE}{self.wiki_path}',
+            'tags': self.tags
+        }
 
     def __repr__(self):
         return f'<{type(self).__name__} {self.id} ({self.name})>'
@@ -204,6 +195,14 @@ class ComponentError(Exception):
         **kwargs
     ):
         super().__init__(message, **kwargs)
+        self.level = level
+        self.message = message
+
+    def to_dict(self):
+        return {
+            'level': self.level.name,
+            'message': self.message
+        }
 
 
 class Component(Base):
@@ -214,6 +213,13 @@ class Component(Base):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._errors = list()
+
+    def to_dict(self):
+        base = super().to_dict()
+        base.update({
+            'errors': [error.to_dict() for error in self.errors]
+        })
+        return base
 
     def test(self):
         '''
@@ -267,6 +273,15 @@ class Item(Base):
         self.conveyance_type = conveyance_type
         self.stack_size = stack_size
         self.sink_value = sink_value
+
+    def to_dict(self):
+        base = super().to_dict()
+        base.update({
+            'conveyance_type': self.conveyance_type.name,
+            'stack_size': self.stack_size,
+            'sink_value': self.sink_value
+        })
+        return base
 
     def stacks(self,
         count: int
@@ -324,6 +339,17 @@ class Recipe(Base):
         self.consumes = consumes
         self.produces = produces
 
+    def to_dict(self):
+        consumes = [ingredient.to_dict() for ingredient in self.consumes] if self.consumes else None
+        produces = [ingredient.to_dict() for ingredient in self.produces] if self.produces else None
+        base = super().to_dict()
+        base.update({
+            'building_type': self.building_type.name,
+            'consumes': consumes,
+            'produces': produces
+        })
+        return base
+
 
 class ConveyanceRecipe(Recipe):
     '''
@@ -372,8 +398,8 @@ class Connection(Base):
         attached_to: Component = None,
         conveyance_type: ConveyanceType = ConveyanceType.BELT,
         ingredients: list[Ingredient] = list(),
-        source: Connection = None,
-        target: Connection = None,
+        source = None,  # Type: Connection
+        target = None,  # Type: Connection
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -382,6 +408,17 @@ class Connection(Base):
         self.ingredients = ingredients
         self.source = source
         self.target = target
+
+    def to_dict(self):
+        ingredients = [ingredient.to_dict() for ingredient in self.ingredients]
+        base = super().to_dict()
+        base.update({
+            'attached_to': self.attached_to.id,
+            'conveyance_type': self.conveyance_type.name,
+            'ingredients': ingredients,
+            'source': self.source.id,
+            'target': self.target.id
+        })
 
     def is_input(self):
         raise NotImplementedError
@@ -488,6 +525,16 @@ class ResourceNode(Component):
             attached_to=self
         )]
 
+    def to_dict(self):
+        outputs = [output.id for output in self.outputs]
+        base = super().to_dict()
+        base.update({
+            'purity': self.purity.name,
+            'item': self.item.to_dict(),
+            'outputs': outputs
+        })
+        return base
+
     def test(self):
         '''
         Detects errors with this ResourceNode
@@ -541,7 +588,9 @@ class ResourceNode(Component):
                             'The connected Miner has no recipe'
                         ))
                     else:
-                        if self.item not in target_bldg.recipe.produces:
+                        if self.item not in [
+                            ingredient.item for ingredient in target_bldg.recipe.produces
+                        ]:
                             self.add_error(ComponentError(
                                 ComponentErrorLevel.IMPOSSIBLE,
                                 f'The connected Miner must produce {self.item.name}, but it does not.'
@@ -588,6 +637,21 @@ class Building(Component):
         self.inputs = inputs
         self.outputs = outputs
         self.base_power_usage = base_power_usage
+
+    def to_dict(self):
+        inputs = [input.id for input in self.inputs]
+        outputs = [output.id for output in self.outputs]
+        base = super().to_dict()
+        base.update({
+            'building_type': self.building_type.name,
+            'recipe': self.recipe.to_dict() if self.recipe else None,
+            'clock_rate': self.clock_rate,
+            'standby': self.standby,
+            'dimensions': self.dimensions.to_dict(),
+            'inputs': inputs,
+            'outputs': outputs,
+        })
+        return base
 
     @property
     def ingredients(self):
@@ -649,6 +713,74 @@ class Building(Component):
                     ]
         return True
 
+    def connect(self,
+        target,  # Type: Building
+        conveyance, # Type: Type[Conveyance]
+        connect_output: bool = True,
+    ):
+        '''
+        Connect this Building to another by creating a Conveyance between them. Throw exceptions if
+        it cannot be done. Returns the conveyance created to connect the buildings.
+        '''
+
+        output = None
+        input = None
+        connector = conveyance()
+
+        # If we're connecting the output of this building to the input of another, determine a valid
+        # output and input connection.
+        if connect_output:
+            # Find the first available, compatible output on this building
+            for o in self.outputs:
+                if not o.target and o.conveyance_type == connector.conveyance_type:
+                    output = o
+                    break
+            if not output:
+                raise ComponentError(
+                    ComponentErrorLevel.IMPOSSIBLE,
+                    message='Source building has no available compatible outputs.'
+                )
+
+            # Find the first available, compatible input on the target building
+            for i in target.inputs:
+                if not i.source and i.conveyance_type == connector.conveyance_type:
+                    input = i
+                    break
+            if not input:
+                raise ComponentError(
+                    ComponentErrorLevel.IMPOSSIBLE,
+                    message='Target building has no available compatible inputs.'
+                )
+
+        # If we're connecting the input of this building to the output of another, determine a valid
+        # output and input connection.
+        else:
+            # Find the first available, compatible output on the target building
+            for o in target.outputs:
+                if not o.target and o.conveyance_type == connector.conveyance_type:
+                    output = o
+                    break
+            if not output:
+                raise ComponentError(
+                    ComponentErrorLevel.IMPOSSIBLE,
+                    message='Target building has no available compatible outputs.'
+                )
+
+            # Find the first available, compatible input on this building
+            for i in self.inputs:
+                if not i.source and i.conveyance_type == connector.conveyance_type:
+                    input = i
+                    break
+            if not input:
+                raise ComponentError(
+                    ComponentErrorLevel.IMPOSSIBLE,
+                    message='Source building has no available compatible inputs.'
+                )
+
+        output.connect(connector.inputs[0])
+        connector.outputs[0].connect(input)
+        return connector
+
 
 class Conveyance(Building):
     '''
@@ -676,6 +808,14 @@ class Conveyance(Building):
         self.rate = rate
         self.recipe = None
         self.set_ingredients(ingredients)
+
+    def to_dict(self):
+        base = super().to_dict()
+        base.update({
+            'conveyance_type': self.conveyance_type.name,
+            'rate': self.rate
+        })
+        return base
 
     def set_ingredients(self,
         ingredients: list[Ingredient]
@@ -716,3 +856,10 @@ class Storage(Conveyance):
             **kwargs
         )
         self.stacks = stacks
+
+    def to_dict(self):
+        base = super().to_dict()
+        base.update({
+            'stacks': self.stacks
+        })
+        return base
