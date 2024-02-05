@@ -720,62 +720,56 @@ class Building(Component):
     ):
         '''
         Connect this Building to another by creating a Conveyance between them. Throw exceptions if
-        it cannot be done. Returns the conveyance created to connect the buildings.
+        it cannot be done. Returns the conveyance created to connect the buildings, or None if the
+        connection cannot be made.
+
+            - target: A Building to connect this Building to
+            - conveyance: A class representing the type of conveyance to build between the Buildings
+            - connect_output: When True, connects an output on this building to an input on the
+                target. When False, connects an input on this building to an output on the target.
         '''
+
+        # Python's type hinting can't be self-referential, so we have to test a couple things here
+        if not isinstance(target, Building):
+            raise TypeError
+        if not issubclass(conveyance, Conveyance):
+            raise TypeError
 
         output = None
         input = None
         connector = conveyance()
 
-        # If we're connecting the output of this building to the input of another, determine a valid
-        # output and input connection.
+        # If we're connecting the output of this building to the input of another...
         if connect_output:
-            # Find the first available, compatible output on this building
+            # ...find the first available, compatible output on this building...
             for o in self.outputs:
                 if not o.target and o.conveyance_type == connector.conveyance_type:
                     output = o
                     break
-            if not output:
-                raise ComponentError(
-                    ComponentErrorLevel.IMPOSSIBLE,
-                    message='Source building has no available compatible outputs.'
-                )
 
-            # Find the first available, compatible input on the target building
+            # ...then find the first available, compatible input on the target building.
             for i in target.inputs:
                 if not i.source and i.conveyance_type == connector.conveyance_type:
                     input = i
                     break
-            if not input:
-                raise ComponentError(
-                    ComponentErrorLevel.IMPOSSIBLE,
-                    message='Target building has no available compatible inputs.'
-                )
 
-        # If we're connecting the input of this building to the output of another, determine a valid
-        # output and input connection.
+        # If we're connecting the input of this building to the output of another...
         else:
-            # Find the first available, compatible output on the target building
+            # ...find the first available, compatible output on the target building...
             for o in target.outputs:
                 if not o.target and o.conveyance_type == connector.conveyance_type:
                     output = o
                     break
-            if not output:
-                raise ComponentError(
-                    ComponentErrorLevel.IMPOSSIBLE,
-                    message='Target building has no available compatible outputs.'
-                )
 
-            # Find the first available, compatible input on this building
+            # ...then find the first available, compatible input on this building.
             for i in self.inputs:
                 if not i.source and i.conveyance_type == connector.conveyance_type:
                     input = i
                     break
-            if not input:
-                raise ComponentError(
-                    ComponentErrorLevel.IMPOSSIBLE,
-                    message='Source building has no available compatible inputs.'
-                )
+
+        # We have to have a valid input and output to attach to this conveyance; fail otherwise
+        if not input or not output:
+            return False
 
         output.connect(connector.inputs[0])
         connector.outputs[0].connect(input)
