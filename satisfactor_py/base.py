@@ -9,6 +9,7 @@ import random
 from enum import Enum
 from inspect import isclass, isfunction
 from typing import Type
+from uuid import uuid4
 
 
 WIKI_URL_BASE = 'https://satisfactory.fandom.com/wiki'
@@ -21,21 +22,21 @@ def generate_id():
     Generates a random ID for the purpose of unique reference
     '''
 
-    alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    length = random.randint(12, 40)
-    return ''.join([random.choice(alphabet) for i in range(0, length)])
+    return str(uuid4())
 
 
 # Enums and helper classes go here
 
 class Availability(object):
     '''
-    A combo of tier and hub upgrade depicting when the resource becomes unlocked.
+    A combo of tier and hub upgrade depicting when the resource becomes unlocked. For resources that
+    are unlocked by MAM research, set tier/upgrade to None, them set mam to True when it's unlocked.
     '''
 
-    def __init__(self, tier, upgrade):
+    def __init__(self, tier, upgrade, mam=False):
         self.tier = tier
         self.upgrade = upgrade
+        self.mam = mam
 
     def to_dict(self):
         return {
