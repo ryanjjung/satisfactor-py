@@ -257,14 +257,14 @@ class Item(Base):
     '''
     An Item is something which can be held in an inventory slot, used in a Recipe, or used to build
     a factory component. An item with `None` for a `stack_size` cannot be held in inventory. An item
-    with `None` for a `sink_value` cannot be consumed by the Awesome Sink.
+    with `None` for a `sink_value` cannot be consumed by the Awesome Sink. A `None` for a
+    `conveyance_type` cannot be conveyed, such as a Smelter, which is an "Item" to the extent that
+    it is the product of a recipe and so must be defined as such.
 
         - conveyance_type: The mechanism by which the item can be transported automatically. Used to
             prevent, for example, a liquid material being transported on a conveyor belt.
-        - stack_size: The number of this item which can be held in one inventory slot. `None` means
-            it cannot be held in inventory (such as Power or Water).
+        - stack_size: The number of this item which can be held in one inventory slot.
         - sink_value: The number of points this item generates when destroyed in the Awesome Sink.
-            `None` means it cannot be destroyed in the Awesome Sink.
     '''
 
     def __init__(self,
@@ -327,9 +327,9 @@ class Recipe(Base):
     those Items. This class sets up a common interface for Recipes.
 
         - building_type: The type of building that this Recipe can be built in (such as Iron Ingots
-            only being craftable in Smelters).
-        - consumes: A list of Ingredients that go into the Recipe
-        - produces: A list of Ingredients that come out of the Recipe
+            only being craftable in Smelters, or Smelters being craftable in a build gun).
+        - consumes: A list of Ingredients that go into the Recipe.
+        - produces: A list of Ingredients that come out of the Recipe.
     '''
 
     def __init__(self,
@@ -378,7 +378,7 @@ class ConveyanceRecipe(Recipe):
         self.produces = self._ingredients
 
 
-class Connection(Base):
+class Connection(Component):
     '''
     A Connection represents a linkage between two connectable points, such as the output of a
     Smelter and the input of a ConveyorBelt. It is essentially a constraint to ensure that we don't
@@ -442,6 +442,18 @@ class Connection(Base):
     def process(self):
         raise NotImplementedError
 
+    def test(self):
+        '''
+        Test for problems with generic connections.
+        '''
+
+        super().test()
+        if not self.attached_to:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.IMPOSSIBLE,
+                'Connection is not attached to anything'
+            ))
+
 
 class Input(Connection):
     '''
@@ -478,6 +490,18 @@ class Input(Connection):
         if self.attached_to:
             self.attached_to.ingredients = self.ingredients
 
+    def test(self):
+        '''
+        Test for issues with inputs
+        '''
+
+        super().test()
+        if not self.source:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'Input is not connected to a source'
+            ))
+
 
 class Output(Connection):
     '''
@@ -513,6 +537,18 @@ class Output(Connection):
         # An output can only connect to an input, so just pass the ingredients along
         if self.target:
             self.target.ingredients = self.ingredients
+
+    def test(self):
+        '''
+        Test for issues with outputs
+        '''
+
+        super().test()
+        if not self.target:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'Output is not connected to a target'
+            ))
 
 
 class ResourceNode(Component):
