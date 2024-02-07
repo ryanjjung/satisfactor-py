@@ -167,7 +167,6 @@ class Factory(Base):
         func(cursor)
 
         # Advance the cursor
-        # import pdb; pdb.set_trace()
         if isinstance(cursor, Input):
             self.traverse(cursor.attached_to, func)
         elif isinstance(cursor, Output):

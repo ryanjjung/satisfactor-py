@@ -492,7 +492,6 @@ class Input(Connection):
 
     def process(self):
         # If the input is attached (it should be), pass the ingredients along
-        # import pdb; pdb.set_trace()
         if self.attached_to:
             self.attached_to.ingredients.extend(self.ingredients)
 
@@ -749,7 +748,6 @@ class Building(Component):
         Sets the ingredients of this Building's outputs based on its settings.
         '''
 
-        #import pdb; pdb.set_trace()
         if not self.can_process():
             return False
 
