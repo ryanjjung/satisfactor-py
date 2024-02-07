@@ -33,5 +33,6 @@ class ConveyorBeltMk1(Conveyance):
                 attached_to=self,
                 conveyance_type=ConveyanceType.BELT
             )],
+            ingredients=[],
             **kwargs
         )

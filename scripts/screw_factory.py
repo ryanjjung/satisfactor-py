@@ -15,7 +15,7 @@ def main():
         if len(component.errors) > 0
     }
     print(json.dumps(errors, indent=2))
-    #import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
 
 if __name__ == '__main__':
     main()

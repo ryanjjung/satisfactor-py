@@ -90,12 +90,12 @@ class Miner(Building):
         # If it's not connected, we can't process
         if not self.inputs[0].source:
             return False
-        
+
         # It can only be attached to a resource node
-        resource_node =self.inputs[0].source.attached_to 
+        resource_node = self.inputs[0].source.attached_to
         if type(resource_node) is not ResourceNode:
             return False
-        
+
         # The recipe must be of a special kind that consumes nothing and produces only one thing
         if self.recipe.consumes != None or len(self.recipe.produces) != 1:
             return False
@@ -103,7 +103,7 @@ class Miner(Building):
         # The resource node must produce the right item
         if resource_node.item != self.recipe.produces[0].item:
             return False
-        
+
         return True
 
 
@@ -113,8 +113,9 @@ class Miner(Building):
         '''
 
         self.can_process()
-        self.outputs[0].ingredients = \
-            self.recipe.produces * self.inputs[0].source.attached_to.purity
+        super().process()
+        self.outputs[0].ingredients[0].rate = \
+            self.outputs[0].ingredients[0].rate * self.inputs[0].source.attached_to.purity.value
 
 
 class MinerMk1(Miner):

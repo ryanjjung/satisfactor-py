@@ -57,12 +57,6 @@ class Factory(Base):
     ):
         for component in components:
             component.factory = self
-            if isinstance(component, Building):
-                for input in component.inputs:
-                    input.factory = self
-                for output in component.outputs:
-                    output.factory = self
-
         self._components.extend(components)
 
     def get_buildings_by_type(self,
@@ -173,7 +167,7 @@ class Factory(Base):
         func(cursor)
 
         # Advance the cursor
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         if isinstance(cursor, Input):
             self.traverse(cursor.attached_to, func)
         elif isinstance(cursor, Output):
@@ -242,10 +236,10 @@ def debug_component(component):
 
     # Threading makes this ugly. Print some output every time so the user understands what they're
     # looking at.
-    print(f'[DEBUG] Inspecting component BEFORE simulation "{component.name or component.id}" ({type(component).__name__})')
+    print(f'\n[DEBUG] ----- Inspecting component BEFORE simulation "{component.name or component.id}" ({type(component).__name__})')
     x = component
     pdb.set_trace()
     component.process()
-    print(f'[DEBUG] Inspecting component AFTER simulation "{component.name or component.id}" ({type(component).__name__})')
+    print(f'\n[DEBUG] ----- Inspecting component AFTER simulation "{component.name or component.id}" ({type(component).__name__})')
     pdb.set_trace()
 
