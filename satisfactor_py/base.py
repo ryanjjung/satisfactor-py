@@ -239,7 +239,7 @@ class Component(Base):
         '''
 
         self._errors.append(error)
-    
+
     @property
     def errors(self):
         return self._errors
@@ -682,7 +682,6 @@ class Building(Component):
         clock_rate: float = 1.0,
         standby: bool = False,
         dimensions: Dimension = Dimension(0, 0, 0),
-        ingredients: list[Ingredient] = list(),
         inputs: list[Input] = list(),
         outputs: list[Output] = list(),
         power_connections: int = 1,
@@ -694,11 +693,11 @@ class Building(Component):
         self.recipe = recipe
         self.clock_rate = clock_rate
         self.standby = standby
-        self.ingredients = ingredients
         self.dimensions = dimensions
         self.inputs = inputs
         self.outputs = outputs
         self.base_power_usage = base_power_usage
+        self.ingredients = list()
 
     def to_dict(self):
         inputs = [input.id for input in self.inputs]
@@ -855,16 +854,15 @@ class Conveyance(Building):
     def __init__(self,
         conveyance_type: ConveyanceType = ConveyanceType.BELT,
         rate: float = 0,
-        ingredients: list[Ingredient] = list(),
         **kwargs
     ):
         super().__init__(
             building_type=BuildingType.CONVEYANCE,
+            ingredients=list(),
             **kwargs
         )
         self.conveyance_type = conveyance_type
         self.rate = rate
-        self.ingredients = ingredients
         self.recipe = None
 
     def to_dict(self):
