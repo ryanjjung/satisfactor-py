@@ -55,6 +55,14 @@ class Factory(Base):
     def add(self,
         components: list[Component]
     ):
+        for component in components:
+            component.factory = self
+            if isinstance(component, Building):
+                for input in component.inputs:
+                    input.factory = self
+                for output in component.outputs:
+                    output.factory = self
+
         self._components.extend(components)
 
     def get_buildings_by_type(self,
@@ -165,6 +173,7 @@ class Factory(Base):
         func(cursor)
 
         # Advance the cursor
+        import pdb; pdb.set_trace()
         if isinstance(cursor, Input):
             self.traverse(cursor.attached_to, func)
         elif isinstance(cursor, Output):
@@ -210,13 +219,6 @@ class Factory(Base):
         '''
         self.traverse_all(simulate_component)
 
-    def test(self):
-        '''
-        Steps through each component of the factory, running tests
-        '''
-
-        self.traverse_all(test_component)
-
 def drain_component(component):
     '''
     Clear all ingredients in a component
@@ -233,22 +235,17 @@ def simulate_component(component):
 
     component.process()
 
-def test_component(component):
-    '''
-    Instruct the component to run self-tests
-    '''
-
-    # During traversal, we will encounter non-components, such as Connections. Skip those.
-    if isinstance(component, Component):
-        component.test()
-
 def debug_component(component):
     '''
-    Break with a debugger prompt on every component
+    Break with a debugger prompt before and after processing each component
     '''
 
     # Threading makes this ugly. Print some output every time so the user understands what they're
     # looking at.
-    print(f'''[DEBUG] Inspecting component "{component.id}" {type(component)})
-            {json.dumps(component.to_dict(), indent=2)}''')
+    print(f'[DEBUG] Inspecting component BEFORE simulation "{component.name or component.id}" ({type(component).__name__})')
+    x = component
     pdb.set_trace()
+    component.process()
+    print(f'[DEBUG] Inspecting component AFTER simulation "{component.name or component.id}" ({type(component).__name__})')
+    pdb.set_trace()
+

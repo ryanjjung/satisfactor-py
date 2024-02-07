@@ -214,6 +214,7 @@ class Component(Base):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._errors = list()
+        self.factory = kwargs['factory'] if 'factory' in kwargs else None
 
     def to_dict(self):
         base = super().to_dict()
@@ -238,7 +239,7 @@ class Component(Base):
         '''
 
         self._errors.append(error)
-
+    
     @property
     def errors(self):
         return self._errors
@@ -365,9 +366,11 @@ class ConveyanceRecipe(Recipe):
     '''
 
     def __init__(self,
+        max_rate: int,
         ingredients: list[Ingredient] = list()
     ):
         super().__init__(building_type=BuildingType.CONVEYANCE)
+        self.max_rate = max_rate
         self.set_ingredients(ingredients)
 
     def set_ingredients(self,
@@ -376,6 +379,8 @@ class ConveyanceRecipe(Recipe):
         self._ingredients = ingredients
         self.consumes = self._ingredients
         self.produces = self._ingredients
+        for ingredient in self.produces:
+            ingredient.rate = min(ingredient.rate, self.max_rate)
 
 
 class Connection(Component):
@@ -487,8 +492,9 @@ class Input(Connection):
 
     def process(self):
         # If the input is attached (it should be), pass the ingredients along
+        # import pdb; pdb.set_trace()
         if self.attached_to:
-            self.attached_to.ingredients = self.ingredients
+            self.attached_to.ingredients.extend(self.ingredients)
 
     def test(self):
         '''
@@ -688,6 +694,7 @@ class Building(Component):
         self.recipe = recipe
         self.clock_rate = clock_rate
         self.standby = standby
+        self.ingredients = ingredients
         self.dimensions = dimensions
         self.inputs = inputs
         self.outputs = outputs
@@ -743,6 +750,7 @@ class Building(Component):
         Sets the ingredients of this Building's outputs based on its settings.
         '''
 
+        #import pdb; pdb.set_trace()
         if not self.can_process():
             return False
 
@@ -793,7 +801,7 @@ class Building(Component):
                     output = o
                     break
 
-            # ...then find the first available, compatible input on the target building.
+            # ...then find the first avaFixed in PR #15.ilable, compatible input on the target building.
             for i in target.inputs:
                 if not i.source and i.conveyance_type == connector.conveyance_type:
                     input = i
@@ -821,6 +829,16 @@ class Building(Component):
         connector.outputs[0].connect(input)
         return connector
 
+    def test(self):
+        '''
+        Tests for buildings processing recipes
+        '''
+
+        # Input rate is less than recipe rate
+        # Input rate is more than recipe rate
+        # Mismatched ingredients
+        # Missing ingredients
+
 
 class Conveyance(Building):
     '''
@@ -836,7 +854,7 @@ class Conveyance(Building):
 
     def __init__(self,
         conveyance_type: ConveyanceType = ConveyanceType.BELT,
-        rate: int = 0,
+        rate: float = 0,
         ingredients: list[Ingredient] = list(),
         **kwargs
     ):
@@ -862,9 +880,9 @@ class Conveyance(Building):
         Ensures the Recipe is set up correctly and that the outputs match the inputs.
         '''
 
-        self.recipe = ConveyanceRecipe(self.ingredients)
+        self.recipe = ConveyanceRecipe(self.rate, self.ingredients)
         if self.can_process():
-            self.outputs[0].ingredients = self.ingredients
+            self.outputs[0].ingredients = self.recipe.produces
         return True
 
 
