@@ -181,7 +181,6 @@ class Factory(Base):
                 return
             # If there is only one output, traverse along it
             elif len(cursor.outputs) == 1 and cursor.recipe:
-                cursor.outputs[0].ingredients = cursor.recipe.produces
                 self.traverse(cursor.outputs[0], func)
             # If there are multiple outputs, we must split into threads to traverse them
             elif len(cursor.outputs) > 1:

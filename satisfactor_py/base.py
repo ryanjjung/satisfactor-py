@@ -882,12 +882,15 @@ class Conveyance(Building):
         return True
 
 
-class Storage(Conveyance):
+class Storage(Building):
     '''
     Any kind of building, such as Industrial Storage or a Fluid Buffer, which is essentially a
     Conveyance with added storage. Liquid storage is odd because it does not have inventory slots,
     but instead a volume of storage. Since the functionality is otherwise identical, fluids have a
     stack_size of 1 and buffers have a number of stacks equal to their volume.
+
+    This class inherits from Building, not from Conveyance, because, unlike a Conveyance, the rate
+    of output depends on the rate of whatever the output is connected to.
 
         - stacks: Number of inventory slots in the storage unit
     '''
@@ -897,8 +900,10 @@ class Storage(Conveyance):
         **kwargs
     ):
         super().__init__(
+            building_type=BuildingType.STORAGE,
             **kwargs
         )
+        self.rate = None
         self.stacks = stacks
 
     def to_dict(self):
@@ -907,3 +912,20 @@ class Storage(Conveyance):
             'stacks': self.stacks
         })
         return base
+
+    def process(self):
+        '''
+        Processing a Storage means passing along whatever ingredients are coming in at whatever rate
+        the output can handle. In an actual game, what goes out is whatever is stacked inside. We're
+        not tracking the contents of the Storage, and this software doesn't track factories over
+        time, so we don't do that. We just pass the rates along, which is okay for simulation and
+        problem detection.
+        '''
+
+        # We can have multiple outputs, which can have different rates
+        for output in self.outputs:
+            if output.target and output.target.attached_to:
+                ingredients = self.ingredients
+                for ingredient in ingredients:
+                    ingredient.rate = min(ingredient.rate, output.target.attached_to.rate)
+                output.ingredients = ingredients
