@@ -165,7 +165,7 @@ class Base(object):
         }
 
     def __repr__(self):
-        return f'<{type(self).__name__} {self.id} ({self.name})>'
+        return f'<{type(self).__name__} {self.name or self.id}>'
 
 
 class ComponentErrorLevel(Enum):
@@ -223,14 +223,6 @@ class Component(Base):
         })
         return base
 
-    def test(self):
-        '''
-        In this base class, running `test` just ensures that the list of errors is cleared. Call
-        this function before running downstream test functions to prevent duplicate errors.
-        '''
-
-        self.errors = list()
-
     def add_error(self,
         error: ComponentError
     ):
@@ -251,7 +243,7 @@ class Component(Base):
         self._errors = value
 
     def process(self):
-        pass
+        self._errors = list()
 
 
 class Item(Base):
@@ -445,14 +437,7 @@ class Connection(Component):
         raise NotImplementedError
 
     def process(self):
-        raise NotImplementedError
-
-    def test(self):
-        '''
-        Test for problems with generic connections.
-        '''
-
-        super().test()
+        super().process()
         if not self.attached_to:
             self.add_error(ComponentError(
                 ComponentErrorLevel.IMPOSSIBLE,
@@ -491,6 +476,7 @@ class Input(Connection):
         connection.target = self
 
     def process(self):
+        super().process()
         # If the input is attached (it should be), pass the ingredients along
         if self.attached_to:
             self.attached_to.ingredients.extend(self.ingredients)
@@ -539,21 +525,20 @@ class Output(Connection):
         connection.source = self
 
     def process(self):
-        # An output can only connect to an input, so just pass the ingredients along
-        if self.target:
+        super().process()
+        if not self.target:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'Output is not connected to a target'
+            ))
+        else:
+            # An output can only connect to an input, so just pass the ingredients along
             self.target.ingredients = self.ingredients
 
     def test(self):
         '''
         Test for issues with outputs
         '''
-
-        super().test()
-        if not self.target:
-            self.add_error(ComponentError(
-                ComponentErrorLevel.WARNING,
-                'Output is not connected to a target'
-            ))
 
 
 class ResourceNode(Component):
@@ -594,32 +579,25 @@ class ResourceNode(Component):
         })
         return base
 
-    def test(self):
+    def process(self):
         '''
-        Detects errors with this ResourceNode
-        '''
-
-        super().test()
-        self.test_inputs()
-        self.test_outputs()
-
-    def test_inputs(self):
-        '''
-        Resource nodes cannot have inputs
+        A ResourceNode can't really process anything, but there are still some configuration errors
+        to check for.
         '''
 
+        super().process()
+
+        # ResourceNodes cannot have inputs
         input_ct = len(self.inputs)
         if input_ct > 0:
             self.add_error(ComponentError(
                 f'ResourceNodes cannot have any inputs, but this has {input_ct}.'
             ))
+        self.test_inputs()
+        self.test_outputs()
 
-    def test_outputs(self):
-        '''
-        ResourceNodes must be connected to Miners whose Recipes match the Item the ResourceNode
-        emits. They can also not have multiple outputs.
-        '''
-
+        # ResourceNodes must be connected to Miners whose Recipes match the Item the ResourceNode
+        # emits. They can also not have multiple outputs.
         output_ct = len(self.outputs)
         if output_ct > 1 or output_ct < 1:
             self.add_error(ComponentError(
@@ -718,39 +696,81 @@ class Building(Component):
         Determines if the conditions are met for the recipe to be processed.
         '''
 
+        success = True
         # Can't process if there's no recipe to process
         if self.recipe is None:
-            return False
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'Building has no recipe'
+            ))
+            success = False
 
         # Can't process in standby mode
         if self.standby:
-            return False
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'Building is in standby mode'
+            ))
+            success = False
 
         # Make sure recipes which consume can be processed in this building
         if self.recipe.consumes:
             # Can't process if there aren't enough inputs to supply the recipe's ingredients
             if len(self.inputs) < len(self.recipe.consumes):
-                return False
+                self.add_error(ComponentError(
+                    ComponentErrorLevel.IMPOSSIBLE,
+                    'Building has fewer inputs than its recipe requires'
+                ))
+                success = False
 
             # Can't process if the inputs don't match the recipe
             requirements = [ingredient.item for ingredient in self.recipe.consumes]
             ing_items = [ingredient.item for ingredient in self.ingredients]
             for ingredient in requirements:
                 if ingredient not in ing_items:
-                    return False
-            return True
+                    self.add_error(ComponentError(
+                        ComponentErrorLevel.WARNING,
+                        f'Recipe ingredient {ingredient.name} is not available'
+                    ))
+                    success = False
+
+            for ingredient in ing_items:
+                if ingredient not in requirements:
+                    self.add_error(ComponentError(
+                        ComponentErrorLevel.DEBUG,
+                        f'Ingredient {ingredient.name} is not required for the recipe'
+                    ))
+
         # Some recipes don't consume; those can be processed without additional checks
-        else:
-            return True
+        return success
 
     def process(self) -> bool:
         '''
         Sets the ingredients of this Building's outputs based on its settings.
         '''
 
+        super().process()
         if not self.can_process():
             return False
 
+        # Determine if the rates of the incoming ingredients mismatch the demand by the recipe
+        for recipe_ingredient in self.recipe.consumes:
+            for input_ingredient in self.ingredients:
+                if recipe_ingredient.item == input_ingredient.item:
+                    if input_ingredient.rate < recipe_ingredient.rate:
+                        self.add_error(ComponentError(
+                            ComponentErrorLevel.DEBUG,
+                            f'Recipe consumes {recipe_ingredient.item.name} '\
+                            'faster than it is being supplied.'
+                        ))
+                    if input_ingredient.rate > recipe_ingredient.rate:
+                        self.add_error(ComponentError(
+                            ComponentErrorLevel.DEBUG,
+                            f'Ingredient {recipe_ingredient.item.name} is supplied '\
+                            'faster than the recipe can consume it.'
+                        ))
+
+        success = True
         for recipe_ingredient in self.recipe.produces:
             for output in self.outputs:
                 # If the output isn't already occupied and it has the right conveyance type, use it
@@ -762,7 +782,16 @@ class Building(Component):
                             recipe_ingredient.rate * self.clock_rate
                         )
                     ]
-        return True
+                else:
+                    success = False
+
+        if not success:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.IMPOSSIBLE,
+                'Building doesn\'t have sufficient outputs for what its recipe produces'
+            ))
+
+        return success
 
     def connect(self,
         target,  # Type: Building
@@ -826,16 +855,6 @@ class Building(Component):
         connector.outputs[0].connect(input)
         return connector
 
-    def test(self):
-        '''
-        Tests for buildings processing recipes
-        '''
-
-        # Input rate is less than recipe rate
-        # Input rate is more than recipe rate
-        # Mismatched ingredients
-        # Missing ingredients
-
 
 class Conveyance(Building):
     '''
@@ -876,6 +895,7 @@ class Conveyance(Building):
         Ensures the Recipe is set up correctly and that the outputs match the inputs.
         '''
 
+        super().process()
         self.recipe = ConveyanceRecipe(self.rate, self.ingredients)
         if self.can_process():
             self.outputs[0].ingredients = self.recipe.produces
