@@ -88,6 +88,7 @@ Stinger_Remains = Item(
 
 Alien_Protein = Item(
     name='Alien Protein',
+    availability=Availability(0, 0, True),
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
     sink_value=None,
