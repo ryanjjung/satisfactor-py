@@ -8,6 +8,8 @@ from satisfactor_py.base import (
     Building,
     BuildingType,
     Component,
+    ComponentError,
+    ComponentErrorLevel,
     Connection,
     Conveyance,
     ConveyanceRecipe,
@@ -29,6 +31,7 @@ class Factory(Base):
     ):
         super().__init__(**kwargs)
         self._components = components
+        self._errors = list()
 
     def to_dict(self):
         base = super().to_dict()
@@ -58,6 +61,15 @@ class Factory(Base):
         for component in components:
             component.factory = self
         self._components.extend(components)
+
+    def add_error(self,
+        error: ComponentError
+    ):
+        '''
+        Simple helper to ensure that errors are of the right type
+        '''
+
+        self._errors.append(error)
 
     def get_buildings_by_type(self,
         building_type: BuildingType
@@ -163,6 +175,8 @@ class Factory(Base):
             - func: A function to run on each Component and Connection in the flow
         '''
 
+        cursor.traversed = True
+
         # Run the function where the cursor is
         func(cursor)
 
@@ -204,6 +218,23 @@ class Factory(Base):
         process begins with any resource nodes in the factory.
         '''
         self.traverse_all(drain_component)
+        self.errors = list()
+
+    def purge(self):
+        '''
+        Clears ingredients out of all components in the factory, even if they're not traversible.
+        '''
+
+        for component in self.components:
+            component.clear_errors()
+            component.ingredients = list()
+            if isinstance(component, Building):
+                for input in component.inputs:
+                    input.ingredients = list()
+                for output in component.outputs:
+                    output.ingredients = list()
+            if isinstance(component, Conveyance):
+                component.recipe = None
 
     def simulate(self):
         '''
@@ -211,13 +242,23 @@ class Factory(Base):
         '''
         self.traverse_all(simulate_component)
 
+        excluded = [component for component in self.components if not component.traversed]
+        if len(excluded) > 0:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                f'Some components were not traversed: {excluded}'
+            ))
+
+
 def drain_component(component):
     '''
-    Clear all ingredients in a component
+    Clear all ingredients in a component, and clear its errors
     '''
 
-    if isinstance(component, Connection):
-        component.ingredients = list()
+    component.clear_errors()
+    component.traversed = False
+    if hasattr(component, 'ingredients'):
+        component.ingredients.clear()
     return
 
 def simulate_component(component):

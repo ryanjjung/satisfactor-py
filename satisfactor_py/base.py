@@ -209,12 +209,22 @@ class ComponentError(Exception):
 class Component(Base):
     '''
     Anything that can be built as part of a Factory is a Component.
+
+        - constructed: User-togglable boolean indicating whether they've built this component in an
+            actual game of Satisfactory.
+        - traversed: Used internally to determine if a component is actually connected to a larger
+            factory.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        constructed: bool = False,
+        traversed: bool = False,
+        **kwargs
+    ):
         super().__init__(**kwargs)
         self._errors = list()
-        self.factory = kwargs['factory'] if 'factory' in kwargs else None
+        self.constructed = constructed
+        self.traversed = traversed
 
     def to_dict(self):
         base = super().to_dict()
@@ -241,6 +251,9 @@ class Component(Base):
         value: list[ComponentError]
     ):
         self._errors = value
+
+    def clear_errors(self):
+        self._errors.clear()
 
     def process(self):
         self._errors = list()
@@ -593,8 +606,6 @@ class ResourceNode(Component):
             self.add_error(ComponentError(
                 f'ResourceNodes cannot have any inputs, but this has {input_ct}.'
             ))
-        self.test_inputs()
-        self.test_outputs()
 
         # ResourceNodes must be connected to Miners whose Recipes match the Item the ResourceNode
         # emits. They can also not have multiple outputs.
@@ -714,7 +725,7 @@ class Building(Component):
             success = False
 
         # Make sure recipes which consume can be processed in this building
-        if self.recipe.consumes:
+        if self.recipe and self.recipe.consumes:
             # Can't process if there aren't enough inputs to supply the recipe's ingredients
             if len(self.inputs) < len(self.recipe.consumes):
                 self.add_error(ComponentError(
@@ -737,7 +748,7 @@ class Building(Component):
             for ingredient in ing_items:
                 if ingredient not in requirements:
                     self.add_error(ComponentError(
-                        ComponentErrorLevel.DEBUG,
+                        ComponentErrorLevel.WARNING,
                         f'Ingredient {ingredient.name} is not required for the recipe'
                     ))
 
@@ -754,21 +765,22 @@ class Building(Component):
             return False
 
         # Determine if the rates of the incoming ingredients mismatch the demand by the recipe
-        for recipe_ingredient in self.recipe.consumes:
-            for input_ingredient in self.ingredients:
-                if recipe_ingredient.item == input_ingredient.item:
-                    if input_ingredient.rate < recipe_ingredient.rate:
-                        self.add_error(ComponentError(
-                            ComponentErrorLevel.DEBUG,
-                            f'Recipe consumes {recipe_ingredient.item.name} '\
-                            'faster than it is being supplied.'
-                        ))
-                    if input_ingredient.rate > recipe_ingredient.rate:
-                        self.add_error(ComponentError(
-                            ComponentErrorLevel.DEBUG,
-                            f'Ingredient {recipe_ingredient.item.name} is supplied '\
-                            'faster than the recipe can consume it.'
-                        ))
+        if self.recipe and self.recipe.consumes:
+            for recipe_ingredient in self.recipe.consumes:
+                for input_ingredient in self.ingredients:
+                    if recipe_ingredient.item == input_ingredient.item:
+                        if input_ingredient.rate < recipe_ingredient.rate:
+                            self.add_error(ComponentError(
+                                ComponentErrorLevel.WARNING,
+                                f'Recipe consumes {recipe_ingredient.item.name} '\
+                                'faster than it is being supplied.'
+                            ))
+                        if input_ingredient.rate > recipe_ingredient.rate:
+                            self.add_error(ComponentError(
+                                ComponentErrorLevel.WARNING,
+                                f'Ingredient {recipe_ingredient.item.name} is supplied '\
+                                'faster than the recipe can consume it.'
+                            ))
 
         success = True
         for recipe_ingredient in self.recipe.produces:
@@ -895,8 +907,6 @@ class Conveyance(Building):
         Ensures the Recipe is set up correctly and that the outputs match the inputs.
         '''
 
-        super().process()
-
         # If the conveyance's rate is lower than the combined ingredient rates, we have to slow it
         # all down proportionately.
         recipe = ConveyanceRecipe(self.rate, self.ingredients)
@@ -909,9 +919,9 @@ class Conveyance(Building):
             ratio = total_rate / self.rate
             for ingredient in recipe.produces:
                 ingredient.rate /= ratio
+        self.recipe = recipe
 
-        if self.can_process():
-            self.outputs[0].ingredients = self.recipe.produces
+        self.outputs[0].ingredients = self.recipe.produces
         return True
 
 
