@@ -175,7 +175,7 @@ class ComponentErrorLevel(Enum):
         - DEBUG: Used only for emitting debugging information
         - WARNING: Indicates a scenario that is possible to achieve in the game but which should be
             considered misconfigured for the purposes of running a factory, such as a Building with
-            no assigned recipe.
+            no assigned recipe or a detectable inefficiency.
         - IMPOSSIBLE: Indicates a scenario that is not possible to achieve in the game but which
             might be possible through the incorrect use of this library.
     '''
@@ -860,7 +860,7 @@ class Conveyance(Building):
     '''
     A Conveyance is anything that can move Items from one Connection to another without changing
     the contents being conveyed. They are essentially Buildings with added constraints on the inputs
-    and outputs.
+    and outputs, and on the maximum rate of transfer.
 
         - conveyance_type: The kind of conveyance, preventing us from attaching, say, a Conveyor
             Belt to a Pipeline.
@@ -896,7 +896,20 @@ class Conveyance(Building):
         '''
 
         super().process()
-        self.recipe = ConveyanceRecipe(self.rate, self.ingredients)
+
+        # If the conveyance's rate is lower than the combined ingredient rates, we have to slow it
+        # all down proportionately.
+        recipe = ConveyanceRecipe(self.rate, self.ingredients)
+        total_rate = sum([product.rate for product in recipe.produces])
+        if total_rate > self.rate:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'The conveyance is too slow to carry all of the items on it.'
+            ))
+            ratio = total_rate / self.rate
+            for ingredient in recipe.produces:
+                ingredient.rate /= ratio
+
         if self.can_process():
             self.outputs[0].ingredients = self.recipe.produces
         return True
