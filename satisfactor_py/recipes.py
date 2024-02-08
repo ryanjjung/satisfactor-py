@@ -133,7 +133,7 @@ IronOreMk1 = Recipe(
     produces=[Ingredient(iIronOre, None, 60)]
 )
 
-Limestone = Recipe(
+LimestoneMk1 = Recipe(
     name='Limestone',
     availability=Availability(0, 3),
     wiki_path='/Limestone',

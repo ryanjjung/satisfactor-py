@@ -976,7 +976,6 @@ class Storage(Building):
 
         # We can have multiple outputs, which can have different rates
         for output in self.outputs:
-            import pdb; pdb.set_trace()
             if output.target and output.target.attached_to:
                 ingredients = self.ingredients
                 for ingredient in ingredients:

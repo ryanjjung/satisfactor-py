@@ -9,14 +9,17 @@ from satisfactor_py.factories import Factory
 from satisfactor_py.items import (
     CopperOre as iCopperOre,
     IronOre as iIronOre,
+    Limestone as iLimestone
 )
 from satisfactor_py.recipes import (
     Cable as rCable,
+    Concrete as rConcrete,
     CopperOreMk1 as rCopperOreMk1,
     CopperIngot as rCopperIngot,
     IronOreMk1 as rIronOreMk1,
     IronIngot as rIronIngot,
     IronRod as rIronRod,
+    LimestoneMk1 as rLimestoneMk1,
     Screw as rScrew,
     Wire as rWire,
 )
@@ -108,7 +111,7 @@ def tier_0_cable_factory(
         - Storage container
     '''
 
-    factory = Factory(name='Tier 1 Cable Factory')
+    factory = Factory(name='Tier 0 Cable Factory')
 
     # Start by adding a copper resource node to the factory
     copperSource = ResourceNode(
@@ -162,5 +165,53 @@ def tier_0_cable_factory(
         cableConstructor,
         convCableToStorage,
         cableStorage
+    ])
+    return factory
+
+def tier_0_concrete_factory(
+    purity: Purity = Purity.NORMAL
+):
+    '''
+    Returns a simple factory producing concrete using only Tier 0 items as follows:
+
+        - Limestone resource node
+        - Miner
+        - Concrete constructor
+        - Storage container
+    '''
+
+    factory = Factory(name='Tier 0 Concrete Factory')
+
+    # Start with a limestone resource node
+    limestoneSource = ResourceNode(
+        name=f'{purity.name.title()} Limestone Source',
+        purity=purity,
+        item=iLimestone
+    )
+
+    # Connect a miner to it
+    limestoneMiner = MinerMk1(
+        name='Limestone Miner',
+        recipe=rLimestoneMk1
+    )
+    limestoneSource.outputs[0].connect(limestoneMiner.inputs[0])
+
+    # Connect it to a constructor producing limestone
+    concreteConstructor = Constructor(
+        name='Concrete Constructor',
+        recipe=rConcrete
+    )
+    convLimestoneToConstructor = limestoneMiner.connect(concreteConstructor, ConveyorBeltMk1)
+
+    concreteStorage = StorageContainer(name='Concrete Storage')
+    convConcreteToStorage = concreteConstructor.connect(concreteStorage, ConveyorBeltMk1)
+
+    factory.add([
+        limestoneSource,
+        limestoneMiner,
+        convLimestoneToConstructor,
+        concreteConstructor,
+        convConcreteToStorage,
+        concreteStorage
     ])
     return factory
