@@ -7,7 +7,8 @@ from satisfactor_py.base import (
     Input,
     Item,
     Output,
-    Recipe
+    Recipe,
+    ResourceNode
 )
 
 
@@ -77,6 +78,44 @@ class Miner(Building):
             )],
             **kwargs
         )
+
+    def can_process(self):
+        '''
+        Returns True if the conditions are right for processing the Miner recipe.
+        '''
+
+        # All the basic building tests
+        super().can_process()
+
+        # If it's not connected, we can't process
+        if not self.inputs[0].source:
+            return False
+
+        # It can only be attached to a resource node
+        resource_node = self.inputs[0].source.attached_to
+        if type(resource_node) is not ResourceNode:
+            return False
+
+        # The recipe must be of a special kind that consumes nothing and produces only one thing
+        if self.recipe.consumes != None or len(self.recipe.produces) != 1:
+            return False
+
+        # The resource node must produce the right item
+        if resource_node.item != self.recipe.produces[0].item:
+            return False
+
+        return True
+
+
+    def process(self):
+        '''
+        Miners must additionally apply a purity factor to their outputs
+        '''
+
+        self.can_process()
+        super().process()
+        self.outputs[0].ingredients[0].rate = \
+            self.outputs[0].ingredients[0].rate * self.inputs[0].source.attached_to.purity.value
 
 
 class MinerMk1(Miner):

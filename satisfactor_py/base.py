@@ -9,6 +9,7 @@ import random
 from enum import Enum
 from inspect import isclass, isfunction
 from typing import Type
+from uuid import uuid4
 
 
 WIKI_URL_BASE = 'https://satisfactory.fandom.com/wiki'
@@ -21,21 +22,21 @@ def generate_id():
     Generates a random ID for the purpose of unique reference
     '''
 
-    alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    length = random.randint(12, 40)
-    return ''.join([random.choice(alphabet) for i in range(0, length)])
+    return str(uuid4())
 
 
 # Enums and helper classes go here
 
 class Availability(object):
     '''
-    A combo of tier and hub upgrade depicting when the resource becomes unlocked.
+    A combo of tier and hub upgrade depicting when the resource becomes unlocked. For resources that
+    are unlocked by MAM research, set tier/upgrade to None, them set mam to True when it's unlocked.
     '''
 
-    def __init__(self, tier, upgrade):
+    def __init__(self, tier, upgrade, mam=False):
         self.tier = tier
         self.upgrade = upgrade
+        self.mam = mam
 
     def to_dict(self):
         return {
@@ -164,7 +165,7 @@ class Base(object):
         }
 
     def __repr__(self):
-        return f'<{type(self).__name__} {self.id} ({self.name})>'
+        return f'<{type(self).__name__} {self.name or self.id}>'
 
 
 class ComponentErrorLevel(Enum):
@@ -174,7 +175,7 @@ class ComponentErrorLevel(Enum):
         - DEBUG: Used only for emitting debugging information
         - WARNING: Indicates a scenario that is possible to achieve in the game but which should be
             considered misconfigured for the purposes of running a factory, such as a Building with
-            no assigned recipe.
+            no assigned recipe or a detectable inefficiency.
         - IMPOSSIBLE: Indicates a scenario that is not possible to achieve in the game but which
             might be possible through the incorrect use of this library.
     '''
@@ -208,11 +209,22 @@ class ComponentError(Exception):
 class Component(Base):
     '''
     Anything that can be built as part of a Factory is a Component.
+
+        - constructed: User-togglable boolean indicating whether they've built this component in an
+            actual game of Satisfactory.
+        - traversed: Used internally to determine if a component is actually connected to a larger
+            factory.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        constructed: bool = False,
+        traversed: bool = False,
+        **kwargs
+    ):
         super().__init__(**kwargs)
         self._errors = list()
+        self.constructed = constructed
+        self.traversed = traversed
 
     def to_dict(self):
         base = super().to_dict()
@@ -220,14 +232,6 @@ class Component(Base):
             'errors': [error.to_dict() for error in self.errors]
         })
         return base
-
-    def test(self):
-        '''
-        In this base class, running `test` just ensures that the list of errors is cleared. Call
-        this function before running downstream test functions to prevent duplicate errors.
-        '''
-
-        self.errors = list()
 
     def add_error(self,
         error: ComponentError
@@ -248,22 +252,25 @@ class Component(Base):
     ):
         self._errors = value
 
+    def clear_errors(self):
+        self._errors.clear()
+
     def process(self):
-        pass
+        self._errors = list()
 
 
 class Item(Base):
     '''
     An Item is something which can be held in an inventory slot, used in a Recipe, or used to build
     a factory component. An item with `None` for a `stack_size` cannot be held in inventory. An item
-    with `None` for a `sink_value` cannot be consumed by the Awesome Sink.
+    with `None` for a `sink_value` cannot be consumed by the Awesome Sink. A `None` for a
+    `conveyance_type` cannot be conveyed, such as a Smelter, which is an "Item" to the extent that
+    it is the product of a recipe and so must be defined as such.
 
         - conveyance_type: The mechanism by which the item can be transported automatically. Used to
             prevent, for example, a liquid material being transported on a conveyor belt.
-        - stack_size: The number of this item which can be held in one inventory slot. `None` means
-            it cannot be held in inventory (such as Power or Water).
+        - stack_size: The number of this item which can be held in one inventory slot.
         - sink_value: The number of points this item generates when destroyed in the Awesome Sink.
-            `None` means it cannot be destroyed in the Awesome Sink.
     '''
 
     def __init__(self,
@@ -326,9 +333,9 @@ class Recipe(Base):
     those Items. This class sets up a common interface for Recipes.
 
         - building_type: The type of building that this Recipe can be built in (such as Iron Ingots
-            only being craftable in Smelters).
-        - consumes: A list of Ingredients that go into the Recipe
-        - produces: A list of Ingredients that come out of the Recipe
+            only being craftable in Smelters, or Smelters being craftable in a build gun).
+        - consumes: A list of Ingredients that go into the Recipe.
+        - produces: A list of Ingredients that come out of the Recipe.
     '''
 
     def __init__(self,
@@ -364,9 +371,11 @@ class ConveyanceRecipe(Recipe):
     '''
 
     def __init__(self,
+        max_rate: int,
         ingredients: list[Ingredient] = list()
     ):
         super().__init__(building_type=BuildingType.CONVEYANCE)
+        self.max_rate = max_rate
         self.set_ingredients(ingredients)
 
     def set_ingredients(self,
@@ -375,9 +384,11 @@ class ConveyanceRecipe(Recipe):
         self._ingredients = ingredients
         self.consumes = self._ingredients
         self.produces = self._ingredients
+        for ingredient in self.produces:
+            ingredient.rate = min(ingredient.rate, self.max_rate)
 
 
-class Connection(Base):
+class Connection(Component):
     '''
     A Connection represents a linkage between two connectable points, such as the output of a
     Smelter and the input of a ConveyorBelt. It is essentially a constraint to ensure that we don't
@@ -439,7 +450,12 @@ class Connection(Base):
         raise NotImplementedError
 
     def process(self):
-        raise NotImplementedError
+        super().process()
+        if not self.attached_to:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.IMPOSSIBLE,
+                'Connection is not attached to anything'
+            ))
 
 
 class Input(Connection):
@@ -473,9 +489,22 @@ class Input(Connection):
         connection.target = self
 
     def process(self):
+        super().process()
         # If the input is attached (it should be), pass the ingredients along
         if self.attached_to:
-            self.attached_to.ingredients = self.ingredients
+            self.attached_to.ingredients.extend(self.ingredients)
+
+    def test(self):
+        '''
+        Test for issues with inputs
+        '''
+
+        super().test()
+        if not self.source:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'Input is not connected to a source'
+            ))
 
 
 class Output(Connection):
@@ -509,9 +538,20 @@ class Output(Connection):
         connection.source = self
 
     def process(self):
-        # An output can only connect to an input, so just pass the ingredients along
-        if self.target:
+        super().process()
+        if not self.target:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'Output is not connected to a target'
+            ))
+        else:
+            # An output can only connect to an input, so just pass the ingredients along
             self.target.ingredients = self.ingredients
+
+    def test(self):
+        '''
+        Test for issues with outputs
+        '''
 
 
 class ResourceNode(Component):
@@ -552,32 +592,23 @@ class ResourceNode(Component):
         })
         return base
 
-    def test(self):
+    def process(self):
         '''
-        Detects errors with this ResourceNode
-        '''
-
-        super().test()
-        self.test_inputs()
-        self.test_outputs()
-
-    def test_inputs(self):
-        '''
-        Resource nodes cannot have inputs
+        A ResourceNode can't really process anything, but there are still some configuration errors
+        to check for.
         '''
 
+        super().process()
+
+        # ResourceNodes cannot have inputs
         input_ct = len(self.inputs)
         if input_ct > 0:
             self.add_error(ComponentError(
                 f'ResourceNodes cannot have any inputs, but this has {input_ct}.'
             ))
 
-    def test_outputs(self):
-        '''
-        ResourceNodes must be connected to Miners whose Recipes match the Item the ResourceNode
-        emits. They can also not have multiple outputs.
-        '''
-
+        # ResourceNodes must be connected to Miners whose Recipes match the Item the ResourceNode
+        # emits. They can also not have multiple outputs.
         output_ct = len(self.outputs)
         if output_ct > 1 or output_ct < 1:
             self.add_error(ComponentError(
@@ -639,7 +670,6 @@ class Building(Component):
         clock_rate: float = 1.0,
         standby: bool = False,
         dimensions: Dimension = Dimension(0, 0, 0),
-        ingredients: list[Ingredient] = list(),
         inputs: list[Input] = list(),
         outputs: list[Output] = list(),
         power_connections: int = 1,
@@ -655,6 +685,7 @@ class Building(Component):
         self.inputs = inputs
         self.outputs = outputs
         self.base_power_usage = base_power_usage
+        self.ingredients = list()
 
     def to_dict(self):
         inputs = [input.id for input in self.inputs]
@@ -676,39 +707,82 @@ class Building(Component):
         Determines if the conditions are met for the recipe to be processed.
         '''
 
+        success = True
         # Can't process if there's no recipe to process
         if self.recipe is None:
-            return False
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'Building has no recipe'
+            ))
+            success = False
 
         # Can't process in standby mode
         if self.standby:
-            return False
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'Building is in standby mode'
+            ))
+            success = False
 
         # Make sure recipes which consume can be processed in this building
-        if self.recipe.consumes:
+        if self.recipe and self.recipe.consumes:
             # Can't process if there aren't enough inputs to supply the recipe's ingredients
             if len(self.inputs) < len(self.recipe.consumes):
-                return False
+                self.add_error(ComponentError(
+                    ComponentErrorLevel.IMPOSSIBLE,
+                    'Building has fewer inputs than its recipe requires'
+                ))
+                success = False
 
             # Can't process if the inputs don't match the recipe
             requirements = [ingredient.item for ingredient in self.recipe.consumes]
             ing_items = [ingredient.item for ingredient in self.ingredients]
             for ingredient in requirements:
                 if ingredient not in ing_items:
-                    return False
-            return True
+                    self.add_error(ComponentError(
+                        ComponentErrorLevel.WARNING,
+                        f'Recipe ingredient {ingredient.name} is not available'
+                    ))
+                    success = False
+
+            for ingredient in ing_items:
+                if ingredient not in requirements:
+                    self.add_error(ComponentError(
+                        ComponentErrorLevel.WARNING,
+                        f'Ingredient {ingredient.name} is not required for the recipe'
+                    ))
+
         # Some recipes don't consume; those can be processed without additional checks
-        else:
-            return True
+        return success
 
     def process(self) -> bool:
         '''
         Sets the ingredients of this Building's outputs based on its settings.
         '''
 
+        super().process()
         if not self.can_process():
             return False
 
+        # Determine if the rates of the incoming ingredients mismatch the demand by the recipe
+        if self.recipe and self.recipe.consumes:
+            for recipe_ingredient in self.recipe.consumes:
+                for input_ingredient in self.ingredients:
+                    if recipe_ingredient.item == input_ingredient.item:
+                        if input_ingredient.rate < recipe_ingredient.rate:
+                            self.add_error(ComponentError(
+                                ComponentErrorLevel.WARNING,
+                                f'Recipe consumes {recipe_ingredient.item.name} '\
+                                'faster than it is being supplied.'
+                            ))
+                        if input_ingredient.rate > recipe_ingredient.rate:
+                            self.add_error(ComponentError(
+                                ComponentErrorLevel.WARNING,
+                                f'Ingredient {recipe_ingredient.item.name} is supplied '\
+                                'faster than the recipe can consume it.'
+                            ))
+
+        success = True
         for recipe_ingredient in self.recipe.produces:
             for output in self.outputs:
                 # If the output isn't already occupied and it has the right conveyance type, use it
@@ -720,7 +794,16 @@ class Building(Component):
                             recipe_ingredient.rate * self.clock_rate
                         )
                     ]
-        return True
+                else:
+                    success = False
+
+        if not success:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.IMPOSSIBLE,
+                'Building doesn\'t have sufficient outputs for what its recipe produces'
+            ))
+
+        return success
 
     def connect(self,
         target,  # Type: Building
@@ -756,7 +839,7 @@ class Building(Component):
                     output = o
                     break
 
-            # ...then find the first available, compatible input on the target building.
+            # ...then find the first avaFixed in PR #15.ilable, compatible input on the target building.
             for i in target.inputs:
                 if not i.source and i.conveyance_type == connector.conveyance_type:
                     input = i
@@ -789,7 +872,7 @@ class Conveyance(Building):
     '''
     A Conveyance is anything that can move Items from one Connection to another without changing
     the contents being conveyed. They are essentially Buildings with added constraints on the inputs
-    and outputs.
+    and outputs, and on the maximum rate of transfer.
 
         - conveyance_type: The kind of conveyance, preventing us from attaching, say, a Conveyor
             Belt to a Pipeline.
@@ -799,17 +882,16 @@ class Conveyance(Building):
 
     def __init__(self,
         conveyance_type: ConveyanceType = ConveyanceType.BELT,
-        rate: int = 0,
-        ingredients: list[Ingredient] = list(),
+        rate: float = 0,
         **kwargs
     ):
         super().__init__(
             building_type=BuildingType.CONVEYANCE,
+            ingredients=list(),
             **kwargs
         )
         self.conveyance_type = conveyance_type
         self.rate = rate
-        self.ingredients = ingredients
         self.recipe = None
 
     def to_dict(self):
@@ -825,18 +907,33 @@ class Conveyance(Building):
         Ensures the Recipe is set up correctly and that the outputs match the inputs.
         '''
 
-        self.recipe = ConveyanceRecipe(self.ingredients)
-        if self.can_process():
-            self.outputs[0].ingredients = self.ingredients
+        # If the conveyance's rate is lower than the combined ingredient rates, we have to slow it
+        # all down proportionately.
+        recipe = ConveyanceRecipe(self.rate, self.ingredients)
+        total_rate = sum([product.rate for product in recipe.produces])
+        if total_rate > self.rate:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                'The conveyance is too slow to carry all of the items on it.'
+            ))
+            ratio = total_rate / self.rate
+            for ingredient in recipe.produces:
+                ingredient.rate /= ratio
+        self.recipe = recipe
+
+        self.outputs[0].ingredients = self.recipe.produces
         return True
 
 
-class Storage(Conveyance):
+class Storage(Building):
     '''
     Any kind of building, such as Industrial Storage or a Fluid Buffer, which is essentially a
     Conveyance with added storage. Liquid storage is odd because it does not have inventory slots,
     but instead a volume of storage. Since the functionality is otherwise identical, fluids have a
     stack_size of 1 and buffers have a number of stacks equal to their volume.
+
+    This class inherits from Building, not from Conveyance, because, unlike a Conveyance, the rate
+    of output depends on the rate of whatever the output is connected to.
 
         - stacks: Number of inventory slots in the storage unit
     '''
@@ -846,8 +943,10 @@ class Storage(Conveyance):
         **kwargs
     ):
         super().__init__(
+            building_type=BuildingType.STORAGE,
             **kwargs
         )
+        self.rate = None
         self.stacks = stacks
 
     def to_dict(self):
@@ -856,3 +955,20 @@ class Storage(Conveyance):
             'stacks': self.stacks
         })
         return base
+
+    def process(self):
+        '''
+        Processing a Storage means passing along whatever ingredients are coming in at whatever rate
+        the output can handle. In an actual game, what goes out is whatever is stacked inside. We're
+        not tracking the contents of the Storage, and this software doesn't track factories over
+        time, so we don't do that. We just pass the rates along, which is okay for simulation and
+        problem detection.
+        '''
+
+        # We can have multiple outputs, which can have different rates
+        for output in self.outputs:
+            if output.target and output.target.attached_to:
+                ingredients = self.ingredients
+                for ingredient in ingredients:
+                    ingredient.rate = min(ingredient.rate, output.target.attached_to.rate)
+                output.ingredients = ingredients

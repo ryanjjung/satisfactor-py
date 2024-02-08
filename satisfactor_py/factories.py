@@ -8,6 +8,8 @@ from satisfactor_py.base import (
     Building,
     BuildingType,
     Component,
+    ComponentError,
+    ComponentErrorLevel,
     Connection,
     Conveyance,
     ConveyanceRecipe,
@@ -29,6 +31,7 @@ class Factory(Base):
     ):
         super().__init__(**kwargs)
         self._components = components
+        self._errors = list()
 
     def to_dict(self):
         base = super().to_dict()
@@ -55,7 +58,18 @@ class Factory(Base):
     def add(self,
         components: list[Component]
     ):
+        for component in components:
+            component.factory = self
         self._components.extend(components)
+
+    def add_error(self,
+        error: ComponentError
+    ):
+        '''
+        Simple helper to ensure that errors are of the right type
+        '''
+
+        self._errors.append(error)
 
     def get_buildings_by_type(self,
         building_type: BuildingType
@@ -161,6 +175,8 @@ class Factory(Base):
             - func: A function to run on each Component and Connection in the flow
         '''
 
+        cursor.traversed = True
+
         # Run the function where the cursor is
         func(cursor)
 
@@ -179,7 +195,6 @@ class Factory(Base):
                 return
             # If there is only one output, traverse along it
             elif len(cursor.outputs) == 1 and cursor.recipe:
-                cursor.outputs[0].ingredients = cursor.recipe.produces
                 self.traverse(cursor.outputs[0], func)
             # If there are multiple outputs, we must split into threads to traverse them
             elif len(cursor.outputs) > 1:
@@ -203,6 +218,23 @@ class Factory(Base):
         process begins with any resource nodes in the factory.
         '''
         self.traverse_all(drain_component)
+        self.errors = list()
+
+    def purge(self):
+        '''
+        Clears ingredients out of all components in the factory, even if they're not traversible.
+        '''
+
+        for component in self.components:
+            component.clear_errors()
+            component.ingredients = list()
+            if isinstance(component, Building):
+                for input in component.inputs:
+                    input.ingredients = list()
+                for output in component.outputs:
+                    output.ingredients = list()
+            if isinstance(component, Conveyance):
+                component.recipe = None
 
     def simulate(self):
         '''
@@ -210,20 +242,23 @@ class Factory(Base):
         '''
         self.traverse_all(simulate_component)
 
-    def test(self):
-        '''
-        Steps through each component of the factory, running tests
-        '''
+        excluded = [component for component in self.components if not component.traversed]
+        if len(excluded) > 0:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                f'Some components were not traversed: {excluded}'
+            ))
 
-        self.traverse_all(test_component)
 
 def drain_component(component):
     '''
-    Clear all ingredients in a component
+    Clear all ingredients in a component, and clear its errors
     '''
 
-    if isinstance(component, Connection):
-        component.ingredients = list()
+    component.clear_errors()
+    component.traversed = False
+    if hasattr(component, 'ingredients'):
+        component.ingredients.clear()
     return
 
 def simulate_component(component):
@@ -233,22 +268,17 @@ def simulate_component(component):
 
     component.process()
 
-def test_component(component):
-    '''
-    Instruct the component to run self-tests
-    '''
-
-    # During traversal, we will encounter non-components, such as Connections. Skip those.
-    if isinstance(component, Component):
-        component.test()
-
 def debug_component(component):
     '''
-    Break with a debugger prompt on every component
+    Break with a debugger prompt before and after processing each component
     '''
 
     # Threading makes this ugly. Print some output every time so the user understands what they're
     # looking at.
-    print(f'''[DEBUG] Inspecting component "{component.id}" {type(component)})
-            {json.dumps(component.to_dict(), indent=2)}''')
+    print(f'\n[DEBUG] ----- Inspecting component BEFORE simulation "{component.name or component.id}" ({type(component).__name__})')
+    x = component
     pdb.set_trace()
+    component.process()
+    print(f'\n[DEBUG] ----- Inspecting component AFTER simulation "{component.name or component.id}" ({type(component).__name__})')
+    pdb.set_trace()
+
