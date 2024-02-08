@@ -145,6 +145,14 @@ Limestone = Recipe(
 
 # Smelter recipes
 
+CopperIngot = Recipe(
+    name='Copper Ingot',
+    wiki_path='/Copper_Ingot',
+    building_type=BuildingType.SMELTER,
+    consumes=[Ingredient(iCopperOre, 1, 30)],
+    produces=[Ingredient(iCopperIngot, 1, 30)]
+)
+
 IronIngot = Recipe(
     name='Iron Ingot',
     wiki_path='/Iron_Ingot',

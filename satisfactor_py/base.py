@@ -808,6 +808,7 @@ class Building(Component):
     def connect(self,
         target,  # Type: Building
         conveyance, # Type: Type[Conveyance]
+        conveyance_name: str = None,
         connect_output: bool = True,
     ):
         '''
@@ -829,6 +830,7 @@ class Building(Component):
 
         output = None
         input = None
+
         connector = conveyance()
 
         # If we're connecting the output of this building to the input of another...
@@ -839,11 +841,14 @@ class Building(Component):
                     output = o
                     break
 
-            # ...then find the first avaFixed in PR #15.ilable, compatible input on the target building.
+            # ...then find the first available, compatible input on the target building.
             for i in target.inputs:
                 if not i.source and i.conveyance_type == connector.conveyance_type:
                     input = i
                     break
+
+            if not conveyance_name:
+                conveyance_name = f'{self.name}_to_{target.name}'
 
         # If we're connecting the input of this building to the output of another...
         else:
@@ -859,12 +864,16 @@ class Building(Component):
                     input = i
                     break
 
+            if not conveyance_name:
+                conveyance_name = f'{target.name}_to_{self.name}'
+
         # We have to have a valid input and output to attach to this conveyance; fail otherwise
         if not input or not output:
             return False
 
         output.connect(connector.inputs[0])
         connector.outputs[0].connect(input)
+        connector.name = conveyance_name
         return connector
 
 
@@ -967,6 +976,7 @@ class Storage(Building):
 
         # We can have multiple outputs, which can have different rates
         for output in self.outputs:
+            import pdb; pdb.set_trace()
             if output.target and output.target.attached_to:
                 ingredients = self.ingredients
                 for ingredient in ingredients:
