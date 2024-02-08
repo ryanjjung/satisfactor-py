@@ -140,6 +140,7 @@ class Smelter(Building):
 
     def __init__(self, name='Smelter', **kwargs):
         super().__init__(
+            name=name,
             availability=Availability(0, 2),
             wiki_path='/Smelter',
             base_power_usage=4,

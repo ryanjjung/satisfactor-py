@@ -133,7 +133,7 @@ IronOreMk1 = Recipe(
     produces=[Ingredient(iIronOre, None, 60)]
 )
 
-Limestone = Recipe(
+LimestoneMk1 = Recipe(
     name='Limestone',
     availability=Availability(0, 3),
     wiki_path='/Limestone',
@@ -144,6 +144,14 @@ Limestone = Recipe(
 
 
 # Smelter recipes
+
+CopperIngot = Recipe(
+    name='Copper Ingot',
+    wiki_path='/Copper_Ingot',
+    building_type=BuildingType.SMELTER,
+    consumes=[Ingredient(iCopperOre, 1, 30)],
+    produces=[Ingredient(iCopperIngot, 1, 30)]
+)
 
 IronIngot = Recipe(
     name='Iron Ingot',
