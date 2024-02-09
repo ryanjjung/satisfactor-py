@@ -56,11 +56,16 @@ class Factory(Base):
                 if isinstance(component, ResourceNode)]
 
     def add(self,
-        components: list[Component]
+        components: list[Component] | list[list[Component]]
     ):
         for component in components:
-            component.factory = self
-        self._components.extend(components)
+            if issubclass(type(component), Component):
+                component.factory = self
+                self._components.append(component)
+            if type(component) == list:
+                for comp in component:
+                    comp.factory = self
+                    self._components.append(comp)
 
     def add_error(self,
         error: ComponentError
@@ -194,7 +199,7 @@ class Factory(Base):
             if len(cursor.outputs) < 1:
                 return
             # If there is only one output, traverse along it
-            elif len(cursor.outputs) == 1 and cursor.recipe:
+            elif len(cursor.outputs) == 1:
                 self.traverse(cursor.outputs[0], func)
             # If there are multiple outputs, we must split into threads to traverse them
             elif len(cursor.outputs) > 1:
@@ -266,6 +271,7 @@ def simulate_component(component):
     Simulate the component, determining if it can process, and what the contents of its outputs are
     '''
 
+    print(f'Simulating component {component}')
     component.process()
 
 def debug_component(component):
@@ -275,10 +281,10 @@ def debug_component(component):
 
     # Threading makes this ugly. Print some output every time so the user understands what they're
     # looking at.
-    print(f'\n[DEBUG] ----- Inspecting component BEFORE simulation "{component.name or component.id}" ({type(component).__name__})')
-    x = component
+    this = component
+    print(f'\n[DEBUG] ----- Inspecting component BEFORE simulation "{this.name or this.id}" ({type(this).__name__})')
     pdb.set_trace()
-    component.process()
-    print(f'\n[DEBUG] ----- Inspecting component AFTER simulation "{component.name or component.id}" ({type(component).__name__})')
+    this.process()
+    print(f'\n[DEBUG] ----- Inspecting component AFTER simulation "{this.name or this.id}" ({type(this).__name__})')
     pdb.set_trace()
 

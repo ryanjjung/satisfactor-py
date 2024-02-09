@@ -1,6 +1,8 @@
 from satisfactor_py.base import Purity, ResourceNode
 from satisfactor_py.buildings import (
     Constructor,
+    ConveyorMerger,
+    ConveyorSplitter,
     MinerMk1,
     Smelter,
 )
@@ -56,7 +58,7 @@ def tier_0_screw_factory(
 
     # Uncomment the next line to produce an error
     #ironMiner = MinerMk1(recipe=rCopperOreMk1)
-    ironSource.outputs[0].connect(ironMiner.inputs[0])
+    ironSource.outputs[0].connect(ironMiner.inputs[0], ConveyorBeltMk1)
 
     # Connect the miner to a smelter
     ironSmelter = Smelter(
@@ -213,5 +215,105 @@ def tier_0_concrete_factory(
         concreteConstructor,
         convConcreteToStorage,
         concreteStorage
+    ])
+    return factory
+
+def tier_1_screw_factory():
+    '''
+    Builds a Tier 1 screw factory from a normal resource node, splitting various outputs to maximize
+    efficiency.
+
+        - Iron resource node (Normal)
+        - Miner Mk.1
+        - Smelter x2
+        - Constructor (Iron Rod) x4
+        - Constructor (Screw) x6
+        - Storage Container
+    '''
+
+    factory = Factory(name='Tier 1 Screw Factory')
+
+    # Start with a normal iron source, attach it to a miner
+    ironSource = ResourceNode(
+        name='Normal Iron Source',
+        purity=Purity.NORMAL,
+        item=iIronOre
+    )
+    ironMiner = MinerMk1(
+        name='Iron Miner',
+        recipe=rIronOreMk1
+    )
+    ironSource.outputs[0].connect(ironMiner.inputs[0])
+
+    # Build two smelters and split the ore from the miner to go to each of them
+    oreSplitter = ConveyorSplitter(name='Iron Ore Splitter')
+    ironMiner.connect(oreSplitter, ConveyorBeltMk1)
+
+    ironSmelters = [Smelter(
+        name=f'Iron Smelter #{i + 1}',
+        recipe=rIronIngot) for i in range(2)]
+    oreSplitter.connect(ironSmelters[0], ConveyorBeltMk1)
+    oreSplitter.connect(ironSmelters[1], ConveyorBeltMk1)
+
+    # Split the output of each smelter to supply two rod constructors per smelter
+    ingotSplitters = [ConveyorSplitter(name=f'Iron Ingot Splitter #{i + 1}')
+        for i in range(2)]
+    ironSmelters[0].connect(ingotSplitters[0], ConveyorBeltMk1)
+    ironSmelters[1].connect(ingotSplitters[1], ConveyorBeltMk1)
+
+    ironRodConstructors = [Constructor(
+        name=f'Iron Rod Constructor #{i + 1}',
+        recipe=rIronRod
+    ) for i in range(4)]
+    ingotSplitters[0].connect(ironRodConstructors[0], ConveyorBeltMk1)
+    ingotSplitters[0].connect(ironRodConstructors[1], ConveyorBeltMk1)
+    ingotSplitters[1].connect(ironRodConstructors[2], ConveyorBeltMk1)
+    ingotSplitters[1].connect(ironRodConstructors[3], ConveyorBeltMk1)
+
+    # Merge output of each pair of rod constructors (15/m * 2 = 30/m) so we can split it up evenly
+    # into (30/m ÷ 3 = 10/m) feeders for three screw constructors. With two of this pattern, we get
+    # six constructors getting exactly the supply they need.
+    rodMergers = [ConveyorMerger(name=f'Iron Rod Merger #{i + 1}')
+        for i in range(2)]
+    ironRodConstructors[0].connect(rodMergers[0], ConveyorBeltMk1)
+    ironRodConstructors[1].connect(rodMergers[0], ConveyorBeltMk1)
+    ironRodConstructors[2].connect(rodMergers[1], ConveyorBeltMk1)
+    ironRodConstructors[3].connect(rodMergers[1], ConveyorBeltMk1)
+
+    rodSplitters = [ConveyorSplitter(name=f'Iron Rod Splitter #{i + 1}')
+        for i in range(2)]
+    rodMergers[0].connect(rodSplitters[0], ConveyorBeltMk1)
+    rodMergers[1].connect(rodSplitters[1], ConveyorBeltMk1)
+
+    screwConstructors = [Constructor(
+        name=f'Screw Constructor #{i + 1}',
+        recipe=rScrew
+    ) for i in range(6)]
+    rodSplitters[0].connect(screwConstructors[0], ConveyorBeltMk1)
+    rodSplitters[0].connect(screwConstructors[1], ConveyorBeltMk1)
+    rodSplitters[0].connect(screwConstructors[2], ConveyorBeltMk1)
+    rodSplitters[1].connect(screwConstructors[3], ConveyorBeltMk1)
+    rodSplitters[1].connect(screwConstructors[4], ConveyorBeltMk1)
+    rodSplitters[1].connect(screwConstructors[5], ConveyorBeltMk1)
+
+    # The screw constructors emit 40 screws/m. Merging even two of these will outpace the output of
+    # the merger by 20/m, so to keep efficiency up, we have to pipeline each constructor into its
+    # own storage container.
+    screwStorages = [StorageContainer(name=f'Screw Storage #{i + 1}')
+        for i in range(6)]
+    for i in range(6):
+        screwConstructors[i].connect(screwStorages[i], ConveyorBeltMk1)
+
+    factory.add([
+        ironSource,
+        ironMiner,
+        oreSplitter,
+        ironSmelters,
+        ingotSplitters,
+        ironRodConstructors,
+        rodMergers,
+        rodSplitters,
+        screwConstructors,
+        screwStorages
     ])
     return factory

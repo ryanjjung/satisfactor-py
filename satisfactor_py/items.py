@@ -8,7 +8,8 @@ from satisfactor_py.base import (
 Here are defined all of the items we care about.
 '''
 
-# "Natural" items
+##### "Natural" items
+
 # Things you find/discover in the world, which cannot be manufactured
 
 Leaves = Item(
@@ -83,7 +84,6 @@ Stinger_Remains = Item(
     wiki_path='/Alien_Remains#Stinger'
 )
 
-
 # Things made of Natural Items
 
 Alien_Protein = Item(
@@ -105,7 +105,8 @@ Color_Cartridge = Item(
 )
 
 
-# "Core" items
+##### "Core" items
+
 # Things which are pulled up from the ground like ore, oil, and water
 IronOre = Item(
     name='Iron Ore',
@@ -123,7 +124,7 @@ CopperOre = Item(
     wiki_path='/Copper_Ore')
 
 
-# Smelted Items
+##### Smelted Items
 
 CopperIngot = Item(
     name='Copper Ingot',
@@ -142,7 +143,9 @@ IronIngot = Item(
     wiki_path='/Iron_Ingot')
 
 
-# Constructed Items
+##### Constructed Items
+
+# Tier 0
 
 Cable = Item(
     name='Cable',
@@ -167,7 +170,8 @@ IronPlate = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=6,
-    wiki_path='Iron_Plate')
+    wiki_path='Iron_Plate'
+)
 
 IronRod = Item(
     name='Iron Rod',
@@ -205,7 +209,9 @@ Wire = Item(
 )
 
 
-# Assembled Items
+##### Assembled Items
+
+# Tier 0
 
 PortableMiner = Item(
     name='Portable Miner',
@@ -225,7 +231,10 @@ ReinforcedIronPlate = Item(
     wiki_path='/Reinforced_Iron_Plate'
 )
 
-# Built Items
+
+##### Built Items
+
+# Tier 0
 
 BiomassBurner = Item(
     name='Biomass Burner',
@@ -353,7 +362,154 @@ WallOutletMk1 = Item(
 )
 
 
-# Power Items
+# Tier 1
+
+BasicWall1mFicsit = Item(
+    name='Basic Wall 1m (FICSIT)',
+    availability=Availability(1, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Walls'
+)
+
+BasicWall4mFicsit = Item(
+    name='Basic Wall 4m (FICSIT)',
+    availability=Availability(1, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Walls'
+)
+
+Beacon = Item(
+    name='Beacon',
+    availability=Availability(1, 3),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Beacon'
+)
+
+ConveyorLiftMk1 = Item(
+    name='Conveyor Lift Mk.1',
+    availability=Availability(1, 2),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Conveyor_Lift'
+)
+
+ConveyorMerger = Item(
+    name='Conveyor Merger',
+    availability=Availability(1, 2),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Conveyor_Merger'
+)
+
+ConveyorSplitter = Item(
+    name='Conveyor Splitter',
+    availability=Availability(1, 2),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Conveyor_Splitter'
+)
+
+Foundation1mFicsit = Item(
+    name='Foundation 1m (FICSIT)',
+    availability=Availability(1, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Foundations'
+)
+
+Foundation2mFicsit = Item(
+    name='Foundation 2m (FICSIT)',
+    availability=Availability(1, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Foundations'
+)
+
+Foundation4mFicsit = Item(
+    name='Foundation 4m (FICSIT)',
+    availability=Availability(1, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Foundations'
+)
+
+LookoutTower = Item(
+    name='Lookout Tower',
+    availability=Availability(1, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='Lookout_Tower'
+)
+
+MAM = Item(
+    name='MAM',
+    availability=Availability(1, 3),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/MAM'
+)
+
+ObjectScanner = Item(
+    name='Object Scanner',
+    availability=Availability(1, 3),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Object_Scanner'
+)
+
+PersonalStorageBox = Item(
+    name='Personal Storage Box',
+    availability=Availability(1, 3),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Personal_Storage_Box'
+)
+
+Ramp1mFicsit = Item(
+    name='Ramp 1m (FICSIT)',
+    availability=Availability(1, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Foundations#Ramps'
+)
+
+Ramp2mFicsit = Item(
+    name='Ramp 2m (FICSIT)',
+    availability=Availability(1, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Foundations#Ramps'
+)
+
+Ramp4mFicsit = Item(
+    name='Ramp 4m (FICSIT)',
+    availability=Availability(1, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Foundations#Ramps'
+)
+
+
+##### Power Items
 
 Power = Item(
     name='Power',
