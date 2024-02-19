@@ -304,6 +304,19 @@ def tier_1_screw_factory():
     for i in range(6):
         screwConstructors[i].connect(screwStorages[i], ConveyorBeltMk1)
 
+    # If we then merge the storages down into a single storage, we should see some errors pop up.abs
+    storageMergers = [ConveyorMerger(name=f'Storage Merger #{i + 1}')
+        for i in range(3)]
+    for i in range(3):
+        screwStorages[i].connect(storageMergers[0], ConveyorBeltMk1)
+    for i in range(3, 6):
+        screwStorages[i].connect(storageMergers[1], ConveyorBeltMk1)
+    storageMergers[0].connect(storageMergers[2], ConveyorBeltMk1)
+    storageMergers[1].connect(storageMergers[2], ConveyorBeltMk1)
+
+    finalStorage = StorageContainer(name='Final Screw Storage')
+    storageMergers[2].connect(finalStorage, ConveyorBeltMk1)
+
     factory.add([
         ironSource,
         ironMiner,
@@ -314,6 +327,8 @@ def tier_1_screw_factory():
         rodMergers,
         rodSplitters,
         screwConstructors,
-        screwStorages
+        screwStorages,
+        storageMergers,
+        finalStorage
     ])
     return factory

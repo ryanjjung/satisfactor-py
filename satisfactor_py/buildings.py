@@ -108,6 +108,8 @@ class ConveyorMerger(Building):
         connected_inputs = [input for input in self.inputs if input.source]
         if not self.can_process(connected_inputs):
             return False
+        
+        self._errors = []
 
         # Determine the ideal recipe by combining all inputs into one, combining like ingredients
         working_recipe = Recipe(
@@ -180,6 +182,8 @@ class ConveyorSplitter(Building):
         connected_outputs = [output for output in self.outputs if output.target]
         if not self.can_process(connected_outputs):
             return False
+
+        self._errors = []
 
         # Determine the ideal recipe, if we were to divide the incoming ingredients up across all
         # connected outputs.
