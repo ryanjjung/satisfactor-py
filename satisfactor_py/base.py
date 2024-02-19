@@ -165,7 +165,7 @@ class Base(object):
         }
 
     def __repr__(self):
-        return f'<{type(self).__name__} {self.name or self.id}>'
+        return f'<{type(self).__name__} "{self.name or self.id}">'
 
 
 class ComponentErrorLevel(Enum):
@@ -489,22 +489,24 @@ class Input(Connection):
         connection.target = self
 
     def process(self):
+        # import pdb; pdb.set_trace()
         super().process()
-        # If the input is attached (it should be), pass the ingredients along
+        # If the input is attached...
         if self.attached_to:
-            self.attached_to.ingredients.extend(self.ingredients)
-
-    def test(self):
-        '''
-        Test for issues with inputs
-        '''
-
-        super().test()
-        if not self.source:
-            self.add_error(ComponentError(
-                ComponentErrorLevel.WARNING,
-                'Input is not connected to a source'
-            ))
+            # If the thing we're attached to only has one input, then we must set the ingredients
+            input_ct = len(self.attached_to.inputs)
+            if input_ct == 1:
+                self.attached_to.ingredients = self.ingredients
+            # If it has multiple inputs, then we must *append* our ingredients
+            else:
+                for input_ing in self.ingredients:
+                    already_here = False
+                    for target_ing in self.attached_to.ingredients:
+                        if input_ing.item == target_ing.item:
+                            already_here = True
+                            target_ing.rate += input_ing.rate
+                    if not already_here:
+                        self.attached_to.ingredients.append(input_ing)
 
 
 class Output(Connection):
@@ -761,8 +763,15 @@ class Building(Component):
         '''
 
         super().process()
+
         if not self.can_process():
             return False
+
+        # Always clear the outputs; we don't know when this function is run whether all of the
+        # building's inputs have been processed. The output should always be based on the most
+        # up to date understanding of the inputs.
+        for output in self.outputs:
+            output.ingredients = []
 
         # Determine if the rates of the incoming ingredients mismatch the demand by the recipe
         if self.recipe and self.recipe.consumes:
@@ -848,7 +857,7 @@ class Building(Component):
                     break
 
             if not conveyance_name:
-                conveyance_name = f'{self.name}_to_{target.name}'
+                conveyance_name = f'"{self.name}" to "{target.name}"'
 
         # If we're connecting the input of this building to the output of another...
         else:

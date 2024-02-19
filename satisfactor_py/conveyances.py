@@ -35,3 +35,28 @@ class ConveyorBeltMk1(Conveyance):
             )],
             **kwargs
         )
+
+
+class ConveyorLiftMk1(Conveyance):
+    def __init__(self, **kwargs):
+        super().__init__(
+            name='Conveyor Lift Mk.1',
+            availability=Availability(1, 2),
+            wiki_path='/Conveyor_Lift',
+            conveyance_type=ConveyanceType.BELT,
+            rate=60,
+            dimensions=Dimension(
+                width=2,
+                length=2,
+                height=7 # At a minimum, adjust after instantiation as needed
+            ),
+            inputs=[Input(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT
+            )],
+            outputs=[Output(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT
+            )],
+            **kwargs
+        )
