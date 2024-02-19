@@ -52,7 +52,7 @@ Flower_Petals = Item(
     wiki_path='/Flower_Petals'
 )
 
-Hatcher_Remains = Item(
+HatcherRemains = Item(
     name='Hatcher Remains',
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
@@ -60,7 +60,7 @@ Hatcher_Remains = Item(
     wiki_path='/Alien_Remains#Hatcher'
 )
 
-Hog_Remains = Item(
+HogRemains = Item(
     name='Hog Remains',
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
@@ -68,7 +68,7 @@ Hog_Remains = Item(
     wiki_path='/Alien_Remains#Hog'
 )
 
-Spitter_Remains = Item(
+SpitterRemains = Item(
     name='Spitter Remains',
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
@@ -76,7 +76,7 @@ Spitter_Remains = Item(
     wiki_path='/Alien_Remains#Spitter'
 )
 
-Stinger_Remains = Item(
+StingerRemains = Item(
     name='Stinger Remains',
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
@@ -86,7 +86,7 @@ Stinger_Remains = Item(
 
 # Things made of Natural Items
 
-Alien_Protein = Item(
+AlienProtein = Item(
     name='Alien Protein',
     availability=Availability(0, 0, True),
     conveyance_type=ConveyanceType.BELT,
@@ -95,7 +95,7 @@ Alien_Protein = Item(
     wiki_path='/Alien_Protein'
 )
 
-Color_Cartridge = Item(
+ColorCartridge = Item(
     name='Color Cartridge',
     availability=Availability(2, 0),
     conveyance_type=ConveyanceType.BELT,

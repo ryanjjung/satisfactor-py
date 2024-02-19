@@ -58,7 +58,7 @@ def tier_0_screw_factory(
 
     # Uncomment the next line to produce an error
     #ironMiner = MinerMk1(recipe=rCopperOreMk1)
-    ironSource.outputs[0].connect(ironMiner.inputs[0], ConveyorBeltMk1)
+    ironSource.outputs[0].connect(ironMiner.inputs[0])
 
     # Connect the miner to a smelter
     ironSmelter = Smelter(
