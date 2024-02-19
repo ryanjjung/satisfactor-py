@@ -30,6 +30,7 @@ Wood = Item(
 
 Biomass = Item(
     name='Biomass',
+    availability=Availability(0, 6),
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=12,
