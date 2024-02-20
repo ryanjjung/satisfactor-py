@@ -96,15 +96,6 @@ AlienProtein = Item(
     wiki_path='/Alien_Protein'
 )
 
-ColorCartridge = Item(
-    name='Color Cartridge',
-    availability=Availability(2, 0),
-    conveyance_type=ConveyanceType.BELT,
-    stack_size=200,
-    sink_value=10,
-    wiki_path='/Color_Cartridge'
-)
-
 
 ##### "Core" items
 
@@ -507,6 +498,144 @@ Ramp4mFicsit = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Foundations#Ramps'
+)
+
+
+##### Tier 2
+
+Assembler = Item(
+    name='Assembler',
+    availability=Availability(2, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Assembler'
+)
+
+AwesomeSink = Item(
+    name='AWESOME Sink',
+    availability=Availability(2, 4),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/AWESOME_Sink'
+)
+
+AwesomeSinkPoint = Item(
+    name='AWESOME Sink Point',
+    availability=Availability(2, 4),
+    conveyance_type=ConveyanceType.AWESOME_SINK,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/AWESOME_Sink'
+)
+
+Chainsaw = Item(
+    name='Chainsaw',
+    availability=Availability(2, 2),
+    conveyance_type=None,
+    stack_size=1,
+    sink_value=2760,
+    wiki_path='/Copper_Sheet'
+)
+
+ColorCartridge = Item(
+    name='Color Cartridge',
+    availability=Availability(2, 4),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=200,
+    sink_value=10,
+    wiki_path='/Color_Cartridge'
+)
+
+CopperSheet = Item(
+    name='Copper Sheet',
+    availability=Availability(2, 1),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=200,
+    sink_value=24,
+    wiki_path='/Copper_Sheet'
+)
+
+ConveyorBeltMk2 = Item(
+    name='Conveyor Belt Mk.2',
+    availability=Availability(2, 5),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Conveyor_Belt#Mk.2'
+)
+
+ConveyorLiftMk2 = Item(
+    name='Conveyor Lift Mk.2',
+    availability=Availability(2, 5),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Conveyor_Lift#Mk.2'
+)
+
+JumpPad = Item(
+    name='Jump Pad',
+    availability=Availability(2, 3),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Jump_Pad'
+)
+
+ModularFrame = Item(
+    name='Modular Frame',
+    availability=Availability(2, 1),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=50,
+    sink_value=408,
+    wiki_path='/Modular_Frame'
+)
+
+Rotor = Item(
+    name='Rotor',
+    availability=Availability(2, 1),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=100,
+    sink_value=140,
+    wiki_path='/Rotor'
+)
+
+SmartPlating = Item(
+    name='Smart Plating',
+    availability=Availability(2, 1),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=50,
+    sink_value=520,
+    wiki_path='/Smart_Plating'
+)
+
+SolidBiofuel = Item(
+    name='Solid Biofuel',
+    availability=Availability(2, 1),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=200,
+    sink_value=48,
+    wiki_path='/Solit_Biofuel'
+)
+
+StackableConveyorPole = Item(
+    name='StackableConveyor Pole',
+    availability=Availability(2, 5),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Conveyor_Poles#Stackable'
+)
+
+UJellyLandingPad = Item(
+    name='U-Jelly Landing Pad',
+    availability=Availability(2, 3),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/U-Jelly_Landing_Pad'
 )
 
 

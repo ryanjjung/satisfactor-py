@@ -6,12 +6,15 @@ from satisfactor_py.base import (
 )
 from satisfactor_py.items import (
     AlienProtein as iAlienProtein,
+    Assembler as iAssembler,
+    AwesomeSink as iAwesomeSink,
     BasicWall1mFicsit as iBasicWall1mFicsit,
     BasicWall4mFicsit as iBasicWall4mFicsit,
     Beacon as iBeacon,
     Biomass as iBiomass,
     BiomassBurner as iBiomassBurner,
     Cable as iCable,
+    Chainsaw as iChainsaw,
     ColorCartridge as iColorCartridge,
     Concrete as iConcrete,
     Constructor as iConstructor,
@@ -19,9 +22,12 @@ from satisfactor_py.items import (
     ConveyorMerger as iConveyorMerger,
     ConveyorSplitter as iConveyorSplitter,
     ConveyorBeltMk1 as iConveyorBeltMk1,
+    ConveyorBeltMk2 as iConveyorBeltMk2,
+    ConveyorLiftMk2 as iConveyorLiftMk2,
     ConveyorPole as iConveyorPole,
     CopperIngot as iCopperIngot,
     CopperOre as iCopperOre,
+    CopperSheet as iCopperSheet,
     CraftBench as iCraftBench,
     DoubleWallOutletMk1 as iDoubleWallOutletMk1,
     EquipmentWorkshop as iEquipmentWorkshop,
@@ -34,10 +40,12 @@ from satisfactor_py.items import (
     IronOre as iIronOre,
     IronPlate as iIronPlate,
     IronRod as iIronRod,
+    JumpPad as iJumpPad,
     Leaves as iLeaves,
     Limestone as iLimestone,
     LookoutTower as iLookoutTower,
     MinerMk1 as iMinerMk1,
+    ModularFrame as iModularFrame,
     Mycelia as iMycelia,
     ObjectScanner as iObjectScanner,
     PersonalStorageBox as iPersonalStorageBox,
@@ -48,12 +56,17 @@ from satisfactor_py.items import (
     Ramp2mFicsit as iRamp2mFicsit,
     Ramp4mFicsit as iRamp4mFicsit,
     ReinforcedIronPlate as iReinforcedIronPlate,
+    Rotor as iRotor,
     Screw as iScrew,
+    SmartPlating as iSmartPlating,
     Smelter as iSmelter,
+    SolidBiofuel as iSolidBiofuel,
+    StackableConveyorPole as iStackableConveyorPole,
     SpaceElevator as iSpaceElevator,
     SpitterRemains as iSpitterRemains,
     StingerRemains as iStingerRemains,
     StorageContainer as iStorageContainer,
+    UJellyLandingPad as iUJellyLandingPad,
     Wire as iWire,
     WallOutletMk1 as iWallOutletMk1,
     Wood as iWood,
@@ -595,6 +608,155 @@ Ramp4mFicsit = Recipe(
         Ingredient(iConcrete, 5, None),
         Ingredient(iIronPlate, 2, None)],
     produces=[Ingredient(iRamp4mFicsit, 1, None)]
+)
+
+
+#### Tier 2
+
+Assembler = Recipe(
+    name='Assembler',
+    availability=Availability(2, 1),
+    wiki_path='/Assembler',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iReinforcedIronPlate, 8, None),
+        Ingredient(iRotor, 4, None),
+        Ingredient(iCable, 10, None)
+    ],
+    produces=[Ingredient(iAssembler, 1, None)]
+)
+
+AwesomeSink = Recipe(
+    name='AWESOME Sink',
+    availability=Availability(2, 4),
+    wiki_path='/AWESOME_Sink',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iReinforcedIronPlate, 15, None),
+        Ingredient(iCable, 30, None),
+        Ingredient(iConcrete, 45, None)
+    ],
+    produces=[Ingredient(iAwesomeSink, 1, None)]
+)
+
+Chainsaw = Recipe(
+    name='Chainsaw',
+    availability=Availability(2, 2),
+    wiki_path='/Chainsaw',
+    building_type=BuildingType.WORKSHOP,
+    consumes=[Ingredient(iReinforcedIronPlate, 1, None)],
+    produces=[Ingredient(iConveyorBeltMk2, 1, None)]
+)
+
+ConveyorBeltMk2 = Recipe(
+    name='Conveyor Belt Mk.2',
+    availability=Availability(2, 5),
+    wiki_path='/Conveyor_Belt#Mk.2',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[Ingredient(iReinforcedIronPlate, 1, None)],
+    produces=[Ingredient(iConveyorBeltMk2, 1, None)]
+)
+
+ConveyorLiftMk2 = Recipe(
+    name='Conveyor Lift Mk.2',
+    availability=Availability(2, 5),
+    wiki_path='/Conveyor_Lift#Mk.2',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[Ingredient(iReinforcedIronPlate, 2, None)],
+    produces=[Ingredient(iConveyorLiftMk2, 1, None)]
+)
+
+CopperSheet = Recipe(
+    name='Copper Sheet',
+    availability=Availability(2, 1),
+    wiki_path='/Copper_Sheet',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iCopperIngot, 2, 20)],
+    produces=[Ingredient(iCopperSheet, 1, 10)]
+)
+
+JumpPad = Recipe(
+    name='Jump Pad',
+    availability=Availability(2, 3),
+    wiki_path='/Jump_Pad',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iRotor, 2, None),
+        Ingredient(iIronPlate, 15, None),
+        Ingredient(iCable, 10, None)
+    ],
+    produces=[Ingredient(iJumpPad, 1, None)]
+)
+
+ModularFrame = Recipe(
+    name='Modular Frame',
+    availability=Availability(2, 1),
+    wiki_path='/Modular_Frame',
+    building_type=BuildingType.ASSEMBLER,
+    consumes=[
+        Ingredient(iIronRod, 12, 12),
+        Ingredient(iReinforcedIronPlate, 3, 3)
+    ],
+    produces=[Ingredient(iModularFrame, 2, 2)]
+)
+
+Rotor = Recipe(
+    name='Rotor',
+    availability=Availability(2, 1),
+    wiki_path='/Rotor',
+    building_type=BuildingType.ASSEMBLER,
+    consumes=[
+        Ingredient(iIronRod, 5, 20),
+        Ingredient(iScrew, 25, 100)
+    ],
+    produces=[Ingredient(iRotor, 1, 4)]
+)
+
+SmartPlating = Recipe(
+    name='Smart Plating',
+    availability=Availability(2, 1),
+    wiki_path='/Smart_Plating',
+    building_type=BuildingType.ASSEMBLER,
+    consumes=[
+        Ingredient(iReinforcedIronPlate, 1, 2),
+        Ingredient(iRotor, 1, 2)
+    ],
+    produces=[Ingredient(iSmartPlating, 1, 2)]
+)
+
+SolidBiofuel = Recipe(
+    name='Solid Biofuel',
+    availability=Availability(2, 2),
+    wiki_path='/Solid_Biofuel',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iBiomass, 8, 120)],
+    produces=[Ingredient(iSolidBiofuel, 4, 60)]
+)
+
+StackableConveyorPole = Recipe(
+    name='StackableConveyor Pole',
+    availability=Availability(2, 5),
+    wiki_path='/Conveyor_Poles#Stackable',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iIronRod, 2, None),
+        Ingredient(iIronPlate, 2, None),
+        Ingredient(iConcrete, 2, None),
+    ],
+    produces=[Ingredient(iStackableConveyorPole, 1, None)]
+)
+
+UJellyLandingPad = Recipe(
+    name='U-Jelly Landing Pad',
+    availability=Availability(2, 3),
+    wiki_path='/U-Jelly_Landing_Pad',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iRotor, 2, None),
+        Ingredient(iCable, 20, None),
+        Ingredient(iBiomass, 200, None),
+    ],
+    produces=[Ingredient(iUJellyLandingPad, 1, None)]
 )
 
 

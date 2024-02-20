@@ -158,7 +158,20 @@ class Factory(Base):
             - func: A function to run on each Component and Connection in the flow
         '''
 
-        components = self.resource_nodes
+        self.traverse_multi(self.resource_nodes, func)
+
+
+    def traverse_multi(self,
+        components: list[Component],
+        func: Callable
+    ):
+        '''
+        Initiates factory traversal beginning with a list of arbitrary components, running the
+        `func` function on each Component and Connection in the flow.
+
+            - components: A list of Components to begin traversal at
+            - func: A function to run on each component
+        '''
 
         # Start up traversal threads.
         threads = list()
@@ -254,6 +267,13 @@ class Factory(Base):
                 f'Some components were not traversed: {excluded}'
             ))
 
+    def simulate_multi(self,
+        components: list[Component]
+    ):
+        '''
+        Runs factory simulation beginning at the specified list of components.
+        '''
+        self.traverse_multi(components, simulate_component)
 
 def drain_component(component):
     '''

@@ -1,4 +1,4 @@
-from satisfactor_py.base import Purity, ResourceNode
+from satisfactor_py.base import Ingredient, Purity, ResourceNode
 from satisfactor_py.buildings import (
     Constructor,
     ConveyorMerger,
@@ -6,14 +6,24 @@ from satisfactor_py.buildings import (
     MinerMk1,
     Smelter,
 )
-from satisfactor_py.conveyances import ConveyorBeltMk1
+from satisfactor_py.conveyances import (
+    ConveyorBeltMk1,
+    ConveyorBeltMk2
+)
 from satisfactor_py.factories import Factory
 from satisfactor_py.items import (
+    Biomass as iBiomass,
     CopperOre as iCopperOre,
     IronOre as iIronOre,
-    Limestone as iLimestone
+    Leaves as iLeaves,
+    Limestone as iLimestone,
+    Mycelia as iMycelia,
+    Wood as iWood
 )
 from satisfactor_py.recipes import (
+    BiomassLeaves as rBiomassLeaves,
+    BiomassMycelia as rBiomassMycelia,
+    BiomassWood as rBiomassWood,
     Cable as rCable,
     Concrete as rConcrete,
     CopperOreMk1 as rCopperOreMk1,
@@ -23,6 +33,7 @@ from satisfactor_py.recipes import (
     IronRod as rIronRod,
     LimestoneMk1 as rLimestoneMk1,
     Screw as rScrew,
+    SolidBiofuel as rSolidBiofuel,
     Wire as rWire,
 )
 from satisfactor_py.storages import StorageContainer
@@ -332,3 +343,88 @@ def tier_1_screw_factory():
         finalStorage
     ])
     return factory
+
+def tier_2_biofuel_factory():
+    '''
+    Builds a not-very-efficient factory that produces biomass from various inputs.
+    '''
+
+    factory = Factory(name='Tier 2 Solid Biofuel Factory')
+
+    # Start with storage containers in which we will place mycelium, leaves, and wood
+    mycelia_storage = StorageContainer(
+        name='Mycelia Storage',
+        ingredients=[Ingredient(iMycelia, None, 1000)]
+    )
+    leaves_storage = StorageContainer(
+        name='Leaves Storage',
+        ingredients=[Ingredient(iLeaves, None, 1000)]
+    )
+    wood_storage = StorageContainer(
+        name='Wood Storage',
+        ingredients=[Ingredient(iWood, None, 1000)]
+    )
+
+    # Hook them up to Constructors to produce Biomass
+    mycelia_constructor = Constructor(
+        name='Biomass from Mycelia Constructor',
+        recipe=rBiomassMycelia
+    )
+    leaves_constructor = Constructor(
+        name='Biomass from Leaves Constructor',
+        recipe=rBiomassLeaves
+    )
+    wood_constructor = Constructor(
+        name='Biomass from Wood Constructor',
+        recipe=rBiomassWood
+    )
+
+    conveyors = list()
+    conveyors.append(mycelia_storage.connect(mycelia_constructor, ConveyorBeltMk2))
+    conveyors.append(leaves_storage.connect(leaves_constructor, ConveyorBeltMk2))
+    conveyors.append(wood_storage.connect(wood_constructor, ConveyorBeltMk2))
+
+    # Add another container to stick already-made biomass
+    biomass_storage = StorageContainer(
+        name='Biomass Storage',
+        ingredients=[Ingredient(iBiomass, None, 1000)]
+    )
+
+    # Make four constructors for making solid fuel, hooking one up to each biomass constructor
+    biofuel_constructors = [Constructor(
+        name=f'Biofuel Constructor #{i + 1}',
+        recipe=rSolidBiofuel
+    ) for i in range(4)]
+
+    conveyors.append(mycelia_constructor.connect(biofuel_constructors[0], ConveyorBeltMk2))
+    conveyors.append(leaves_constructor.connect(biofuel_constructors[1], ConveyorBeltMk2))
+    conveyors.append(wood_constructor.connect(biofuel_constructors[2], ConveyorBeltMk2))
+    conveyors.append(biomass_storage.connect(biofuel_constructors[3], ConveyorBeltMk2))
+
+    # Merge it all down into storage
+    biofuel_mergers = [ConveyorMerger(name=f'Biofuel Merger #{i + 1}')
+        for i in range(3)]
+    biofuel_storage = StorageContainer(name='Biofuel Storage')
+    conveyors.append(biofuel_constructors[0].connect(biofuel_mergers[0], ConveyorBeltMk2))
+    conveyors.append(biofuel_constructors[1].connect(biofuel_mergers[0], ConveyorBeltMk2))
+    conveyors.append(biofuel_constructors[2].connect(biofuel_mergers[1], ConveyorBeltMk2))
+    conveyors.append(biofuel_constructors[3].connect(biofuel_mergers[1], ConveyorBeltMk2))
+    conveyors.append(biofuel_mergers[0].connect(biofuel_mergers[2], ConveyorBeltMk2))
+    conveyors.append(biofuel_mergers[1].connect(biofuel_mergers[2], ConveyorBeltMk2))
+    conveyors.append(biofuel_mergers[2].connect(biofuel_storage, ConveyorBeltMk2))
+
+    factory.add([
+        mycelia_storage,
+        leaves_storage,
+        wood_storage,
+        mycelia_constructor,
+        leaves_constructor,
+        wood_constructor,
+        biomass_storage,
+        biofuel_constructors,
+        biofuel_mergers,
+        biofuel_storage,
+        conveyors
+    ])
+    starters = (mycelia_storage, leaves_storage, wood_storage, biomass_storage)
+    return factory, starters

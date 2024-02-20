@@ -51,25 +51,27 @@ class BuildingType(Enum):
     '''
 
     ASSEMBLER                 = 1
-    BLENDER                   = 2
-    BUILD_GUN                 = 3
-    CONSTRUCTOR               = 4
-    CONVEYANCE                = 5
-    FOUNDRY                   = 6
-    GENERATOR                 = 7
-    MANUFACTURER              = 8
-    MINER                     = 9
-    OIL_EXTRACTOR             = 10
-    PACKAGER                  = 11
-    PARTICLE_ACCELERATOR      = 12
-    POWER_POLE                = 13
-    REFINERY                  = 14
-    RESOURCE_WELL_PRESSURIZER = 15
-    SMELTER                   = 16
-    SPACE_ELEVATOR            = 17
-    STORAGE                   = 18
-    WATER_EXTRACTOR           = 19
-    WORKSHOP                  = 20
+    AWESOME_SINK              = 2
+    BLENDER                   = 3
+    BUILD_GUN                 = 4
+    CONSTRUCTOR               = 5
+    CONVEYANCE                = 6
+    FOUNDRY                   = 7
+    GENERATOR                 = 8
+    MANUFACTURER              = 9
+    MINER                     = 10
+    OIL_EXTRACTOR             = 11
+    PACKAGER                  = 12
+    PARTICLE_ACCELERATOR      = 13
+    POWER_POLE                = 14
+    REFINERY                  = 15
+    RESOURCE_WELL_PRESSURIZER = 16
+    SMELTER                   = 17
+    SPACE_ELEVATOR            = 18
+    STORAGE                   = 19
+    WATER_EXTRACTOR           = 20
+    WORKSHOP                  = 21
+    OTHER                     = 22
 
 
 class ConveyanceType(Enum):
@@ -84,6 +86,7 @@ class ConveyanceType(Enum):
     PIPE          = 3
     POWER_LINE    = 4
     RESOURCE_NODE = 5
+    AWESOME_SINK  = 6
 
 
 class Dimension(object):
@@ -774,6 +777,7 @@ class Building(Component):
             output.ingredients = []
 
         # Determine if the rates of the incoming ingredients mismatch the demand by the recipe
+        import pdb; pdb.set_trace()
         if self.recipe and self.recipe.consumes:
             for recipe_ingredient in self.recipe.consumes:
                 for input_ingredient in self.ingredients:
@@ -958,6 +962,7 @@ class Storage(Building):
 
     def __init__(self,
         stacks: int,
+        ingredients: list[Ingredient] = None,
         **kwargs
     ):
         super().__init__(
@@ -966,6 +971,7 @@ class Storage(Building):
         )
         self.rate = None
         self.stacks = stacks
+        self.ingredients = ingredients
 
     def to_dict(self):
         base = super().to_dict()
