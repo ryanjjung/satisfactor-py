@@ -1,7 +1,6 @@
 #!/bin/env python3
 
 import json
-import sys
 
 from satisfactor_py.base import BuildingType, ResourceNode
 from satisfactor_py.patterns import tier_1_screw_factory

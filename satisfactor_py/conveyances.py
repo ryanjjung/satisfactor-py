@@ -37,6 +37,35 @@ class ConveyorBeltMk1(Conveyance):
         )
 
 
+class ConveyorBeltMk2(Conveyance):
+    '''
+    A second-tier conveyor belt carrying 120 Items per minute.
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            name='Conveyor Belt Mk.2',
+            availability=Availability(2, 5),
+            wiki_path='/Conveyor_Belt#Mk.2',
+            conveyance_type=ConveyanceType.BELT,
+            rate=120,
+            dimensions=Dimension(
+                width=2,
+                length=1,
+                height=1
+            ),
+            inputs=[Input(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT,
+            )],
+            outputs=[Output(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT
+            )],
+            **kwargs
+        )
+
+
 class ConveyorLiftMk1(Conveyance):
     def __init__(self, **kwargs):
         super().__init__(

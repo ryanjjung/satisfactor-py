@@ -13,6 +13,7 @@ from satisfactor_py.base import (
     Recipe,
     ResourceNode
 )
+from satisfactor_py.items import AwesomeSinkPoint
 
 
 class BiomassBurner(Building):
@@ -31,6 +32,93 @@ class BiomassBurner(Building):
             ),
             **kwargs
         )
+
+
+class Assembler(Building):
+    '''
+    A type of Building which combines two items into a single other item. Has two inputs and one
+    output.
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.ASSEMBLER,
+            availability=Availability(2, 1),
+            base_power_usage=15,
+            dimensions=Dimension(
+                width=10,
+                length=15,
+                height=11
+            ),
+            inputs=[Input(
+                conveyance_type=ConveyanceType.BELT,
+                attached_to=self
+            ) for i in range(2)],
+            outputs=[Output(
+                conveyance_type=ConveyanceType.BELT,
+                attached_to=self
+            )]
+        )
+
+
+class AwesomeSink(Building):
+    '''
+    An AWESOME Sink
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.AWESOME_SINK,
+            recipe=None,
+            overclockable=False,
+            dimensions=Dimension(
+                width=16,
+                length=13,
+                height=24
+            ),
+            inputs=[Input(
+                conveyance_type=ConveyanceType.BELT,
+                attached_to=self
+            )],
+            outputs=[Output(
+                conveyance_type=ConveyanceType.AWESOME_SINK,
+                attached_to=self
+            )]
+        )
+
+    def can_process(self):
+        '''
+        Determine if this Sink can process
+        '''
+
+        nondisposables = [ingredient for ingredient in self.ingredients if ingredient.item.sink_value == None]
+        if len(nondisposables) > 0:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                message=f'Non-disposable items ({nondisposables}) are being sent to an AWESOME Sink.'
+            ))
+            return False
+        
+        return True
+
+    def process(self):
+        '''
+        Convert items into points
+        '''
+
+        if not self.can_process():
+            return False
+
+        self.outputs[0].ingredients = [
+            Ingredient(
+                item=AwesomeSinkPoint,
+                amount=None,
+                rate=sum([ingredient.item.sink_value * ingredient.rate
+                    for ingredient in self.ingredients])
+            )
+        ]
+        return True
+
 
 
 class Constructor(Building):
@@ -56,9 +144,6 @@ class Constructor(Building):
                 attached_to=self)],
             **kwargs
         )
-
-    def process(self):
-        super().process()
 
 
 class ConveyorMerger(Building):
@@ -420,5 +505,27 @@ class SpaceElevator(Building):
                 attached_to=self,
                 conveyance_type=ConveyanceType.BELT) for i in range(0, 6)],
             power_connections=0,
+            **kwargs
+        )
+
+
+class UJellyLandingPad(Building):
+    '''
+    A landing pad building
+    '''
+
+    def __init__(self, name='U-Jelly Landing Pad', **kwargs):
+        super().__init__(
+            name=name,
+            availability=Availability(2, 3),
+            wiki_path='/U-Jelly_Landing_Pad',
+            building_type=BuildingType.OTHER,
+            dimensions=Dimension(
+                width=10,
+                length=11,
+                height=5
+            ),
+            power_connections=1,
+            base_power_usage=5,
             **kwargs
         )
