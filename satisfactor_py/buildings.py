@@ -91,7 +91,7 @@ class AwesomeSink(Building):
         Determine if this Sink can process
         '''
 
-        nondisposables = [ingredient for ingredient in self.ingredients if self.sink_value == None]
+        nondisposables = [ingredient for ingredient in self.ingredients if ingredient.item.sink_value == None]
         if len(nondisposables) > 0:
             self.add_error(ComponentError(
                 ComponentErrorLevel.WARNING,
@@ -112,7 +112,9 @@ class AwesomeSink(Building):
         self.outputs[0].ingredients = [
             Ingredient(
                 item=AwesomeSinkPoint,
-                rate=sum([ingredient.sink_value * ingredient.rate for ingredient in self.ingredients])
+                amount=None,
+                rate=sum([ingredient.item.sink_value * ingredient.rate
+                    for ingredient in self.ingredients])
             )
         ]
         return True

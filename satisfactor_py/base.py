@@ -492,7 +492,6 @@ class Input(Connection):
         connection.target = self
 
     def process(self):
-        # import pdb; pdb.set_trace()
         super().process()
         # If the input is attached...
         if self.attached_to:
@@ -777,7 +776,6 @@ class Building(Component):
             output.ingredients = []
 
         # Determine if the rates of the incoming ingredients mismatch the demand by the recipe
-        import pdb; pdb.set_trace()
         if self.recipe and self.recipe.consumes:
             for recipe_ingredient in self.recipe.consumes:
                 for input_ingredient in self.ingredients:

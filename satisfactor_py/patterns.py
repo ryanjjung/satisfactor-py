@@ -1,5 +1,6 @@
 from satisfactor_py.base import Ingredient, Purity, ResourceNode
 from satisfactor_py.buildings import (
+    AwesomeSink,
     Constructor,
     ConveyorMerger,
     ConveyorSplitter,
@@ -404,14 +405,14 @@ def tier_2_biofuel_factory():
     # Merge it all down into storage
     biofuel_mergers = [ConveyorMerger(name=f'Biofuel Merger #{i + 1}')
         for i in range(3)]
-    biofuel_storage = StorageContainer(name='Biofuel Storage')
+    awesome_sink = AwesomeSink(name="Throw away biofuel!")
     conveyors.append(biofuel_constructors[0].connect(biofuel_mergers[0], ConveyorBeltMk2))
     conveyors.append(biofuel_constructors[1].connect(biofuel_mergers[0], ConveyorBeltMk2))
     conveyors.append(biofuel_constructors[2].connect(biofuel_mergers[1], ConveyorBeltMk2))
     conveyors.append(biofuel_constructors[3].connect(biofuel_mergers[1], ConveyorBeltMk2))
     conveyors.append(biofuel_mergers[0].connect(biofuel_mergers[2], ConveyorBeltMk2))
     conveyors.append(biofuel_mergers[1].connect(biofuel_mergers[2], ConveyorBeltMk2))
-    conveyors.append(biofuel_mergers[2].connect(biofuel_storage, ConveyorBeltMk2))
+    conveyors.append(biofuel_mergers[2].connect(awesome_sink, ConveyorBeltMk2))
 
     factory.add([
         mycelia_storage,
@@ -423,7 +424,7 @@ def tier_2_biofuel_factory():
         biomass_storage,
         biofuel_constructors,
         biofuel_mergers,
-        biofuel_storage,
+        awesome_sink,
         conveyors
     ])
     starters = (mycelia_storage, leaves_storage, wood_storage, biomass_storage)

@@ -16,11 +16,8 @@ def main():
     }
     print(f'Errors: {json.dumps(errors, indent=2)}')
 
-    print('\nContents of storage:')
-    storages = factory.get_buildings_by_type(BuildingType.STORAGE)
-    for storage in storages:
-        for ingredient in storage.ingredients:
-            print(f'{storage} - {ingredient.item}@{ingredient.rate}')
+    sink = factory.get_buildings_by_type(BuildingType.AWESOME_SINK)[0]
+    print(f'Sink generating {sink.outputs[0].ingredients[0].rate} points per minue.')
 
 if __name__ == '__main__':
     main()
