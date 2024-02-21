@@ -98,7 +98,7 @@ class AwesomeSink(Building):
                 message=f'Non-disposable items ({nondisposables}) are being sent to an AWESOME Sink.'
             ))
             return False
-        
+
         return True
 
     def process(self):
@@ -193,7 +193,7 @@ class ConveyorMerger(Building):
         connected_inputs = [input for input in self.inputs if input.source]
         if not self.can_process(connected_inputs):
             return False
-        
+
         self._errors = []
 
         # Determine the ideal recipe by combining all inputs into one, combining like ingredients
@@ -446,7 +446,7 @@ class MinerMk1(Miner):
     A first-tier Miner
     '''
 
-    def __init__(self, name='Miner Mk.1', **kwargs):
+    def __init__(self, name='Miner Mk.1-0', **kwargs):
         super().__init__(
             name=name,
             availability=Availability(0, 1),
