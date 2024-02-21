@@ -45,7 +45,7 @@ Mycelia = Item(
     wiki_path='/Mycelia'
 )
 
-Flower_Petals = Item(
+FlowerPetals = Item(
     name='Flower Petals',
     conveyance_type=ConveyanceType.BELT,
     stack_size=500,
