@@ -12,7 +12,7 @@ from typing import Type
 from uuid import uuid4
 
 
-WIKI_URL_BASE = 'https://satisfactory.fandom.com/wiki'
+WIKI_URL_BASE = 'https://satisfactory.wiki.gg/wiki'
 
 
 # Helper functions go here
@@ -144,7 +144,7 @@ class Base(object):
         id: str = None,
         name: str = '',
         availability: Availability = Availability(0, 0),
-        wiki_path: str ='/',
+        wiki_path: str ='/Satisfactory_Wiki',
         tags: dict[str, str] = dict(),
         **kwargs
     ):
@@ -575,7 +575,7 @@ class ResourceNode(Component):
         **kwargs
     ):
         super().__init__(
-            wiki_path='/Resource_node',
+            wiki_path='/Resource_Node',
             **kwargs
         )
         self.purity = purity

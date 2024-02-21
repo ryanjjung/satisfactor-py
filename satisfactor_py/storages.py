@@ -17,7 +17,7 @@ class StorageContainer(Storage):
         super().__init__(
             name=name,
             availability=Availability(0, 5),
-            wiki_path='/Storage_Container',
+            wiki_path='/Storage_Container#Normal-0',
             stacks=24,
             dimensions=Dimension(
                 width=5,
