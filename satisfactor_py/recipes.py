@@ -72,70 +72,69 @@ from satisfactor_py.items import (
     Wood as iWood,
 )
 
+'''
+Here are defined every recipe we care about
+'''
 
-##### "Natural" recipes
-
-HatcherProtein = Recipe(
-    name='Hatcher Protein',
-    wiki_path='/Alien_Protein',
-    availability=Availability(None, None, True),
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iHatcherRemains, 1, 1)],
-    produces=[Ingredient(iAlienProtein, 1, 1)]
+Assembler = Recipe(
+    name='Assembler',
+    availability=Availability(2, 1),
+    wiki_path='/Assembler',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iReinforcedIronPlate, 8, None),
+        Ingredient(iRotor, 4, None),
+        Ingredient(iCable, 10, None)
+    ],
+    produces=[Ingredient(iAssembler, 1, None)]
 )
 
-SpitterProtein = Recipe(
-    name='Spitter Protein',
-    wiki_path='/Alien_Protein',
-    availability=Availability(None, None, True),
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iSpitterRemains, 1, 1)],
-    produces=[Ingredient(iAlienProtein, 1, 1)]
+AwesomeSink = Recipe(
+    name='AWESOME Sink',
+    availability=Availability(2, 4),
+    wiki_path='/AWESOME_Sink',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iReinforcedIronPlate, 15, None),
+        Ingredient(iCable, 30, None),
+        Ingredient(iConcrete, 45, None)
+    ],
+    produces=[Ingredient(iAwesomeSink, 1, None)]
 )
 
-StingerProtein = Recipe(
-    name='Stinger Protein',
-    wiki_path='/Alien_Protein',
-    availability=Availability(None, None, True),
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iStingerRemains, 1, 1)],
-    produces=[Ingredient(iAlienProtein, 1, 1)]
+BasicWall1mFicsit = Recipe(
+    name='Basic Wall 1m (FICSIT)',
+    availability=Availability(1, 1),
+    wiki_path='/Walls',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iConcrete, 2, None),
+        Ingredient(iIronPlate, 2, None)],
+    produces=[Ingredient(iBasicWall1mFicsit, 1, None)]
 )
 
-HogProtein = Recipe(
-    name='Hog Protein',
-    wiki_path='/Alien_Protein',
-    availability=Availability(None, None, True),
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iHogRemains, 1, 1)],
-    produces=[Ingredient(iAlienProtein, 1, 1)]
+BasicWall4mFicsit = Recipe(
+    name='Basic Wall 4m (FICSIT)',
+    availability=Availability(1, 1),
+    wiki_path='/Walls',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iConcrete, 2, None),
+        Ingredient(iIronPlate, 2, None)],
+    produces=[Ingredient(iBasicWall4mFicsit, 1, None)]
 )
 
-BiomassLeaves = Recipe(
-    name='Biomass (Leaves)',
-    availability=Availability(0, 6),
-    wiki_path='/Biomass',
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iLeaves, 10, 120)],
-    produces=[Ingredient(iBiomass, 5, 60)]
-)
-
-BiomassWood = Recipe(
-    name='Biomass (Wood)',
-    availability=Availability(0, 6),
-    wiki_path='/Biomass',
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iWood, 4, 60)],
-    produces=[Ingredient(iBiomass, 20, 300)]
-)
-
-BiomassMycelia = Recipe(
-    name='Biomass (Mycelia)',
-    wiki_path='/Biomass',
-    availability=Availability(None, None, True),
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iMycelia, 10, 150)],
-    produces=[Ingredient(iBiomass, 10, 150)]
+Beacon = Recipe(
+    name='Beacon',
+    availability=Availability(1, 3),
+    wiki_path='/Beacon',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iCable, 15, None),
+        Ingredient(iIronPlate, 3, None),
+        Ingredient(iIronRod, 1, None),
+        Ingredient(iWire, 15, None)],
+    produces=[Ingredient(iBeacon, 1, None)]
 )
 
 BiomassAlienProtein = Recipe(
@@ -147,58 +146,44 @@ BiomassAlienProtein = Recipe(
     produces=[Ingredient(iBiomass, 100, 1500)]
 )
 
-
-##### Miner recipes
-
-CopperOreMk1 = Recipe(
-    name='Copper Ore',
-    availability=Availability(0, 2),
-    wiki_path='/Copper_Ore',
-    building_type=BuildingType.MINER,
-    consumes=None,
-    produces=[Ingredient(iCopperOre, None, 60)]
+BiomassBurner = Recipe(
+    name='Biomass Burner',
+    availability=Availability(0, 6),
+    wiki_path='/Biomass_Burner',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iIronPlate, 15, None),
+        Ingredient(iIronRod, 15, None),
+        Ingredient(iWire, 25, None)],
+    produces=[Ingredient(iBiomassBurner, 1, None)]
 )
 
-IronOreMk1 = Recipe(
-    name='Iron Ore',
-    wiki_path='/Iron_Ore',
-    building_type=BuildingType.MINER,
-    consumes=None,
-    produces=[Ingredient(iIronOre, None, 60)]
+BiomassLeaves = Recipe(
+    name='Biomass (Leaves)',
+    availability=Availability(0, 6),
+    wiki_path='/Biomass',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iLeaves, 10, 120)],
+    produces=[Ingredient(iBiomass, 5, 60)]
 )
 
-LimestoneMk1 = Recipe(
-    name='Limestone',
-    availability=Availability(0, 3),
-    wiki_path='/Limestone',
-    building_type=BuildingType.MINER,
-    consumes=None,
-    produces=[Ingredient(iLimestone, None, 60)]
+BiomassMycelia = Recipe(
+    name='Biomass (Mycelia)',
+    wiki_path='/Biomass',
+    availability=Availability(None, None, True),
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iMycelia, 10, 150)],
+    produces=[Ingredient(iBiomass, 10, 150)]
 )
 
-
-##### Smelter recipes
-
-CopperIngot = Recipe(
-    name='Copper Ingot',
-    wiki_path='/Copper_Ingot',
-    building_type=BuildingType.SMELTER,
-    consumes=[Ingredient(iCopperOre, 1, 30)],
-    produces=[Ingredient(iCopperIngot, 1, 30)]
+BiomassWood = Recipe(
+    name='Biomass (Wood)',
+    availability=Availability(0, 6),
+    wiki_path='/Biomass',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iWood, 4, 60)],
+    produces=[Ingredient(iBiomass, 20, 300)]
 )
-
-IronIngot = Recipe(
-    name='Iron Ingot',
-    wiki_path='/Iron_Ingot',
-    building_type=BuildingType.SMELTER,
-    consumes=[Ingredient(iIronOre, 1, 30)],
-    produces=[Ingredient(iIronIngot, 1, 30)]
-)
-
-
-##### Constructor recipes
-
-# Tier 0
 
 Cable = Recipe(
     name='Cable',
@@ -207,6 +192,15 @@ Cable = Recipe(
     building_type=BuildingType.CONSTRUCTOR,
     consumes=[Ingredient(iWire, 2, 60)],
     produces=[Ingredient(iCable, 1, 30)]
+)
+
+Chainsaw = Recipe(
+    name='Chainsaw',
+    availability=Availability(2, 2),
+    wiki_path='/Chainsaw',
+    building_type=BuildingType.WORKSHOP,
+    consumes=[Ingredient(iReinforcedIronPlate, 1, None)],
+    produces=[Ingredient(iConveyorBeltMk2, 1, None)]
 )
 
 Concrete = Recipe(
@@ -218,71 +212,21 @@ Concrete = Recipe(
     produces=[Ingredient(iConcrete, 1, 15)]
 )
 
-IronPlate = Recipe(
-    name='Iron Plate',
-    wiki_path='/Iron_Plate',
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iIronIngot, 3, 30)],
-    produces=[Ingredient(iIronPlate, 2, 20)]
+CopperIngot = Recipe(
+    name='Copper Ingot',
+    wiki_path='/Copper_Ingot',
+    building_type=BuildingType.SMELTER,
+    consumes=[Ingredient(iCopperOre, 1, 30)],
+    produces=[Ingredient(iCopperIngot, 1, 30)]
 )
 
-IronRod = Recipe(
-    name='Iron Rod',
-    wiki_path='/Iron_Rod',
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iIronIngot, 1, 15)],
-    produces=[Ingredient(iIronRod, 1, 15)]
-)
-
-Screw = Recipe(
-    name='Screw',
-    availability=Availability(0, 3),
-    wiki_path='/Screw',
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iIronRod, 1, 10)],
-    produces=[Ingredient(iScrew, 4, 40)]
-)
-
-Wire = Recipe(
-    name='Wire',
+CopperOreMk1 = Recipe(
+    name='Copper Ore',
     availability=Availability(0, 2),
-    wiki_path='/Wire',
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iCopperIngot, 1, 15)],
-    produces=[Ingredient(iWire, 2, 30)]
-)
-
-
-##### Assembler recipes
-
-# Tier 0
-
-ReinforcedIronPlate = Recipe(
-    name='Reinforced Iron Plate',
-    availability=Availability(0, 3),
-    wiki_path='/Reinforced_Iron_Plate',
-    building_type=BuildingType.ASSEMBLER,
-    consumes=[
-        Ingredient(iIronPlate, 6, 30),
-        Ingredient(iScrew, 12, 60)],
-    produces=[Ingredient(iReinforcedIronPlate, 1, 5)]
-)
-
-
-##### Build gun recipes
-
-# Tier 0
-
-BiomassBurner = Recipe(
-    name='Biomass Burner',
-    availability=Availability(0, 6),
-    wiki_path='/Biomass_Burner',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iIronPlate, 15, None),
-        Ingredient(iIronRod, 15, None),
-        Ingredient(iWire, 25, None)],
-    produces=[Ingredient(iBiomassBurner, 1, None)]
+    wiki_path='/Copper_Ore',
+    building_type=BuildingType.MINER,
+    consumes=None,
+    produces=[Ingredient(iCopperOre, None, 60)]
 )
 
 Constructor = Recipe(
@@ -306,6 +250,44 @@ ConveyorBeltMk1 = Recipe(
     produces=[Ingredient(iConveyorBeltMk1, 1, None)]
 )
 
+ConveyorBeltMk2 = Recipe(
+    name='Conveyor Belt Mk.2',
+    availability=Availability(2, 5),
+    wiki_path='/Conveyor_Belt#Mk.2',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[Ingredient(iReinforcedIronPlate, 1, None)],
+    produces=[Ingredient(iConveyorBeltMk2, 1, None)]
+)
+
+ConveyorLiftMk1 = Recipe(
+    name='Conveyor Lift Mk.1',
+    availability=Availability(1, 2),
+    wiki_path='/Conveyor_Lift',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[Ingredient(iIronPlate, 2, None)],
+    produces=[Ingredient(iConveyorLiftMk1, 1, None)]
+)
+
+ConveyorLiftMk2 = Recipe(
+    name='Conveyor Lift Mk.2',
+    availability=Availability(2, 5),
+    wiki_path='/Conveyor_Lift#Mk.2',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[Ingredient(iReinforcedIronPlate, 2, None)],
+    produces=[Ingredient(iConveyorLiftMk2, 1, None)]
+)
+
+ConveyorMerger = Recipe(
+    name='Conveyor Merger',
+    availability=Availability(1, 2),
+    wiki_path='/Conveyor_Merger',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iIronPlate, 2, None),
+        Ingredient(iIronRod, 2, None)],
+    produces=[Ingredient(iConveyorMerger, 1, None)]
+)
+
 ConveyorPole = Recipe(
     name='Conveyor Pole',
     availability=Availability(0, 4),
@@ -316,6 +298,26 @@ ConveyorPole = Recipe(
         Ingredient(iIronRod, 1, None),
         Ingredient(iConcrete, 1, None)],
     produces=[Ingredient(iConveyorPole, 1, None)]
+)
+
+ConveyorSplitter = Recipe(
+    name='Conveyor Splitter',
+    availability=Availability(1, 2),
+    wiki_path='/Conveyor_Splitter',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iIronPlate, 2, None),
+        Ingredient(iCable, 2, None)],
+    produces=[Ingredient(iConveyorSplitter, 1, None)]
+)
+
+CopperSheet = Recipe(
+    name='Copper Sheet',
+    availability=Availability(2, 1),
+    wiki_path='/Copper_Sheet',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iCopperIngot, 2, 20)],
+    produces=[Ingredient(iCopperSheet, 1, 10)]
 )
 
 CraftBench = Recipe(
@@ -348,154 +350,6 @@ EquipmentWorkshop = Recipe(
         Ingredient(iWire, 8, None),
         Ingredient(iIronRod, 2, None)],
     produces=[Ingredient(iDoubleWallOutletMk1, 1, None)]
-)
-
-MinerMk1 = Recipe(
-    name='Miner Mk. 1',
-    availability=Availability(0, 1),
-    wiki_path='/Miner',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iPortableMiner, 1, None),
-        Ingredient(iIronPlate, 10, None),
-        Ingredient(iConcrete, 10, None)],
-    produces=[Ingredient(iMinerMk1, 1, None)]
-)
-
-PowerLine = Recipe(
-    name='Power Line',
-    availability=Availability(0, 2),
-    wiki_path='Power_Line',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[Ingredient(iCable, 1, None)],
-    produces=[Ingredient(iPowerLine, 1, None)]
-)
-
-PowerPoleMk1 = Recipe(
-    name='Power Pole Mk.1',
-    availability=Availability(0, 3),
-    wiki_path='Power_Pole#Ground_Poles',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iWire, 3, None),
-        Ingredient(iIronRod, 1, None),
-        Ingredient(iConcrete, 1, None)],
-    produces=[Ingredient(iPowerPoleMk1, 1, None)]
-)
-
-Smelter = Recipe(
-    name='Smelter',
-    availability=Availability(0, 2),
-    wiki_path='/Smelter',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iIronRod, 5, None),
-        Ingredient(iWire, 8, None)],
-    produces=[Ingredient(iSmelter, 1, None)]
-)
-
-SpaceElevator = Recipe(
-    name='Space Elevator',
-    availability=Availability(0, 6),
-    wiki_path='/Space_Elevator',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iConcrete, 500, None),
-        Ingredient(iIronPlate, 250, None),
-        Ingredient(iIronRod, 400, None),
-        Ingredient(iWire, 1500, None)],
-    produces=[Ingredient(iSpaceElevator, 1, None)]
-)
-
-StorageContainer = Recipe(
-    name='Storage Container',
-    availability=Availability(0, 5),
-    wiki_path='/Storage_Container',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iIronPlate, 10, None),
-        Ingredient(iIronRod, 10, None)
-    ],
-    produces=Ingredient(iStorageContainer, 1, None)
-)
-
-WallOutletMk1 = Recipe(
-    name='Wall Outlet Mk.1',
-    availability=Availability(0, 3),
-    wiki_path='/Power_Pole#Wall_Outlets',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iWire, 4, None),
-        Ingredient(iIronRod, 1, None)],
-    produces=[Ingredient(iWallOutletMk1, 1, None)]
-)
-
-# Tier 1
-
-Beacon = Recipe(
-    name='Beacon',
-    availability=Availability(1, 3),
-    wiki_path='/Beacon',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iCable, 15, None),
-        Ingredient(iIronPlate, 3, None),
-        Ingredient(iIronRod, 1, None),
-        Ingredient(iWire, 15, None)],
-    produces=[Ingredient(iBeacon, 1, None)]
-)
-
-ConveyorLiftMk1 = Recipe(
-    name='Conveyor Lift Mk.1',
-    availability=Availability(1, 2),
-    wiki_path='/Conveyor_Lift',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[Ingredient(iIronPlate, 2, None)],
-    produces=[Ingredient(iConveyorLiftMk1, 1, None)]
-)
-
-ConveyorMerger = Recipe(
-    name='Conveyor Merger',
-    availability=Availability(1, 2),
-    wiki_path='/Conveyor_Merger',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iIronPlate, 2, None),
-        Ingredient(iIronRod, 2, None)],
-    produces=[Ingredient(iConveyorMerger, 1, None)]
-)
-
-ConveyorSplitter = Recipe(
-    name='Conveyor Splitter',
-    availability=Availability(1, 2),
-    wiki_path='/Conveyor_Splitter',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iIronPlate, 2, None),
-        Ingredient(iCable, 2, None)],
-    produces=[Ingredient(iConveyorSplitter, 1, None)]
-)
-
-BasicWall1mFicsit = Recipe(
-    name='Basic Wall 1m (FICSIT)',
-    availability=Availability(1, 1),
-    wiki_path='/Walls',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iConcrete, 2, None),
-        Ingredient(iIronPlate, 2, None)],
-    produces=[Ingredient(iBasicWall1mFicsit, 1, None)]
-)
-
-BasicWall4mFicsit = Recipe(
-    name='Basic Wall 4m (FICSIT)',
-    availability=Availability(1, 1),
-    wiki_path='/Walls',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iConcrete, 2, None),
-        Ingredient(iIronPlate, 2, None)],
-    produces=[Ingredient(iBasicWall4mFicsit, 1, None)]
 )
 
 Foundation1mFicsit = Recipe(
@@ -531,6 +385,78 @@ Foundation4mFicsit = Recipe(
     produces=[Ingredient(iFoundation4mFicsit, 1, None)]
 )
 
+HatcherProtein = Recipe(
+    name='Hatcher Protein',
+    wiki_path='/Alien_Protein',
+    availability=Availability(None, None, True),
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iHatcherRemains, 1, 1)],
+    produces=[Ingredient(iAlienProtein, 1, 1)]
+)
+
+HogProtein = Recipe(
+    name='Hog Protein',
+    wiki_path='/Alien_Protein',
+    availability=Availability(None, None, True),
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iHogRemains, 1, 1)],
+    produces=[Ingredient(iAlienProtein, 1, 1)]
+)
+
+IronIngot = Recipe(
+    name='Iron Ingot',
+    wiki_path='/Iron_Ingot',
+    building_type=BuildingType.SMELTER,
+    consumes=[Ingredient(iIronOre, 1, 30)],
+    produces=[Ingredient(iIronIngot, 1, 30)]
+)
+
+IronOreMk1 = Recipe(
+    name='Iron Ore',
+    wiki_path='/Iron_Ore',
+    building_type=BuildingType.MINER,
+    consumes=None,
+    produces=[Ingredient(iIronOre, None, 60)]
+)
+
+IronPlate = Recipe(
+    name='Iron Plate',
+    wiki_path='/Iron_Plate',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iIronIngot, 3, 30)],
+    produces=[Ingredient(iIronPlate, 2, 20)]
+)
+
+IronRod = Recipe(
+    name='Iron Rod',
+    wiki_path='/Iron_Rod',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iIronIngot, 1, 15)],
+    produces=[Ingredient(iIronRod, 1, 15)]
+)
+
+JumpPad = Recipe(
+    name='Jump Pad',
+    availability=Availability(2, 3),
+    wiki_path='/Jump_Pad',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iRotor, 2, None),
+        Ingredient(iIronPlate, 15, None),
+        Ingredient(iCable, 10, None)
+    ],
+    produces=[Ingredient(iJumpPad, 1, None)]
+)
+
+LimestoneMk1 = Recipe(
+    name='Limestone',
+    availability=Availability(0, 3),
+    wiki_path='/Limestone',
+    building_type=BuildingType.MINER,
+    consumes=None,
+    produces=[Ingredient(iLimestone, None, 60)]
+)
+
 LookoutTower = Recipe(
     name='Lookout Tower',
     availability=Availability(1, 1),
@@ -554,6 +480,30 @@ MAM = Recipe(
     produces=[Ingredient(iConveyorMerger, 1, None)]
 )
 
+MinerMk1 = Recipe(
+    name='Miner Mk. 1',
+    availability=Availability(0, 1),
+    wiki_path='/Miner',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iPortableMiner, 1, None),
+        Ingredient(iIronPlate, 10, None),
+        Ingredient(iConcrete, 10, None)],
+    produces=[Ingredient(iMinerMk1, 1, None)]
+)
+
+ModularFrame = Recipe(
+    name='Modular Frame',
+    availability=Availability(2, 1),
+    wiki_path='/Modular_Frame',
+    building_type=BuildingType.ASSEMBLER,
+    consumes=[
+        Ingredient(iIronRod, 12, 12),
+        Ingredient(iReinforcedIronPlate, 3, 3)
+    ],
+    produces=[Ingredient(iModularFrame, 2, 2)]
+)
+
 ObjectScanner = Recipe(
     name='Object Scanner',
     availability=Availability(1, 3),
@@ -575,6 +525,38 @@ PersonalStorageBox = Recipe(
         Ingredient(iIronPlate, 6, None),
         Ingredient(iIronRod, 6, None)],
     produces=[Ingredient(iPersonalStorageBox, 1, None)]
+)
+
+PortableMiner = Recipe(
+    name='Portable Miner',
+    availability=Availability(0, 1),
+    wiki_path='/Miner#Portable_Miner',
+    building_type=BuildingType.WORKSHOP,
+    consumes=[
+        Ingredient(iIronPlate, 2, None),
+        Ingredient(iIronRod, 4, None)],
+    produces=[Ingredient(iPortableMiner, 1, None)]
+)
+
+PowerLine = Recipe(
+    name='Power Line',
+    availability=Availability(0, 2),
+    wiki_path='Power_Line',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[Ingredient(iCable, 1, None)],
+    produces=[Ingredient(iPowerLine, 1, None)]
+)
+
+PowerPoleMk1 = Recipe(
+    name='Power Pole Mk.1',
+    availability=Availability(0, 3),
+    wiki_path='Power_Pole#Ground_Poles',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iWire, 3, None),
+        Ingredient(iIronRod, 1, None),
+        Ingredient(iConcrete, 1, None)],
+    produces=[Ingredient(iPowerPoleMk1, 1, None)]
 )
 
 Ramp1mFicsit = Recipe(
@@ -610,94 +592,15 @@ Ramp4mFicsit = Recipe(
     produces=[Ingredient(iRamp4mFicsit, 1, None)]
 )
 
-
-#### Tier 2
-
-Assembler = Recipe(
-    name='Assembler',
-    availability=Availability(2, 1),
-    wiki_path='/Assembler',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iReinforcedIronPlate, 8, None),
-        Ingredient(iRotor, 4, None),
-        Ingredient(iCable, 10, None)
-    ],
-    produces=[Ingredient(iAssembler, 1, None)]
-)
-
-AwesomeSink = Recipe(
-    name='AWESOME Sink',
-    availability=Availability(2, 4),
-    wiki_path='/AWESOME_Sink',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iReinforcedIronPlate, 15, None),
-        Ingredient(iCable, 30, None),
-        Ingredient(iConcrete, 45, None)
-    ],
-    produces=[Ingredient(iAwesomeSink, 1, None)]
-)
-
-Chainsaw = Recipe(
-    name='Chainsaw',
-    availability=Availability(2, 2),
-    wiki_path='/Chainsaw',
-    building_type=BuildingType.WORKSHOP,
-    consumes=[Ingredient(iReinforcedIronPlate, 1, None)],
-    produces=[Ingredient(iConveyorBeltMk2, 1, None)]
-)
-
-ConveyorBeltMk2 = Recipe(
-    name='Conveyor Belt Mk.2',
-    availability=Availability(2, 5),
-    wiki_path='/Conveyor_Belt#Mk.2',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[Ingredient(iReinforcedIronPlate, 1, None)],
-    produces=[Ingredient(iConveyorBeltMk2, 1, None)]
-)
-
-ConveyorLiftMk2 = Recipe(
-    name='Conveyor Lift Mk.2',
-    availability=Availability(2, 5),
-    wiki_path='/Conveyor_Lift#Mk.2',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[Ingredient(iReinforcedIronPlate, 2, None)],
-    produces=[Ingredient(iConveyorLiftMk2, 1, None)]
-)
-
-CopperSheet = Recipe(
-    name='Copper Sheet',
-    availability=Availability(2, 1),
-    wiki_path='/Copper_Sheet',
-    building_type=BuildingType.CONSTRUCTOR,
-    consumes=[Ingredient(iCopperIngot, 2, 20)],
-    produces=[Ingredient(iCopperSheet, 1, 10)]
-)
-
-JumpPad = Recipe(
-    name='Jump Pad',
-    availability=Availability(2, 3),
-    wiki_path='/Jump_Pad',
-    building_type=BuildingType.BUILD_GUN,
-    consumes=[
-        Ingredient(iRotor, 2, None),
-        Ingredient(iIronPlate, 15, None),
-        Ingredient(iCable, 10, None)
-    ],
-    produces=[Ingredient(iJumpPad, 1, None)]
-)
-
-ModularFrame = Recipe(
-    name='Modular Frame',
-    availability=Availability(2, 1),
-    wiki_path='/Modular_Frame',
+ReinforcedIronPlate = Recipe(
+    name='Reinforced Iron Plate',
+    availability=Availability(0, 3),
+    wiki_path='/Reinforced_Iron_Plate',
     building_type=BuildingType.ASSEMBLER,
     consumes=[
-        Ingredient(iIronRod, 12, 12),
-        Ingredient(iReinforcedIronPlate, 3, 3)
-    ],
-    produces=[Ingredient(iModularFrame, 2, 2)]
+        Ingredient(iIronPlate, 6, 30),
+        Ingredient(iScrew, 12, 60)],
+    produces=[Ingredient(iReinforcedIronPlate, 1, 5)]
 )
 
 Rotor = Recipe(
@@ -712,6 +615,15 @@ Rotor = Recipe(
     produces=[Ingredient(iRotor, 1, 4)]
 )
 
+Screw = Recipe(
+    name='Screw',
+    availability=Availability(0, 3),
+    wiki_path='/Screw',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iIronRod, 1, 10)],
+    produces=[Ingredient(iScrew, 4, 40)]
+)
+
 SmartPlating = Recipe(
     name='Smart Plating',
     availability=Availability(2, 1),
@@ -724,6 +636,17 @@ SmartPlating = Recipe(
     produces=[Ingredient(iSmartPlating, 1, 2)]
 )
 
+Smelter = Recipe(
+    name='Smelter',
+    availability=Availability(0, 2),
+    wiki_path='/Smelter',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iIronRod, 5, None),
+        Ingredient(iWire, 8, None)],
+    produces=[Ingredient(iSmelter, 1, None)]
+)
+
 SolidBiofuel = Recipe(
     name='Solid Biofuel',
     availability=Availability(2, 2),
@@ -731,6 +654,28 @@ SolidBiofuel = Recipe(
     building_type=BuildingType.CONSTRUCTOR,
     consumes=[Ingredient(iBiomass, 8, 120)],
     produces=[Ingredient(iSolidBiofuel, 4, 60)]
+)
+
+SpaceElevator = Recipe(
+    name='Space Elevator',
+    availability=Availability(0, 6),
+    wiki_path='/Space_Elevator',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iConcrete, 500, None),
+        Ingredient(iIronPlate, 250, None),
+        Ingredient(iIronRod, 400, None),
+        Ingredient(iWire, 1500, None)],
+    produces=[Ingredient(iSpaceElevator, 1, None)]
+)
+
+SpitterProtein = Recipe(
+    name='Spitter Protein',
+    wiki_path='/Alien_Protein',
+    availability=Availability(None, None, True),
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iSpitterRemains, 1, 1)],
+    produces=[Ingredient(iAlienProtein, 1, 1)]
 )
 
 StackableConveyorPole = Recipe(
@@ -746,6 +691,27 @@ StackableConveyorPole = Recipe(
     produces=[Ingredient(iStackableConveyorPole, 1, None)]
 )
 
+StingerProtein = Recipe(
+    name='Stinger Protein',
+    wiki_path='/Alien_Protein',
+    availability=Availability(None, None, True),
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iStingerRemains, 1, 1)],
+    produces=[Ingredient(iAlienProtein, 1, 1)]
+)
+
+StorageContainer = Recipe(
+    name='Storage Container',
+    availability=Availability(0, 5),
+    wiki_path='/Storage_Container',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iIronPlate, 10, None),
+        Ingredient(iIronRod, 10, None)
+    ],
+    produces=Ingredient(iStorageContainer, 1, None)
+)
+
 UJellyLandingPad = Recipe(
     name='U-Jelly Landing Pad',
     availability=Availability(2, 3),
@@ -759,16 +725,22 @@ UJellyLandingPad = Recipe(
     produces=[Ingredient(iUJellyLandingPad, 1, None)]
 )
 
-
-#### Workshop recipes
-
-PortableMiner = Recipe(
-    name='Portable Miner',
-    availability=Availability(0, 1),
-    wiki_path='/Miner#Portable_Miner',
-    building_type=BuildingType.WORKSHOP,
+WallOutletMk1 = Recipe(
+    name='Wall Outlet Mk.1',
+    availability=Availability(0, 3),
+    wiki_path='/Power_Pole#Wall_Outlets',
+    building_type=BuildingType.BUILD_GUN,
     consumes=[
-        Ingredient(iIronPlate, 2, None),
-        Ingredient(iIronRod, 4, None)],
-    produces=[Ingredient(iPortableMiner, 1, None)]
+        Ingredient(iWire, 4, None),
+        Ingredient(iIronRod, 1, None)],
+    produces=[Ingredient(iWallOutletMk1, 1, None)]
+)
+
+Wire = Recipe(
+    name='Wire',
+    availability=Availability(0, 2),
+    wiki_path='/Wire',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[Ingredient(iCopperIngot, 1, 15)],
+    produces=[Ingredient(iWire, 2, 30)]
 )
