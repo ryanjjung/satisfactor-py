@@ -16,23 +16,6 @@ from satisfactor_py.base import (
 from satisfactor_py.items import AwesomeSinkPoint
 
 
-class BiomassBurner(Building):
-    '''
-    A type of Building where biomass can be burned into power
-    '''
-
-    def __init__(self, **kwargs):
-        super().__init__(
-            building_type=BuildingType.GENERATOR,
-            availability=Availability(0, 6),
-            dimensions=Dimension(
-                width=8,
-                length=8,
-                height=7
-            ),
-            **kwargs
-        )
-
 
 class Assembler(Building):
     '''
@@ -119,6 +102,41 @@ class AwesomeSink(Building):
         ]
         return True
 
+
+class BiomassBurner(Building):
+    '''
+    A type of Building where biomass can be burned into power
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.BIOMASS_GENERATOR,
+            availability=Availability(0, 6),
+            dimensions=Dimension(
+                width=8,
+                length=8,
+                height=7
+            ),
+            **kwargs
+        )
+
+
+class CoalGenerator(Building):
+    '''
+    A Building where various coal products can be converted to power
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.COAL_GENERATOR,
+            availability=Availability(3, 1),
+            dimensions=Dimension(
+                width=10,
+                length=26,
+                height=36
+            ),
+            **kwargs
+        )
 
 
 class Constructor(Building):
@@ -335,6 +353,26 @@ class ConveyorSplitter(Building):
         return True
 
 
+class ConveyorPole(Building):
+    '''
+    A building which supports a conveyor belt
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.OTHER,
+            availability=Availability(0, 4),
+            dimensions=Dimension(
+                width=2,
+                length=1,
+                height=1
+            ),
+            inputs=[],
+            outputs=[],
+            **kwargs
+        )
+
+
 class MAM(Building):
     '''
     MAM building for performing field research
@@ -450,8 +488,33 @@ class MinerMk1(Miner):
         super().__init__(
             name=name,
             availability=Availability(0, 1),
+            dimensions=Dimension(
+                width=6,
+                length=14,
+                height=18
+            ),
             wiki_path='/Miner#Mk.1',
             base_power_usage=5,
+            **kwargs
+        )
+
+
+class PipelineSupport(Building):
+    '''
+    A building which supports a pipeline
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.OTHER,
+            availability=Availability(3, 1),
+            dimensions=Dimension(
+                width=2,
+                length=1,
+                height=1
+            ),
+            inputs=[],
+            outputs=[],
             **kwargs
         )
 
@@ -527,5 +590,26 @@ class UJellyLandingPad(Building):
             ),
             power_connections=1,
             base_power_usage=5,
+            **kwargs
+        )
+
+
+class WaterExtractor(Miner):
+    '''
+    A kind of Miner that produces Water
+    '''
+
+    def __init__(self, name='Water Extractor' **kwargs):
+        super().__init__(
+            name=name,
+            building_type=BuildingType.WATER_EXTRACTOR,
+            availability=Availability(3, 1),
+            dimensions=Dimension(
+                width=20,
+                length=19.5,
+                height=26
+            ),
+            wiki_path='/Water_Extractor',
+            base_power_usage=20,
             **kwargs
         )

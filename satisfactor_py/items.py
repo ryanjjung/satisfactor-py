@@ -108,6 +108,33 @@ Chainsaw = Item(
     wiki_path='/Copper_Sheet'
 )
 
+Coal = Item(
+    name='Coal',
+    availability=Availability(3, 1),
+    conveyance_type=None,
+    stack_size=100,
+    sink_value=3,
+    wiki_path='/Coal'
+)
+
+CoalGenerator = Item(
+    name='Coal Generator',
+    availability=Availability(3, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Coal_Generator'
+)
+
+CompactedCoal = Item(
+    name='Compacted Coal',
+    availability=Availability(3, 1),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=100,
+    sink_value=28,
+    wiki_path='/Compacted_Coal'
+)
+
 Concrete = Item(
     name='Concrete',
     availability=Availability(0, 3),
@@ -294,6 +321,15 @@ HatcherRemains = Item(
     wiki_path='/Alien_Remains#Hatcher'
 )
 
+HeavyOilResidue = Item(
+    name='Heavy Oil Residue',
+    availability=Availability(5, 1),
+    conveyance_type=ConveyanceType.PIPE,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Heavy_Oil_Residue'
+)
+
 HogRemains = Item(
     name='Hog Remains',
     conveyance_type=ConveyanceType.BELT,
@@ -420,6 +456,42 @@ PersonalStorageBox = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Personal_Storage_Box'
+)
+
+PetroleumCoke = Item(
+    name='Petroleum Coke',
+    availability=Availability(5, 1),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=200,
+    sink_value=20,
+    wiki_path='/Petroleum_Coke'
+)
+
+PipelineMk1 = Item(
+    name='Pipeline Mk.1',
+    availability=Availability(3, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Pipelines#Mk.1-0'
+)
+
+PipelineJunctionCross = Item(
+    name='Pipeline Junction Cross',
+    availability=Availability(3, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Pipeline_Junction_Cross'
+)
+
+PipelineSupport = Item(
+    name='Pipeline Support',
+    availability=Availability(3, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Pipeline_Supports#Simple-0'
 )
 
 PortableMiner = Item(
@@ -581,6 +653,15 @@ StorageContainer = Item(
     wiki_path='/Storage_Container'
 )
 
+Sulfur = Item(
+    name='Sulfur',
+    availability=Availability(0, 1),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=100,
+    sink_value=11,
+    wiki_path='/Sulfur'
+)
+
 UJellyLandingPad = Item(
     name='U-Jelly Landing Pad',
     availability=Availability(2, 3),
@@ -597,6 +678,24 @@ WallOutletMk1 = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Power_Pole#Wall_Outlets'
+)
+
+Water = Item(
+    name='Water',
+    availability=Availability(3, 1),
+    conveyance_type=ConveyanceType.PIPE,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Power_Pole#Wall_Outlets'
+)
+
+WaterExtractor = Item(
+    name='Water Extractor',
+    availability=Availability(3, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Water_Extractor'
 )
 
 Wire = Item(

@@ -52,12 +52,13 @@ class BuildingType(Enum):
 
     ASSEMBLER                 = 1
     AWESOME_SINK              = 2
+    BIOMASS_GENERATOR         = 8
     BLENDER                   = 3
     BUILD_GUN                 = 4
+    COAL_GENERATOR            = 8
     CONSTRUCTOR               = 5
     CONVEYANCE                = 6
     FOUNDRY                   = 7
-    GENERATOR                 = 8
     MANUFACTURER              = 9
     MINER                     = 10
     OIL_EXTRACTOR             = 11
@@ -70,8 +71,8 @@ class BuildingType(Enum):
     SPACE_ELEVATOR            = 18
     STORAGE                   = 19
     WATER_EXTRACTOR           = 20
-    WORKSHOP                  = 21
-    OTHER                     = 22
+    WORKSHOP                  = 20
+    OTHER                     = 21
 
 
 class ConveyanceType(Enum):
@@ -580,7 +581,7 @@ class ResourceNode(Component):
         )
         self.purity = purity
         self.item = item
-        self.inputs = list()
+        self.inputs = []
         self.outputs = [Output(
             conveyance_type=ConveyanceType.RESOURCE_NODE,
             attached_to=self

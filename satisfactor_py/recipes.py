@@ -15,7 +15,10 @@ from satisfactor_py.items import (
     BiomassBurner as iBiomassBurner,
     Cable as iCable,
     Chainsaw as iChainsaw,
+    Coal as iCoal,
+    CoalGenerator as iCoalGenerator,
     ColorCartridge as iColorCartridge,
+    CompactedCoal as iCompactedCoal,
     Concrete as iConcrete,
     Constructor as iConstructor,
     ConveyorLiftMk1 as iConveyorLiftMk1,
@@ -35,6 +38,7 @@ from satisfactor_py.items import (
     Foundation2mFicsit as iFoundation2mFicsit,
     Foundation4mFicsit as iFoundation4mFicsit,
     HatcherRemains as iHatcherRemains,
+    HeavyOilResidue as iHeavyOilResidue,
     HogRemains as iHogRemains,
     IronIngot as iIronIngot,
     IronOre as iIronOre,
@@ -49,6 +53,10 @@ from satisfactor_py.items import (
     Mycelia as iMycelia,
     ObjectScanner as iObjectScanner,
     PersonalStorageBox as iPersonalStorageBox,
+    PetroleumCoke as iPetroleumCoke,
+    PipelineMk1 as iPipelineMk1,
+    PipelineSupport as iPipelineSupport,
+    PipelineJunctionCross as iPipelineJunctionCross,
     PortableMiner as iPortableMiner,
     PowerLine as iPowerLine,
     PowerPoleMk1 as iPowerPoleMk1,
@@ -66,9 +74,12 @@ from satisfactor_py.items import (
     SpitterRemains as iSpitterRemains,
     StingerRemains as iStingerRemains,
     StorageContainer as iStorageContainer,
+    Sulfur as iSulfur,
     UJellyLandingPad as iUJellyLandingPad,
     Wire as iWire,
     WallOutletMk1 as iWallOutletMk1,
+    Water as iWater,
+    WaterExtractor as iWaterExtractor,
     Wood as iWood,
 )
 
@@ -203,6 +214,31 @@ Chainsaw = Recipe(
     produces=[Ingredient(iConveyorBeltMk2, 1, None)]
 )
 
+CoalGenerator = Recipe(
+    name='Coal Generator',
+    availability=Availability(3, 1),
+    wiki_path='/Coal_Generator',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iReinforcedIronPlate, 20, None),
+        Ingredient(iRotor, 10, None),
+        Ingredient(iCable, 30, None)
+    ],
+    produces=[Ingredient(iCoalGenerator, 1, None)]
+)
+
+CompactedCoal = Recipe(
+    name='Compacted Coal',
+    availability=Availability(None, None, mam=True),
+    wiki_path='/Compacted_Coal',
+    building_type=BuildingType.ASSEMBLER,
+    consumes=[
+        Ingredient(iCoal, 5, 25),
+        Ingredient(iSulfur, 5, 25)
+    ],
+    produces=[Ingredient(iCompactedCoal, 25, None)]
+)
+
 Concrete = Recipe(
     name='Concrete',
     availability=Availability(0, 3),
@@ -291,7 +327,7 @@ ConveyorMerger = Recipe(
 ConveyorPole = Recipe(
     name='Conveyor Pole',
     availability=Availability(0, 4),
-    wiki_path='/Conveyor_Poles#Simple',
+    wiki_path='/Conveyor_Poles#Simple-0',
     building_type=BuildingType.BUILD_GUN,
     consumes=[
         Ingredient(iIronPlate, 1, None),
@@ -527,6 +563,47 @@ PersonalStorageBox = Recipe(
     produces=[Ingredient(iPersonalStorageBox, 1, None)]
 )
 
+PetroleumCoke = Recipe(
+    name='Petroleum Coke',
+    availability=Availability(5, 1),
+    wiki_path='/Petroleum_Coke',
+    building_type=BuildingType.REFINERY,
+    consumes=[Ingredient(iHeavyOilResidue, None, 40)],
+    produces=[Ingredient(iPetroleumCoke, 120, None)]
+)
+
+PipelineMk1 = Recipe(
+    name='Pipeline Mk.1',
+    availability=Availability(3, 1),
+    wiki_path='/Pipelines#Mk.1-0',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[Ingredient(iCopperSheet, 1, None)],
+    produces=[Ingredient(iPipelineMk1, 1, None)]
+)
+
+PipelineJunctionCross = Recipe(
+    name='Pipeline Junction Cross',
+    availability=Availability(3, 1),
+    wiki_path='/Pipeline_Junction_Cross',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iCopperSheet, 5, None),
+    ],
+    produces=[Ingredient(iPipelineJunctionCross, 1, None)]
+)
+
+PipelineSupport = Recipe(
+    name='Pipeline Support',
+    availability=Availability(3, 1),
+    wiki_path='/Pipeline_Supports#Simple-0',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iIronPlate, 2, None),
+        Ingredient(iConcrete, 2, None),
+    ],
+    produces=[Ingredient(iPipelineSupport, 1, None)]
+)
+
 PortableMiner = Recipe(
     name='Portable Miner',
     availability=Availability(0, 1),
@@ -734,6 +811,28 @@ WallOutletMk1 = Recipe(
         Ingredient(iWire, 4, None),
         Ingredient(iIronRod, 1, None)],
     produces=[Ingredient(iWallOutletMk1, 1, None)]
+)
+
+Water = Recipe(
+    name='Water',
+    availability=Availability(3, 1),
+    wiki_path='/Water',
+    building_type=BuildingType.WATER_EXTRACTOR,
+    consumes=[],
+    produces=[Ingredient(iWater, None, 120)]
+)
+
+WaterExtractor = Recipe(
+    name='Water Extractor',
+    availability=Availability(3, 1),
+    wiki_path='/Water_Extractor',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iCopperSheet, 20, None),
+        Ingredient(iReinforcedIronPlate, 10, None),
+        Ingredient(iRotor, 10, None)
+    ],
+    produces=[Ingredient(iWaterExtractor, 1, None)]
 )
 
 Wire = Recipe(
