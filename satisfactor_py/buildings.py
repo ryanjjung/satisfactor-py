@@ -519,6 +519,26 @@ class PipelineSupport(Building):
         )
 
 
+class PipelineJunctionCross(Building):
+    '''
+    A combination splitter/merger for pipe networks. Has a configurable number of inputs and
+    outputs, but the total must be no more than four.
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.OTHER,
+            availability=Availability(3, 1),
+            dimensions=Dimension(
+                width=2,
+                length=1,
+                height=1
+            ),
+            inputs=[],
+            outputs=[],
+            **kwargs
+        )
+
 class Smelter(Building):
     '''
     A Smelter Building
