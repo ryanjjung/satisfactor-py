@@ -525,7 +525,11 @@ class PipelineJunctionCross(Building):
     outputs, but the total must be no more than four.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        inputs: int = 1,
+        outputs: int = 1,
+        **kwargs
+    ):
         super().__init__(
             building_type=BuildingType.OTHER,
             availability=Availability(3, 1),
@@ -538,6 +542,75 @@ class PipelineJunctionCross(Building):
             outputs=[],
             **kwargs
         )
+
+        self.set_connections(inputs, outputs)
+    
+    def set_connections(self,
+        inputs: int = 1,
+        outputs: int = 1
+    ):
+        '''
+        Sets this junction's input and output counts. This breaks any connections that may have
+        been placed before.
+        '''
+
+        if len(inputs) + len(outputs) > 4:
+            raise ValueError('Total number of connections exceeds 4')
+        
+        if len(inputs) < 1:
+            raise ValueError('Cannot have fewer than 1 input')
+        
+        if len(outputs < 0):
+            raise ValueError('Cannot have negative number of connections')
+
+        for i in self.inputs:
+            if i.source:
+                i.source.target = None
+            del(i)
+        
+        for o in self.outputs:
+            if o.target:
+                o.target.source = None
+            del(o)
+        
+        self.inputs = [Input(
+            attached_to=self,
+            conveyance_type=ConveyanceType.PIPE
+        ) for i in range(inputs)]
+
+        self.outputs = [Output(
+            attached_to=self,
+            conveyance_type=ConveyanceType.PIPE
+        ) for o in range(outputs)]
+
+    def can_process(self):
+        '''
+        Determines if the junction can process normally.
+        '''
+
+        all_ingredients = []
+        for i in self.inputs:
+            for ingredient in i.ingredients:
+                if ingredient.item not in all_ingredients:
+                    all_ingredients.append(ingredient.item)
+        
+        ct = len(all_ingredients)
+        if ct > 1:
+            self.add_error(ComponentError(
+                level=ComponentErrorLevel.WARNING,
+                message=f'There are {ct} ingredients in this pipeline, but there can be no more '
+                    'than 1.'
+            ))
+            return False
+        
+        return True
+
+    def process(self):
+        super.process()
+
+        if not self.can_process():
+            return False
+
 
 class Smelter(Building):
     '''

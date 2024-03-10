@@ -260,7 +260,7 @@ class Component(Base):
         self._errors.clear()
 
     def process(self):
-        self._errors = list()
+        self.clear_errors()
 
 
 class Item(Base):
@@ -922,7 +922,7 @@ class Conveyance(Building):
             'rate': self.rate
         })
         return base
-
+https://github.com/ifl0w/RandomWallpaperGnome3.git
     def process(self):
         '''
         Ensures the Recipe is set up correctly and that the outputs match the inputs.
