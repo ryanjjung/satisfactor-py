@@ -344,14 +344,22 @@ class Recipe(Base):
 
     def __init__(self,
         building_type: BuildingType,
-        consumes: list[Ingredient] = list(),
-        produces: list[Ingredient] = list(),
+        consumes: list[Ingredient] = [],
+        produces: list[Ingredient] = [],
         **kwargs
     ):
         super().__init__(**kwargs)
         self.building_type = building_type
         self.consumes = consumes
         self.produces = produces
+
+    @property
+    def consumed_items(self):
+        return [ingredient.item for ingredient in self.consumes]
+
+    @property
+    def produced_items(self):
+        return [ingredient.item for ingredient in self.produces]
 
     def to_dict(self):
         consumes = [ingredient.to_dict() for ingredient in self.consumes] if self.consumes else None

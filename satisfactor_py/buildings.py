@@ -544,7 +544,7 @@ class PipelineJunctionCross(Building):
         )
 
         self.set_connections(inputs, outputs)
-    
+
     def set_connections(self,
         inputs: int = 1,
         outputs: int = 1
@@ -556,10 +556,10 @@ class PipelineJunctionCross(Building):
 
         if len(inputs) + len(outputs) > 4:
             raise ValueError('Total number of connections exceeds 4')
-        
+
         if len(inputs) < 1:
             raise ValueError('Cannot have fewer than 1 input')
-        
+
         if len(outputs < 0):
             raise ValueError('Cannot have negative number of connections')
 
@@ -567,12 +567,12 @@ class PipelineJunctionCross(Building):
             if i.source:
                 i.source.target = None
             del(i)
-        
+
         for o in self.outputs:
             if o.target:
                 o.target.source = None
             del(o)
-        
+
         self.inputs = [Input(
             attached_to=self,
             conveyance_type=ConveyanceType.PIPE
@@ -593,7 +593,7 @@ class PipelineJunctionCross(Building):
             for ingredient in i.ingredients:
                 if ingredient.item not in all_ingredients:
                     all_ingredients.append(ingredient.item)
-        
+
         ct = len(all_ingredients)
         if ct > 1:
             self.add_error(ComponentError(
@@ -602,14 +602,53 @@ class PipelineJunctionCross(Building):
                     'than 1.'
             ))
             return False
-        
+
         return True
 
     def process(self):
-        super.process()
-
+        self.clear_errors()
         if not self.can_process():
             return False
+
+        input_item = self.inputs[0].ingredients[0].item
+        total_input_rate = 0
+        for i in self.inputs:
+            total_input_rate += sum([ingredient.rate for ingredient in i.ingredients])
+        remaining_rate = total_input_rate
+
+        connected_outputs = [output for output in self.outputs if output.target]
+        unfilled_outputs = connected_outputs.copy
+        num_unfilled = len(unfilled_outputs)
+
+        # Set the ingredient for each connected output, but give it no rate
+        for output in connected_outputs:
+            output.ingredients = [Ingredient(input_item, None, 0)]
+
+        # Repeatedly iterate over outputs that have not reached capacity, evenly distributing the
+        # ingredient rate until either there is nothing left to distribute or all connected outputs
+        # are full.
+        while num_unfilled > 0 and remaining_rate > 0:
+            for output in unfilled_outputs:
+                ideal_output_rate = remaining_rate / num_unfilled
+                remaining_capacity = output.target.attached_to.rate - output.ingredients[0].rate
+                if remaining_capacity >= ideal_output_rate:
+                    output.ingredients[0].rate += ideal_output_rate
+                    remaining_rate -= ideal_output_rate
+                else:
+                    output.ingredients[0].rate = output.target.attached_to.rate
+                    remaining_rate -= remaining_capacity
+                    num_unfilled -= 1
+
+            # Reset the counters for the next pass
+            unfilled_outputs = [output for output in connected_outputs \
+                if output.ingredients[0].rate < output.target.attached_to.rate]
+            num_unfilled = len(unfilled_outputs)
+
+        if remaining_rate > 0:
+            self.add_error(ComponentError(
+                level=ComponentErrorLevel.WARNING,
+                message=f'Input rate exceeds output rate by {remaining_rate} per minute'
+            ))
 
 
 class Smelter(Building):
@@ -659,8 +698,35 @@ class SpaceElevator(Building):
             ),
             inputs=[Input(
                 attached_to=self,
-                conveyance_type=ConveyanceType.BELT) for i in range(0, 6)],
+                conveyance_type=ConveyanceType.BELT) for i in range(6)],
             power_connections=0,
+            **kwargs
+        )
+
+
+class TruckStation(Building):
+    '''
+    A Truck Station Building
+    '''
+
+    def __init__(self,
+        name: str = 'Truck Station',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            availability=Availability(3, 2),
+            wiki_path='/Truck_Station',
+            building_type=BuildingType.OTHER,
+            dimensions=Dimension(
+                width=16,
+                length=22,
+                height=12
+            ),
+            inputs=[Input(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT) for i in range(3)],
+            power_connections=1,
             **kwargs
         )
 

@@ -34,6 +34,7 @@ from satisfactor_py.items import (
     CraftBench as iCraftBench,
     DoubleWallOutletMk1 as iDoubleWallOutletMk1,
     EquipmentWorkshop as iEquipmentWorkshop,
+    FluidBuffer as iFluidBuffer,
     Foundation1mFicsit as iFoundation1mFicsit,
     Foundation2mFicsit as iFoundation2mFicsit,
     Foundation4mFicsit as iFoundation4mFicsit,
@@ -55,6 +56,7 @@ from satisfactor_py.items import (
     PersonalStorageBox as iPersonalStorageBox,
     PetroleumCoke as iPetroleumCoke,
     PipelineMk1 as iPipelineMk1,
+    PipelinePump as iPipelinePump,
     PipelineSupport as iPipelineSupport,
     PipelineJunctionCross as iPipelineJunctionCross,
     PortableMiner as iPortableMiner,
@@ -75,6 +77,8 @@ from satisfactor_py.items import (
     StingerRemains as iStingerRemains,
     StorageContainer as iStorageContainer,
     Sulfur as iSulfur,
+    Tractor as iTractor,
+    TruckStation as iTruckStation,
     UJellyLandingPad as iUJellyLandingPad,
     Wire as iWire,
     WallOutletMk1 as iWallOutletMk1,
@@ -388,6 +392,17 @@ EquipmentWorkshop = Recipe(
     produces=[Ingredient(iDoubleWallOutletMk1, 1, None)]
 )
 
+FluidBuffer = Recipe(
+    name='Fluid Buffer',
+    availability=Availability(3, 1),
+    wiki_path='/Fluid_Buffer#Normal-0',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iCopperSheet, 10, None),
+        Ingredient(iModularFrame, 5, None)],
+    produces=[Ingredient(iFluidBuffer, 1, None)]
+)
+
 Foundation1mFicsit = Recipe(
     name='Foundation 1m (FICSIT)',
     availability=Availability(1, 1),
@@ -592,6 +607,18 @@ PipelineJunctionCross = Recipe(
     produces=[Ingredient(iPipelineJunctionCross, 1, None)]
 )
 
+PipelinePump = Recipe(
+    name='Pipeline Pump',
+    availability=Availability(3, 1),
+    wiki_path='/Pipeline_Pump',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iCopperSheet, 2, None),
+        Ingredient(iRotor, 2, None)
+    ],
+    produces=[Ingredient(iPipelinePump, 1, None)]
+)
+
 PipelineSupport = Recipe(
     name='Pipeline Support',
     availability=Availability(3, 1),
@@ -787,6 +814,32 @@ StorageContainer = Recipe(
         Ingredient(iIronRod, 10, None)
     ],
     produces=Ingredient(iStorageContainer, 1, None)
+)
+
+Tractor = Recipe(
+    name='Tractor',
+    availability=Availability(3, 2),
+    wiki_path='/Tractor',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iModularFrame, 5, None),
+        Ingredient(iRotor, 5, None),
+        Ingredient(iReinforcedIronPlate, 10, None),
+    ],
+    produces=Ingredient(iTractor, 1, None)
+)
+
+TruckStation = Recipe(
+    name='Truck Station',
+    availability=Availability(3, 2),
+    wiki_path='/Truck_Station',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iModularFrame, 15, None),
+        Ingredient(iRotor, 20, None),
+        Ingredient(iCable, 50, None),
+    ],
+    produces=Ingredient(iTruckStation, 1, None)
 )
 
 UJellyLandingPad = Recipe(

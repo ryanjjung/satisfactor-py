@@ -8,12 +8,47 @@ from satisfactor_py.base import (
     Storage
 )
 
-class StorageContainer(Storage):
+
+class FluidBuffer(Storage):
     '''
-    A Storage Container with a single input and 24 inventory slots.
+    Storage for liquids with a single input and output and a 400m³ capacity.
     '''
 
-    def __init__(self, name='Storage Container', **kwargs):
+    def __init__(self,
+        name: str = 'Fluid Buffer',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            availability=Availability(3, 1),
+            wiki_path='/Fluid_Buffer#Normal-0',
+            stacks=400,
+            dimensions=Dimension(
+                width=6,
+                length=6,
+                height=8
+            ),
+            inputs=[Input(
+                attached_to=self,
+                conveyance_type=ConveyanceType.PIPE
+            )],
+            outputs=[Output(
+                attached_to=self,
+                conveyance_type=ConveyanceType.PIPE
+            )],
+            **kwargs
+        )
+
+
+class StorageContainer(Storage):
+    '''
+    A Storage Container with a single input and output and 24 inventory slots.
+    '''
+
+    def __init__(self,
+        name: str = 'Storage Container',
+        **kwargs
+    ):
         super().__init__(
             name=name,
             availability=Availability(0, 5),

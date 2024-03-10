@@ -286,6 +286,14 @@ FlowerPetals = Item(
     wiki_path='/Flower_Petals'
 )
 
+FluidBuffer = Item(
+    name='Fluid Buffer',
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Fluid_Buffer#Normal-0'
+)
+
 Foundation1mFicsit = Item(
     name='Foundation 1m (FICSIT)',
     availability=Availability(1, 1),
@@ -485,6 +493,15 @@ PipelineJunctionCross = Item(
     wiki_path='/Pipeline_Junction_Cross'
 )
 
+PipelinePump = Item(
+    name='Pipeline Pump',
+    availability=Availability(3, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Pipeline_Pump'
+)
+
 PipelineSupport = Item(
     name='Pipeline Support',
     availability=Availability(3, 1),
@@ -660,6 +677,24 @@ Sulfur = Item(
     stack_size=100,
     sink_value=11,
     wiki_path='/Sulfur'
+)
+
+Tractor = Item(
+    name='Tractor',
+    availability=Availability(3, 2),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Tractor'
+)
+
+TruckStation = Item(
+    name='Truck Station',
+    availability=Availability(3, 2),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Truck_Station'
 )
 
 UJellyLandingPad = Item(
