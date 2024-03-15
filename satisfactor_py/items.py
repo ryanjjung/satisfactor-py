@@ -321,6 +321,15 @@ Foundation4mFicsit = Item(
     wiki_path='/Foundations'
 )
 
+Foundry = Item(
+    name='Foundry',
+    availability=Availability(3, 3),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Foundry'
+)
+
 HatcherRemains = Item(
     name='Hatcher Remains',
     conveyance_type=ConveyanceType.BELT,
@@ -653,6 +662,33 @@ StackableConveyorPole = Item(
     wiki_path='/Conveyor_Poles#Stackable'
 )
 
+SteelBeam = Item(
+    name='Steel Beam',
+    availability=Availability(3, 3),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=200,
+    sink_value=64,
+    wiki_path='/Steel_Beam'
+)
+
+SteelIngot = Item(
+    name='Steel Ingot',
+    availability=Availability(3, 3),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=100,
+    sink_value=8,
+    wiki_path='/Steel_Ingot'
+)
+
+SteelPipe = Item(
+    name='Steel Pipe',
+    availability=Availability(3, 3),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=200,
+    sink_value=24,
+    wiki_path='/Steel_Pipe'
+)
+
 StingerRemains = Item(
     name='Stinger Remains',
     conveyance_type=ConveyanceType.BELT,
@@ -706,6 +742,15 @@ UJellyLandingPad = Item(
     wiki_path='/U-Jelly_Landing_Pad'
 )
 
+VersatileFramework = Item(
+    name='Versatile Framework',
+    availability=Availability(3, 3),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=50,
+    sink_value=1176,
+    wiki_path='/Versatile_Framework'
+)
+
 WallOutletMk1 = Item(
     name='Wall Outlet Mk.1',
     availability=Availability(0, 3),
@@ -748,4 +793,21 @@ Wood = Item(
     stack_size=200,
     sink_value=30,
     wiki_path='/Wood'
+)
+
+XenoBasher = Item(
+    name='Xeno-Basher',
+    availability=Availability(3, 4),
+    conveyance_type=NONE,
+    stack_size=1,
+    sink_value=18800,
+    wiki_path='/Xeno-Basher'
+)
+
+XenoZapper = Item(
+    name='Xeno-Zapper',
+    conveyance_type=NONE,
+    stack_size=1,
+    sink_value=1880,
+    wiki_path='/Xeno-Zapper'
 )

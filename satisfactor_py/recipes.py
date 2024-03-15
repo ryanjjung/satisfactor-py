@@ -38,6 +38,7 @@ from satisfactor_py.items import (
     Foundation1mFicsit as iFoundation1mFicsit,
     Foundation2mFicsit as iFoundation2mFicsit,
     Foundation4mFicsit as iFoundation4mFicsit,
+    Foundry as iFoundry,
     HatcherRemains as iHatcherRemains,
     HeavyOilResidue as iHeavyOilResidue,
     HogRemains as iHogRemains,
@@ -74,17 +75,23 @@ from satisfactor_py.items import (
     StackableConveyorPole as iStackableConveyorPole,
     SpaceElevator as iSpaceElevator,
     SpitterRemains as iSpitterRemains,
+    SteelBeam as iSteelBeam,
+    SteelIngot as iSteelIngot,
+    SteelPipe as iSteelPipe,
     StingerRemains as iStingerRemains,
     StorageContainer as iStorageContainer,
     Sulfur as iSulfur,
     Tractor as iTractor,
     TruckStation as iTruckStation,
     UJellyLandingPad as iUJellyLandingPad,
-    Wire as iWire,
+    VersatileFramework as iVersatileFramework,
     WallOutletMk1 as iWallOutletMk1,
     Water as iWater,
     WaterExtractor as iWaterExtractor,
+    Wire as iWire,
     Wood as iWood,
+    XenoBasher as iXenoBasher,
+    XenoZapper as iXenoZapper,
 )
 
 '''
@@ -434,6 +441,19 @@ Foundation4mFicsit = Recipe(
         Ingredient(iConcrete, 5, None),
         Ingredient(iIronPlate, 2, None)],
     produces=[Ingredient(iFoundation4mFicsit, 1, None)]
+)
+
+Foundry = Recipe(
+    name='Foundry',
+    availability=Availability(3, 3),
+    wiki_path='/Foundry',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iModularFrame, 10, None),
+        Ingredient(iRotor, 10, None),
+        Ingredient(iConcrete, 20, None),
+    ],
+    produces=[Ingredient(iFoundry, 1, None)]
 )
 
 HatcherProtein = Recipe(
@@ -795,6 +815,37 @@ StackableConveyorPole = Recipe(
     produces=[Ingredient(iStackableConveyorPole, 1, None)]
 )
 
+SteelBeam = Recipe(
+    name='Steel Beam',
+    wiki_path='/Steel_Beam',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[
+        Ingredient(iSteelIngot, 4, 60),
+    ],
+    produces=[Ingredient(iSteelBeam, 1, 15)]
+)
+
+SteelIngot = Recipe(
+    name='Steel Ingot',
+    wiki_path='/Steel_Ingot',
+    building_type=BuildingType.FOUNDRY,
+    consumes=[
+        Ingredient(iIronOre, 3, 45),
+        Ingredient(iCoal, 3, 45),
+    ],
+    produces=[Ingredient(iSteelIngot, 3, 45)]
+)
+
+SteelPipe = Recipe(
+    name='Steel Pipe',
+    wiki_path='/Steel_Pipe',
+    building_type=BuildingType.CONSTRUCTOR,
+    consumes=[
+        Ingredient(iSteelIngot, 3, 30),
+    ],
+    produces=[Ingredient(iSteelPipe, 2, 20)]
+)
+
 StingerProtein = Recipe(
     name='Stinger Protein',
     wiki_path='/Alien_Protein',
@@ -855,6 +906,18 @@ UJellyLandingPad = Recipe(
     produces=[Ingredient(iUJellyLandingPad, 1, None)]
 )
 
+VersatileFramework = Recipe(
+    name='Versatile Framework',
+    availability=Availability(3, 3),
+    wiki_path='/Versatile_Framework',
+    building_type=BuildingType.ASSEMBLER,
+    consumes=[
+        Ingredient(iModularFrame, 1, 2.5),
+        Ingredient(iSteelBeam, 12, 30)
+    ],
+    produces=[Ingredient(iVersatileFramework, 2, 5)]
+)
+
 WallOutletMk1 = Recipe(
     name='Wall Outlet Mk.1',
     availability=Availability(0, 3),
@@ -895,4 +958,31 @@ Wire = Recipe(
     building_type=BuildingType.CONSTRUCTOR,
     consumes=[Ingredient(iCopperIngot, 1, 15)],
     produces=[Ingredient(iWire, 2, 30)]
+)
+
+XenoBasher = Recipe(
+    name='Xeno-Basher',
+    availability=Availability(3, 4),
+    wiki_path='/Xeno-Basher',
+    building_type=BuildingType.WORKSHOP,
+    consumes=[
+        Ingredient(iModularFrame, 5, 3.75),
+        Ingredient(iXenoZapper, 2, 1.5),
+        Ingredient(iCable, 25, 18.75),
+        Ingredient(iWire, 500, 375),
+    ],
+    produces=[Ingredient(iXenoBasher, 1, 0.75)]
+)
+
+XenoZapper = Recipe(
+    name='Xeno-Zapper',
+    wiki_path='/Xeno-Zapper',
+    building_type=BuildingType.WORKSHOP,
+    consumes=[
+        Ingredient(iIronRod, 10, 15),
+        Ingredient(iReinforcedIronPlate, 2, 3),
+        Ingredient(iCable, 15, 22.5),
+        Ingredient(iWire, 50, 75),
+    ],
+    produces=[Ingredient(iXenoZapper, 1, 1.5)]
 )

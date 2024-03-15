@@ -373,6 +373,35 @@ class ConveyorPole(Building):
         )
 
 
+class Foundry(Building):
+    '''
+    A Foundry Building
+    '''
+
+    def __init__(self, name='Foundry', **kwargs):
+        super().__init__(
+            name=name,
+            availability=Availability(0, 2),
+            wiki_path='/Foundry',
+            base_power_usage=16,
+            building_type=BuildingType.FOUNDRY,
+            dimensions=Dimension(
+                width=10,
+                length=9,
+                height=9
+            ),
+            inputs=[Input(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT
+            ) for i in range(2)],
+            outputs=[Output(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT
+            )],
+            **kwargs
+        )
+
+
 class MAM(Building):
     '''
     MAM building for performing field research
