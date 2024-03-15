@@ -13,25 +13,11 @@ from satisfactor_py.base import (
     Recipe,
     ResourceNode
 )
-from satisfactor_py.items import AwesomeSinkPoint
+from satisfactor_py.items import (
+    AwesomeSinkPoint,
+    Water
+)
 
-
-class BiomassBurner(Building):
-    '''
-    A type of Building where biomass can be burned into power
-    '''
-
-    def __init__(self, **kwargs):
-        super().__init__(
-            building_type=BuildingType.GENERATOR,
-            availability=Availability(0, 6),
-            dimensions=Dimension(
-                width=8,
-                length=8,
-                height=7
-            ),
-            **kwargs
-        )
 
 
 class Assembler(Building):
@@ -119,6 +105,57 @@ class AwesomeSink(Building):
         ]
         return True
 
+
+class BiomassBurner(Building):
+    '''
+    A type of Building where biomass can be burned into power
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.BIOMASS_GENERATOR,
+            availability=Availability(0, 6),
+            dimensions=Dimension(
+                width=8,
+                length=8,
+                height=7
+            ),
+            **kwargs
+        )
+
+
+class CoalGenerator(Building):
+    '''
+    A Building where various coal products can be converted to power
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.COAL_GENERATOR,
+            availability=Availability(3, 1),
+            dimensions=Dimension(
+                width=10,
+                length=26,
+                height=36
+            ),
+            inputs=[
+                Input(
+                    conveyance_type=ConveyanceType.BELT,
+                    attached_to=self
+                ),
+                Input(
+                    conveyance_type=ConveyanceType.PIPE,
+                    attached_to=self
+                )
+            ],
+            outputs=[
+                Output(
+                    conveyance_type=ConveyanceType.POWER_LINE,
+                    attached_to=self
+                )
+            ],
+            **kwargs
+        )
 
 
 class Constructor(Building):
@@ -335,6 +372,55 @@ class ConveyorSplitter(Building):
         return True
 
 
+class ConveyorPole(Building):
+    '''
+    A building which supports a conveyor belt
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.OTHER,
+            availability=Availability(0, 4),
+            dimensions=Dimension(
+                width=2,
+                length=1,
+                height=1
+            ),
+            inputs=[],
+            outputs=[],
+            **kwargs
+        )
+
+
+class Foundry(Building):
+    '''
+    A Foundry Building
+    '''
+
+    def __init__(self, name='Foundry', **kwargs):
+        super().__init__(
+            name=name,
+            availability=Availability(0, 2),
+            wiki_path='/Foundry',
+            base_power_usage=16,
+            building_type=BuildingType.FOUNDRY,
+            dimensions=Dimension(
+                width=10,
+                length=9,
+                height=9
+            ),
+            inputs=[Input(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT
+            ) for i in range(2)],
+            outputs=[Output(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT
+            )],
+            **kwargs
+        )
+
+
 class MAM(Building):
     '''
     MAM building for performing field research
@@ -437,8 +523,13 @@ class Miner(Building):
 
         self.can_process()
         super().process()
+        self.outputs[0].ingredients = [self.recipe.produces[0]]
+
+        # Apply resource node purity and clock rate
         self.outputs[0].ingredients[0].rate = \
-            self.outputs[0].ingredients[0].rate * self.inputs[0].source.attached_to.purity.value
+            self.outputs[0].ingredients[0].rate * self.inputs[0].source.attached_to.purity.value \
+                * self.clock_rate
+
 
 
 class MinerMk1(Miner):
@@ -454,6 +545,161 @@ class MinerMk1(Miner):
             base_power_usage=5,
             **kwargs
         )
+
+
+class PipelineSupport(Building):
+    '''
+    A building which supports a pipeline
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            building_type=BuildingType.OTHER,
+            availability=Availability(3, 1),
+            dimensions=Dimension(
+                width=2,
+                length=1,
+                height=1
+            ),
+            inputs=[],
+            outputs=[],
+            **kwargs
+        )
+
+
+class PipelineJunctionCross(Building):
+    '''
+    A combination splitter/merger for pipe networks. Has a configurable number of inputs and
+    outputs, but the total must be no more than four.
+    '''
+
+    def __init__(self,
+        inputs: int = 1,
+        outputs: int = 1,
+        **kwargs
+    ):
+        super().__init__(
+            building_type=BuildingType.OTHER,
+            availability=Availability(3, 1),
+            dimensions=Dimension(
+                width=2,
+                length=1,
+                height=1
+            ),
+            inputs=[],
+            outputs=[],
+            **kwargs
+        )
+
+        self.set_connections(inputs, outputs)
+
+    def set_connections(self,
+        inputs: int = 1,
+        outputs: int = 1
+    ):
+        '''
+        Sets this junction's input and output counts. This breaks any connections that may have
+        been placed before.
+        '''
+
+        if inputs + outputs > 4:
+            raise ValueError('Total number of connections exceeds 4')
+
+        if inputs < 1:
+            raise ValueError('Cannot have fewer than 1 input')
+
+        if outputs < 0:
+            raise ValueError('Cannot have negative number of connections')
+
+        for i in self.inputs:
+            if i.source:
+                i.source.target = None
+            del(i)
+
+        for o in self.outputs:
+            if o.target:
+                o.target.source = None
+            del(o)
+
+        self.inputs = [Input(
+            attached_to=self,
+            conveyance_type=ConveyanceType.PIPE
+        ) for i in range(inputs)]
+
+        self.outputs = [Output(
+            attached_to=self,
+            conveyance_type=ConveyanceType.PIPE
+        ) for o in range(outputs)]
+
+    def can_process(self):
+        '''
+        Determines if the junction can process normally.
+        '''
+
+        all_ingredients = []
+        for i in self.inputs:
+            for ingredient in i.ingredients:
+                if ingredient.item not in all_ingredients:
+                    all_ingredients.append(ingredient.item)
+
+        ct = len(all_ingredients)
+        if ct > 1:
+            self.add_error(ComponentError(
+                level=ComponentErrorLevel.WARNING,
+                message=f'There are {ct} ingredients in this pipeline, but there can be no more '
+                    'than 1.'
+            ))
+            return False
+
+        return True
+
+    def process(self):
+        self.clear_errors()
+        if not self.can_process():
+            return False
+
+        input_item = self.inputs[0].ingredients[0].item
+        total_input_rate = 0
+        for i in self.inputs:
+            total_input_rate += sum([ingredient.rate for ingredient in i.ingredients])
+        remaining_rate = total_input_rate
+
+        connected_outputs = [output for output in self.outputs if output.target]
+        unfilled_outputs = connected_outputs.copy()
+        num_unfilled = len(unfilled_outputs)
+
+        # Set the ingredient for each connected output, but give it no rate
+        for output in connected_outputs:
+            output.ingredients = [Ingredient(input_item, None, 0)]
+
+        # Repeatedly iterate over outputs that have not reached capacity, evenly distributing the
+        # ingredient rate until either there is nothing left to distribute or all connected outputs
+        # are full.
+        while num_unfilled > 0 and remaining_rate > 0:
+            num_unprocessed = num_unfilled
+            for output in unfilled_outputs:
+                ideal_output_rate = remaining_rate / num_unprocessed
+                remaining_capacity = output.target.attached_to.rate - output.ingredients[0].rate
+                if remaining_capacity >= ideal_output_rate:
+                    output.ingredients[0].rate += ideal_output_rate
+                    remaining_rate -= ideal_output_rate
+                    num_unprocessed -= 1
+                else:
+                    output.ingredients[0].rate = output.target.attached_to.rate
+                    remaining_rate -= remaining_capacity
+                    num_unfilled -= 1
+                    num_unprocessed -= 1
+
+            # Reset the counters for the next pass
+            unfilled_outputs = [output for output in connected_outputs \
+                if output.ingredients[0].rate < output.target.attached_to.rate]
+            num_unfilled = len(unfilled_outputs)
+
+        if remaining_rate > 0:
+            self.add_error(ComponentError(
+                level=ComponentErrorLevel.WARNING,
+                message=f'Input rate exceeds output rate by {remaining_rate} per minute'
+            ))
 
 
 class Smelter(Building):
@@ -503,8 +749,35 @@ class SpaceElevator(Building):
             ),
             inputs=[Input(
                 attached_to=self,
-                conveyance_type=ConveyanceType.BELT) for i in range(0, 6)],
+                conveyance_type=ConveyanceType.BELT) for i in range(6)],
             power_connections=0,
+            **kwargs
+        )
+
+
+class TruckStation(Building):
+    '''
+    A Truck Station Building
+    '''
+
+    def __init__(self,
+        name: str = 'Truck Station',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            availability=Availability(3, 2),
+            wiki_path='/Truck_Station',
+            building_type=BuildingType.OTHER,
+            dimensions=Dimension(
+                width=16,
+                length=22,
+                height=12
+            ),
+            inputs=[Input(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT) for i in range(3)],
+            power_connections=1,
             **kwargs
         )
 
@@ -529,3 +802,35 @@ class UJellyLandingPad(Building):
             base_power_usage=5,
             **kwargs
         )
+
+
+class WaterExtractor(Miner):
+    '''
+    A kind of Miner that produces Water
+    '''
+
+    def __init__(self, name='Water Extractor', **kwargs):
+        '''
+        This should be, at a base level, a Miner, but we have to override some special things
+        '''
+        super().__init__(
+            name=name,
+            availability=Availability(3, 1),
+            wiki_path='/Water_Extractor',
+            base_power_usage=20,
+            **kwargs
+        )
+        self.building_type = BuildingType.WATER_EXTRACTOR
+        self.dimensions = Dimension(
+            width=20,
+            length=19.5,
+            height=26
+        )
+        self.inputs=[Input(
+            conveyance_type=ConveyanceType.RESOURCE_NODE,
+            attached_to=self
+        )]
+        self.outputs=[Output(
+            conveyance_type=ConveyanceType.PIPE,
+            attached_to=self
+        )]

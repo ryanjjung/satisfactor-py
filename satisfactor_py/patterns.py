@@ -1,24 +1,31 @@
 from satisfactor_py.base import Ingredient, Purity, ResourceNode
 from satisfactor_py.buildings import (
     AwesomeSink,
+    CoalGenerator,
     Constructor,
     ConveyorMerger,
     ConveyorSplitter,
+    Foundry,
     MinerMk1,
+    PipelineJunctionCross,
     Smelter,
+    WaterExtractor,
 )
 from satisfactor_py.conveyances import (
     ConveyorBeltMk1,
-    ConveyorBeltMk2
+    ConveyorBeltMk2,
+    PipelineMk1
 )
 from satisfactor_py.factories import Factory
 from satisfactor_py.items import (
     Biomass as iBiomass,
+    Coal as iCoal,
     CopperOre as iCopperOre,
     IronOre as iIronOre,
     Leaves as iLeaves,
     Limestone as iLimestone,
     Mycelia as iMycelia,
+    Water as iWater,
     Wood as iWood
 )
 from satisfactor_py.recipes import (
@@ -26,6 +33,8 @@ from satisfactor_py.recipes import (
     BiomassMycelia as rBiomassMycelia,
     BiomassWood as rBiomassWood,
     Cable as rCable,
+    CoalMk1 as rCoalMk1,
+    CoalPower as rCoalPower,
     Concrete as rConcrete,
     CopperOreMk1 as rCopperOreMk1,
     CopperIngot as rCopperIngot,
@@ -35,6 +44,9 @@ from satisfactor_py.recipes import (
     LimestoneMk1 as rLimestoneMk1,
     Screw as rScrew,
     SolidBiofuel as rSolidBiofuel,
+    SteelBeam as rSteelBeam,
+    SteelIngot as rSteelIngot,
+    Water as rWater,
     Wire as rWire,
 )
 from satisfactor_py.storages import StorageContainer
@@ -429,3 +441,177 @@ def tier_2_biofuel_factory():
     ])
     starters = (mycelia_storage, leaves_storage, wood_storage, biomass_storage)
     return factory, starters
+
+def tier_3_steel_beam_factory(
+    ironPurity: Purity = Purity.NORMAL,
+    coalPurity: Purity = Purity.NORMAL
+):
+    '''
+    Builds a factory producing steel beams
+    '''
+
+    factory = Factory(name='Tier 3 Steel Beam Factory')
+
+    # Start with resource nodes providing iron and coal
+    ironSource = ResourceNode(
+        name=f'{ironPurity.name.title()} Iron Source',
+        purity=ironPurity,
+        item=iIronOre
+    )
+
+    coalSource = ResourceNode(
+        name=f'{coalPurity.name.title()} Coal Source',
+        purity=coalPurity,
+        item=iCoal
+    )
+
+    # Connect miners to them
+    ironMiner = MinerMk1(
+        name='Iron Miner',
+        recipe=rIronOreMk1
+    )
+
+    coalMiner = MinerMk1(
+        name='Coal Miner',
+        recipe=rCoalMk1
+    )
+
+    ironSource.outputs[0].connect(ironMiner.inputs[0])
+    coalSource.outputs[0].connect(coalMiner.inputs[0])
+
+    # Split the ores into two foundries
+    ironSplitter = ConveyorSplitter(name='Iron Ore Splitter')
+    coalSplitter = ConveyorSplitter(name='Coal Splitter')
+
+    ironMiner.connect(ironSplitter, ConveyorBeltMk2)
+    coalMiner.connect(coalSplitter, ConveyorBeltMk2)
+
+    # Connect the splitters to a pair of foundries, then merge them back together
+    foundries = [Foundry(
+        name='Steel Foundry',
+        recipe=rSteelIngot,
+        clock_rate=(2/3),
+    ) for i in range(2)]
+
+    steelIngotMerger = ConveyorMerger(name='Steel Ingot Merger')
+
+    for foundry in foundries:
+        ironSplitter.connect(foundry, ConveyorBeltMk2)
+        coalSplitter.connect(foundry, ConveyorBeltMk2)
+        foundry.connect(steelIngotMerger, ConveyorBeltMk2)
+
+    # Connect that merger to a constructor
+    steelBeamConstructor = Constructor(
+        name='Steel Beam Constructor',
+        recipe=rSteelBeam
+    )
+    steelIngotMerger.connect(steelBeamConstructor, ConveyorBeltMk2)
+
+    # Connect the constructor to a storage unit
+    steelBeamStorage = StorageContainer(name='Steel Beam Storage')
+    steelBeamConstructor.connect(steelBeamStorage, ConveyorBeltMk2)
+
+    factory.add([
+        ironSource,
+        coalSource,
+        ironMiner,
+        coalMiner,
+        foundry,
+        steelBeamConstructor,
+        steelBeamStorage
+    ])
+    return factory
+
+def tier_3_coal_power_factory(
+    purity: Purity = Purity.NORMAL
+):
+    '''
+    A power factory made of coal generators
+    '''
+
+    factory = Factory(name='Coal Power Factory')
+
+    # Start with coal and water resource nodes
+    coalSource = ResourceNode(
+        name='Coal Source',
+        purity=purity,
+        item=iCoal
+    )
+
+    waterSource = ResourceNode(
+        name='Water Source',
+        purity=purity.NORMAL,
+        item=iWater
+    )
+
+    # Attach a miner/extractor to those nodes
+    coalMiner = MinerMk1(
+        name='Coal Miner',
+        recipe=rCoalMk1
+    )
+
+    waterExtractor = WaterExtractor(
+        recipe=rWater,
+        clock_rate=1.5
+    )
+
+    coalSource.outputs[0].connect(coalMiner.inputs[0])
+    waterSource.outputs[0].connect(waterExtractor.inputs[0])
+
+    # Split coal and water four ways
+    coalSplitter1 = ConveyorSplitter(name='Coal Splitter Tier 1')
+    coalSplitter2_1 = ConveyorSplitter(name='Coal Splitter Tier 2 #1')
+    coalSplitter2_2 = ConveyorSplitter(name='Coal Splitter Tier 2 #2')
+    waterSplitter1 = PipelineJunctionCross(
+        name='Water Splitter Tier 1',
+        inputs=1,
+        outputs=2
+    )
+    waterSplitter2_1 = PipelineJunctionCross(
+        name='Water Splitter Tier 2 #1',
+        inputs=1,
+        outputs=2
+    )
+    waterSplitter2_2 = PipelineJunctionCross(
+        name='Water Splitter Tier 2 #2',
+        inputs=1,
+        outputs=2
+    )
+
+    coalMiner.connect(coalSplitter1, ConveyorBeltMk2)
+    coalSplitter1.connect(coalSplitter2_1, ConveyorBeltMk2)
+    coalSplitter1.connect(coalSplitter2_2, ConveyorBeltMk2)
+    waterExtractor.connect(waterSplitter1, PipelineMk1),
+    waterSplitter1.connect(waterSplitter2_1, PipelineMk1)
+    waterSplitter1.connect(waterSplitter2_2, PipelineMk1)
+
+    # Hook those up to coal generators
+    coalGenerators = [CoalGenerator(
+        name=f'Coal Generator #{i + 1}',
+        recipe=rCoalPower
+    ) for i in range(4)]
+
+    coalSplitter2_1.connect(coalGenerators[0], ConveyorBeltMk2)
+    coalSplitter2_1.connect(coalGenerators[1], ConveyorBeltMk2)
+    coalSplitter2_2.connect(coalGenerators[2], ConveyorBeltMk2)
+    coalSplitter2_2.connect(coalGenerators[3], ConveyorBeltMk2)
+    waterSplitter2_1.connect(coalGenerators[0], PipelineMk1)
+    waterSplitter2_1.connect(coalGenerators[1], PipelineMk1)
+    waterSplitter2_2.connect(coalGenerators[2], PipelineMk1)
+    waterSplitter2_2.connect(coalGenerators[3], PipelineMk1)
+
+    # Add everything to the factory
+    factory.add([
+        coalSource,
+        waterSource,
+        coalMiner,
+        waterExtractor,
+        coalSplitter1,
+        coalSplitter2_1,
+        coalSplitter2_2,
+        waterSplitter1,
+        waterSplitter2_1,
+        waterSplitter2_2,
+        coalGenerators
+    ])
+    return factory

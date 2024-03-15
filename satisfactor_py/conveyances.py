@@ -89,3 +89,33 @@ class ConveyorLiftMk1(Conveyance):
             )],
             **kwargs
         )
+
+
+class PipelineMk1(Conveyance):
+    '''
+    A first-tier pipeline capable of moving up to 300m³ of fluid per minute.
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            name='Pipeline Mk. 1',
+            availability=Availability(0, 4),
+            wiki_path='/Pipelines#Mk.1-0',
+            conveyance_type=ConveyanceType.PIPE,
+            rate=300,
+            dimensions=Dimension(
+                width=2,
+                length=1,
+                height=2
+            ),
+            inputs=[Input(
+                attached_to=self,
+                conveyance_type=ConveyanceType.PIPE
+            )],
+            outputs=[Output(
+                attached_to=self,
+                conveyance_type=ConveyanceType.PIPE
+            )],
+            **kwargs
+        )
+    
