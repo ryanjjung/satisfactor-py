@@ -13,7 +13,10 @@ from satisfactor_py.base import (
     Recipe,
     ResourceNode
 )
-from satisfactor_py.items import AwesomeSinkPoint
+from satisfactor_py.items import (
+    AwesomeSinkPoint,
+    Water
+)
 
 
 
@@ -135,6 +138,22 @@ class CoalGenerator(Building):
                 length=26,
                 height=36
             ),
+            inputs=[
+                Input(
+                    conveyance_type=ConveyanceType.BELT,
+                    attached_to=self
+                ),
+                Input(
+                    conveyance_type=ConveyanceType.PIPE,
+                    attached_to=self
+                )
+            ],
+            outputs=[
+                Output(
+                    conveyance_type=ConveyanceType.POWER_LINE,
+                    attached_to=self
+                )
+            ],
             **kwargs
         )
 
@@ -504,8 +523,13 @@ class Miner(Building):
 
         self.can_process()
         super().process()
+        self.outputs[0].ingredients = [self.recipe.produces[0]]
+
+        # Apply resource node purity and clock rate
         self.outputs[0].ingredients[0].rate = \
-            self.outputs[0].ingredients[0].rate * self.inputs[0].source.attached_to.purity.value
+            self.outputs[0].ingredients[0].rate * self.inputs[0].source.attached_to.purity.value \
+                * self.clock_rate
+
 
 
 class MinerMk1(Miner):
@@ -517,11 +541,6 @@ class MinerMk1(Miner):
         super().__init__(
             name=name,
             availability=Availability(0, 1),
-            dimensions=Dimension(
-                width=6,
-                length=14,
-                height=18
-            ),
             wiki_path='/Miner#Mk.1',
             base_power_usage=5,
             **kwargs
@@ -583,13 +602,13 @@ class PipelineJunctionCross(Building):
         been placed before.
         '''
 
-        if len(inputs) + len(outputs) > 4:
+        if inputs + outputs > 4:
             raise ValueError('Total number of connections exceeds 4')
 
-        if len(inputs) < 1:
+        if inputs < 1:
             raise ValueError('Cannot have fewer than 1 input')
 
-        if len(outputs < 0):
+        if outputs < 0:
             raise ValueError('Cannot have negative number of connections')
 
         for i in self.inputs:
@@ -646,7 +665,7 @@ class PipelineJunctionCross(Building):
         remaining_rate = total_input_rate
 
         connected_outputs = [output for output in self.outputs if output.target]
-        unfilled_outputs = connected_outputs.copy
+        unfilled_outputs = connected_outputs.copy()
         num_unfilled = len(unfilled_outputs)
 
         # Set the ingredient for each connected output, but give it no rate
@@ -657,16 +676,19 @@ class PipelineJunctionCross(Building):
         # ingredient rate until either there is nothing left to distribute or all connected outputs
         # are full.
         while num_unfilled > 0 and remaining_rate > 0:
+            num_unprocessed = num_unfilled
             for output in unfilled_outputs:
-                ideal_output_rate = remaining_rate / num_unfilled
+                ideal_output_rate = remaining_rate / num_unprocessed
                 remaining_capacity = output.target.attached_to.rate - output.ingredients[0].rate
                 if remaining_capacity >= ideal_output_rate:
                     output.ingredients[0].rate += ideal_output_rate
                     remaining_rate -= ideal_output_rate
+                    num_unprocessed -= 1
                 else:
                     output.ingredients[0].rate = output.target.attached_to.rate
                     remaining_rate -= remaining_capacity
                     num_unfilled -= 1
+                    num_unprocessed -= 1
 
             # Reset the counters for the next pass
             unfilled_outputs = [output for output in connected_outputs \
@@ -787,17 +809,28 @@ class WaterExtractor(Miner):
     A kind of Miner that produces Water
     '''
 
-    def __init__(self, name='Water Extractor' **kwargs):
+    def __init__(self, name='Water Extractor', **kwargs):
+        '''
+        This should be, at a base level, a Miner, but we have to override some special things
+        '''
         super().__init__(
             name=name,
-            building_type=BuildingType.WATER_EXTRACTOR,
             availability=Availability(3, 1),
-            dimensions=Dimension(
-                width=20,
-                length=19.5,
-                height=26
-            ),
             wiki_path='/Water_Extractor',
             base_power_usage=20,
             **kwargs
         )
+        self.building_type = BuildingType.WATER_EXTRACTOR
+        self.dimensions = Dimension(
+            width=20,
+            length=19.5,
+            height=26
+        )
+        self.inputs=[Input(
+            conveyance_type=ConveyanceType.RESOURCE_NODE,
+            attached_to=self
+        )]
+        self.outputs=[Output(
+            conveyance_type=ConveyanceType.PIPE,
+            attached_to=self
+        )]

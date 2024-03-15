@@ -798,7 +798,7 @@ Wood = Item(
 XenoBasher = Item(
     name='Xeno-Basher',
     availability=Availability(3, 4),
-    conveyance_type=NONE,
+    conveyance_type=None,
     stack_size=1,
     sink_value=18800,
     wiki_path='/Xeno-Basher'
@@ -806,7 +806,7 @@ XenoBasher = Item(
 
 XenoZapper = Item(
     name='Xeno-Zapper',
-    conveyance_type=NONE,
+    conveyance_type=None,
     stack_size=1,
     sink_value=1880,
     wiki_path='/Xeno-Zapper'

@@ -61,6 +61,7 @@ from satisfactor_py.items import (
     PipelineSupport as iPipelineSupport,
     PipelineJunctionCross as iPipelineJunctionCross,
     PortableMiner as iPortableMiner,
+    Power as iPower,
     PowerLine as iPowerLine,
     PowerPoleMk1 as iPowerPoleMk1,
     Ramp1mFicsit as iRamp1mFicsit,
@@ -225,6 +226,14 @@ Chainsaw = Recipe(
     produces=[Ingredient(iConveyorBeltMk2, 1, None)]
 )
 
+CoalMk1 = Recipe(
+    name='Coal',
+    availability=Availability(3, 1),
+    wiki_path='/Coal',
+    building_type=BuildingType.MINER,
+    produces=[Ingredient(iCoal, None, 60)]
+)
+
 CoalGenerator = Recipe(
     name='Coal Generator',
     availability=Availability(3, 1),
@@ -238,6 +247,18 @@ CoalGenerator = Recipe(
     produces=[Ingredient(iCoalGenerator, 1, None)]
 )
 
+CoalPower = Recipe(
+    name='Coal Power',
+    availability=Availability(3, 1),
+    wiki_path='/Coal_Generator',
+    building_type=BuildingType.COAL_GENERATOR,
+    consumes=[
+        Ingredient(iCoal, None, 15),
+        Ingredient(iWater, None, 45),
+    ],
+    produces=[Ingredient(iPower, None, 75)]
+)
+
 CompactedCoal = Recipe(
     name='Compacted Coal',
     availability=Availability(None, None, mam=True),
@@ -248,6 +269,18 @@ CompactedCoal = Recipe(
         Ingredient(iSulfur, 5, 25)
     ],
     produces=[Ingredient(iCompactedCoal, 25, None)]
+)
+
+CompactedCoalPower = Recipe(
+    name='Compacted Coal Power',
+    availability=Availability(3, 1),
+    wiki_path='/Coal_Generator',
+    building_type=BuildingType.COAL_GENERATOR,
+    consumes=[
+        Ingredient(iCompactedCoal, None, 7.142857),
+        Ingredient(iWater, None, 45),
+    ],
+    produces=[Ingredient(iPower, None, 75)]
 )
 
 Concrete = Recipe(
@@ -605,6 +638,18 @@ PetroleumCoke = Recipe(
     building_type=BuildingType.REFINERY,
     consumes=[Ingredient(iHeavyOilResidue, None, 40)],
     produces=[Ingredient(iPetroleumCoke, 120, None)]
+)
+
+PetroleumCokePower = Recipe(
+    name='Petroleum Coke Power',
+    availability=Availability(3, 1),
+    wiki_path='/Coal_Generator',
+    building_type=BuildingType.COAL_GENERATOR,
+    consumes=[
+        Ingredient(iPetroleumCoke, None, 25),
+        Ingredient(iWater, None, 45),
+    ],
+    produces=[Ingredient(iPower, None, 75)]
 )
 
 PipelineMk1 = Recipe(

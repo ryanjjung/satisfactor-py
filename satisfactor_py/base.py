@@ -52,27 +52,27 @@ class BuildingType(Enum):
 
     ASSEMBLER                 = 1
     AWESOME_SINK              = 2
-    BIOMASS_GENERATOR         = 8
-    BLENDER                   = 3
-    BUILD_GUN                 = 4
-    COAL_GENERATOR            = 8
-    CONSTRUCTOR               = 5
-    CONVEYANCE                = 6
-    FOUNDRY                   = 7
-    MANUFACTURER              = 9
-    MINER                     = 10
-    OIL_EXTRACTOR             = 11
-    PACKAGER                  = 12
-    PARTICLE_ACCELERATOR      = 13
-    POWER_POLE                = 14
-    REFINERY                  = 15
-    RESOURCE_WELL_PRESSURIZER = 16
-    SMELTER                   = 17
-    SPACE_ELEVATOR            = 18
-    STORAGE                   = 19
-    WATER_EXTRACTOR           = 20
-    WORKSHOP                  = 20
-    OTHER                     = 21
+    BIOMASS_GENERATOR         = 3
+    BLENDER                   = 4
+    BUILD_GUN                 = 5
+    COAL_GENERATOR            = 6
+    CONSTRUCTOR               = 7
+    CONVEYANCE                = 8
+    FOUNDRY                   = 9
+    MANUFACTURER              = 10
+    MINER                     = 11
+    OIL_EXTRACTOR             = 12
+    PACKAGER                  = 13
+    PARTICLE_ACCELERATOR      = 14
+    POWER_POLE                = 15
+    REFINERY                  = 16
+    RESOURCE_WELL_PRESSURIZER = 17
+    SMELTER                   = 18
+    SPACE_ELEVATOR            = 19
+    STORAGE                   = 20
+    WATER_EXTRACTOR           = 21
+    WORKSHOP                  = 22
+    OTHER                     = 23
 
 
 class ConveyanceType(Enum):
@@ -636,11 +636,11 @@ class ResourceNode(Component):
                 ))
             else:
                 target_bldg = self.outputs[0].target.attached_to
-                if target_bldg.building_type != BuildingType.MINER:
+                if target_bldg.building_type not in (BuildingType.MINER, BuildingType.WATER_EXTRACTOR):
                     self.add_error(ComponentError(
                         ComponentErrorLevel.IMPOSSIBLE,
-                        'ResourceNodes must be connected to miners, but this is connected to a '
-                        f'{target.building_type.name}'
+                        'ResourceNodes must be connected to miners or water extractors, but this is connected to a '
+                        f'{self.target.building_type.name}'
                     ))
                 else:
                     if target_bldg.recipe is None:
@@ -789,17 +789,21 @@ class Building(Component):
             for recipe_ingredient in self.recipe.consumes:
                 for input_ingredient in self.ingredients:
                     if recipe_ingredient.item == input_ingredient.item:
-                        if input_ingredient.rate < recipe_ingredient.rate:
+                        if input_ingredient.rate < recipe_ingredient.rate * self.clock_rate:
                             self.add_error(ComponentError(
                                 ComponentErrorLevel.WARNING,
                                 f'Recipe consumes {recipe_ingredient.item.name} '\
-                                'faster than it is being supplied.'
+                                'faster than it is being supplied. '\
+                                f'Supply rate: {input_ingredient.rate}; '\
+                                f'Consumption rate: {recipe_ingredient.rate * self.clock_rate}'
                             ))
-                        if input_ingredient.rate > recipe_ingredient.rate:
+                        if input_ingredient.rate > recipe_ingredient.rate * self.clock_rate:
                             self.add_error(ComponentError(
                                 ComponentErrorLevel.WARNING,
                                 f'Ingredient {recipe_ingredient.item.name} is supplied '\
-                                'faster than the recipe can consume it.'
+                                'faster than the recipe can consume it. '\
+                                f'Supply rate: {input_ingredient.rate}; '\
+                                f'Consumption rate: {recipe_ingredient.rate * self.clock_rate}'
                             ))
 
         success = True
@@ -930,7 +934,6 @@ class Conveyance(Building):
             'rate': self.rate
         })
         return base
-https://github.com/ifl0w/RandomWallpaperGnome3.git
     def process(self):
         '''
         Ensures the Recipe is set up correctly and that the outputs match the inputs.
