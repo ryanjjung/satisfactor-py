@@ -312,6 +312,15 @@ errors = {
 - `debug()`: This function traverses the factory. At each component, it outputs some identifying information about the component and what stage of processing it's at (before or after processing it), then stops at a Python debugger prompt. From here, you can use [`pdb`](https://docs.python.org/3/library/pdb.html) as usual to debug the state of each component.
 
 
+#### Reviewing errors
+
+After simulating a factory, you can coalesce its errors easily through two convenience functions:
+
+`Factory.get_errors()` produces a dict where they keys are UUIDs mapping to the `id` of a component in the factory. The values are lists of all `base.ComponentError`s associated with that component.
+
+If you need a version of this which is better suited for textual output, use `Factory.get_errors_as_dict()` instead. Instead of the error objects themselves, it gives dicts containing the name of component, the type of building, and dictionary representations of the errors.
+
+
 ### patterns
 
 This submodule contains functions which produce factories following certain established patterns. Right now this is mostly used for testing things, but could be used in the future for stamping out efficient factories from templates.
@@ -366,28 +375,40 @@ This ultimately produces output like this, showing that the storage container at
 }
 ```
 
-If you run the error collection code shown in the "factories" section above, you can even see some warnings:
+If you print out the result of `factory.get_errors_as_dict()`, you can even see some warnings:
 
 ```
 Errors: {
-  "Iron Smelter": [
-    {
-      "level": "WARNING",
-      "message": "Ingredient Iron Ore is supplied faster than the recipe can consume it."
-    }
-  ],
-  "Rod Constructor": [
-    {
-      "level": "WARNING",
-      "message": "Ingredient Iron Ingot is supplied faster than the recipe can consume it."
-    }
-  ],
-  "Screw Constructor": [
-    {
-      "level": "WARNING",
-      "message": "Ingredient Iron Rod is supplied faster than the recipe can consume it."
-    }
-  ]
+  "59c7ec9a-1a08-4c2e-a888-de1caa1fbba1": {
+    "component": "Storage Merger #1",
+    "building_type": "Conveyance",
+    "errors": [
+      {
+        "level": "DEBUG",
+        "message": "The merger's combined input rate is greater than its output"
+      }
+    ]
+  },
+  "8433771a-a467-4d48-88e0-f19306040ba6": {
+    "component": "Storage Merger #2",
+    "building_type": "Conveyance",
+    "errors": [
+      {
+        "level": "DEBUG",
+        "message": "The merger's combined input rate is greater than its output"
+      }
+    ]
+  },
+  "d03fc620-95ff-465b-ac1d-500216d0e313": {
+    "component": "Storage Merger #3",
+    "building_type": "Conveyance",
+    "errors": [
+      {
+        "level": "DEBUG",
+        "message": "The merger's combined input rate is greater than its output"
+      }
+    ]
+  }
 }
 ```
 

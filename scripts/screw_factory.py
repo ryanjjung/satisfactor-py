@@ -9,11 +9,7 @@ from satisfactor_py.patterns import tier_1_screw_factory
 def main():
     factory = tier_1_screw_factory()
     factory.simulate()
-    errors = {
-        component.name: [error.to_dict() for error in component.errors]
-        for component in factory.components
-        if len(component.errors) > 0
-    }
+    errors = factory.get_errors_as_dict()
     print(f'Errors: {json.dumps(errors, indent=2)}')
 
     print('Components without ingredients:')
@@ -28,9 +24,6 @@ def main():
         for ingredient in storage.ingredients:
             print(f'{storage} - {ingredient.item}@{ingredient.rate}')
 
-
-
-    import pdb; pdb.set_trace()
 
 if __name__ == '__main__':
     main()
