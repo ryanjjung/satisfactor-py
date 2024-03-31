@@ -5,16 +5,28 @@ GTK_APP_ID="com.github.ryanjjung.satisfactor_py"
 import gi
 gi.require_version('Gtk', '4.0')
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gio
 from satisfactor_py.base import Availability
+from satisfactor_ui import files
 
 
 class MainWindow(Gtk.ApplicationWindow):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, filename=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.factory = None
+        if filename:
+            self.__load_factory(filename)
         self.set_default_size(1000, 800)
         self.set_title('Satisfactory Designer')
         self.__build_window()
+
+    def load_factory(self, filename):
+        self.factory = files.load_factory(filename) if filename else None
+        self.set_title(f'Satisfactory Designer ({self.factory.name})')
+        self.boxTopBar.set_sensitive(True)
+        self.cboTier.set_active(self.factory.tier)
+        self.__cboTier_changed(self.cboTier)
+        self.cboUpgrade.set_active(self.factory.upgrade - 1)
 
     def __build_window(self):
         '''
@@ -67,6 +79,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxTopBar.set_margin_bottom(10)
         self.boxTopBar.set_margin_start(10)
         self.boxTopBar.set_margin_end(10)
+        self.boxTopBar.set_sensitive(True if self.factory else False)
 
         self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
         self.boxTopBar.append(self.lblTierUpgrade)
@@ -92,9 +105,18 @@ class MainWindow(Gtk.ApplicationWindow):
 class FactoryDesigner(Gtk.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.mainWindow = None
+        self.set_flags(Gio.ApplicationFlags.HANDLES_OPEN)
         self.connect('activate', self.on_activate)
+        self.connect('open', self.on_open)
 
     def on_activate(self, app):
-        self.mainWindow = MainWindow(application=app)
+        if not self.mainWindow:
+            self.mainWindow = MainWindow(application=app)
         self.mainWindow.present()
 
+    def on_open(self, app, files, n_files, hint):
+        self.on_activate(app)
+        if n_files > 1:
+            raise ValueError('Factory Designer can open only one factory at a time')
+        self.mainWindow.load_factory(files[0].get_path())
