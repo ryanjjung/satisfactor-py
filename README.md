@@ -5,18 +5,19 @@ A Python utility for planning factories in the video game [Satisfactory](https:/
 
 ## Setup
 
-Make a virtual environment, activate it, install dependencies:
+The `satisfactor_py` library has no dependencies.
+
+`satisfactor_ui` requires GTK 4.0. Install it and the Python bindings for GObject. On Fedora, you run:
 
 ```
-virtualenv -p python3 .venv
-. ./bin/activate
-pip install -r requirements.txt
+dnf install gtk4 python3-gobject
 ```
-
 
 ## Run Something
 
-Right now, this is all CLI-driven and written up in Python code. A good place to start is the screw factory test script:
+Right now, this is mostly CLI-driven and written up in Python code. A GTK-based user interface is in development.
+
+A good place to start is the [screw factory test script](./scripts/screw_factory.py):
 
 ```
 PYTHONPATH=. ./scripts/screw_factory.py
@@ -25,7 +26,7 @@ PYTHONPATH=. ./scripts/screw_factory.py
 
 ## How To
 
-This library is intended to be used in a similar fashion to the way you play the game itself. That is, you construct buildings, fit them with recipes, and connect them with conveyances. You add these components to a `Factory` object. When you are ready to see if your factory has any problems or inefficiencies, you run that factory's `simulate` function. Any such errors will get attached to the components they apply to, and you can collect and review those afterward.
+This library is intended to be used in a similar fashion to the way you play the game itself. You construct buildings, fit them with recipes, and connect them with conveyances. You add these components to a `Factory` object. When you are ready to see if your factory has any problems or inefficiencies, you run that factory's `simulate` function. Any such errors will get attached to the components they apply to, and you can collect and review those afterward.
 
 The `satisfactor_py` module has a number of organizational submodules which contain the various factory components' code representations. The `scripts` directory here contains a number of test scripts that you can review and tinker with.
 
@@ -37,9 +38,9 @@ Here's a listing of each submodule and a summary of what you can find in each.
 
 #### base
 
-Contains the underlying data structures that provide common features to all the higher-order components. This includes the common metadata associated with each component (`base.Base`), the `Enum` objects defining various discrete options (such as resource node `Purity` levels and `BuildingType`s), and what `ComponentError`s look like), among other things.
+Contains the underlying data structures that provide common features to all the higher-order components. This includes the common metadata associated with each component (`base.Base`), the `Enum` objects defining various discrete options such as resource node `Purity` levels and `BuildingType`s, and what `ComponentError`s look like, among other things.
 
-Generally, you do not directly use the contents of the `base` module directly. It does not make much sense to create a generic `Building`. Instead, you probably want to create a more specific type of building, such as a `Builder` or a `Constructor`, which you get elsewhere. Peruse the code for full details, but here are a few things of note:
+Generally, you do not directly use the contents of the `base` module. It does not make much sense to create a generic `Building`. Instead, you probably want to create a more specific type of building, such as a `Smelter` or a `Constructor`, which you get elsewhere. Peruse the code for full details, but here are a few things of note:
 
 
 ##### base.Base
@@ -48,8 +49,8 @@ Every single factory component you build with this library is based on this clas
 
 - `id`: A randomly generated UUID which uniquely identifies an object
 - `name` An arbitrary string used for human readability/reference
-- `availability`: An instance of `base.Availability`. A marker of what unlocks the object in the game. This can be at a particular tier and upgrade level, or be unlocked through the MAM.
-- `wiki_path`: What page of the fandom wiki contains information on this object.
+- `availability`: An instance of `base.Availability`. A marker of what unlocks the object in the game. This can be at a particular tier and upgrade level, or be unlocked through the MAM or AWESOME Store.
+- `wiki_path`: What page of the fan wiki contains information on this object.
 - `tags`: An arbitrary dictionary of key/value pairs, used for higher order factory functions.
 
 You can set these values on any object you wish.
@@ -57,7 +58,7 @@ You can set these values on any object you wish.
 
 ##### base.Component
 
-A `Component` is anything that can be constructed as part of a factory, including all building and conveyor belts, and even the lower-order inputs and outputs that connect them all. Common to all components are the following properties:
+A `Component` is anything that can be constructed as part of a factory, including all buildings (including all conveyor belts), and even the lower-order inputs and outputs that connect them all. Common to all components are the following properties:
 
 - `constructed`: A boolean marker indicating whether the component has been built in a user's game world yet.
 - `traversed`: A boolean marker indicating whether the component has been traversed by this library's simulation function. This is useful for determining if you have built something but not connected it, or if there is an upstream factory problem preventing traversal of the component.
@@ -81,7 +82,7 @@ They have these functions:
 
 ##### base.Ingredient
 
-An `Ingredient` is any `Item` in some volume, to be used as input or output of a recipe. If it has an `amount`, that refers to the number of this item used in a single production of a recipe, such as when you craft an item at a craft bench. If it has a `rate`, that refers to a number of this item consumed or produced per minute, such as when you attach a recipe to a building.
+An `Ingredient` is any `Item` in some volume, to be used as input or output of a recipe. If it has an `amount`, that refers to the number of this item used in a single production of a recipe, such as when you craft an item at a craft bench or workshop. If it has a `rate`, that refers to a number of this item consumed or produced per minute, such as when you attach a recipe to a building.
 
 
 ##### base.Recipe
@@ -93,7 +94,7 @@ A `Recipe` also has a `base.BuildingType` constraining which buildings can produ
 
 ##### base.Connection, base.Input, base.Output
 
-A `Connection` is any port of transfer between two `Component`s. These are things you don't ordinarily worry about when playing the game because they're built into the components. We care about them here for logical reasons.
+A `Connection` is any port of transfer between two `Component`s. These are things you don't ordinarily worry about when playing the game because they're built into the buildings. We care about them here for logical reasons.
 
 A `Connection` doesn't have any usefulness without specifying it as an `Input` or an `Output` because flow direction always matters in Satisfactory. As such, navigating the flow of a factory follows this kind of pattern:
 
@@ -108,7 +109,7 @@ Thus, you can navigate forward through the buildings of a factory by manipulatin
 component.outputs[0].target.attached_to
 ```
 
-This starts at one component and traverses its zeroth output to whatever input it's pointed at, and then to the building that input is attached to. You can do this in reverse as well:
+This starts at one component and traverses its zeroth output to whatever input it's pointed at (its `target`), and then to the building that input is attached to. You can do this in reverse as well:
 
 ```
 component.inputs[0].source.attached_to
@@ -119,12 +120,12 @@ component.inputs[0].source.attached_to
 
 ##### base.ResourceNode
 
-A `ResourceNode` is a special `Component` with no inputs and one output. It's special because unlike other buildings, it doesn't process a recipe and can only be attached to a miner. This makes for slightly different logic than other components, so it gets its own base class.
+A `ResourceNode` is a special `Component` with no inputs and one output. It's special because unlike other factory components, it doesn't process a recipe and can only be attached to a miner. This makes for slightly different logic than other components, so it gets its own base class.
 
 
 ##### base.Building
 
-`Building`s are the base class for most constructions in Satisfactory. A `Building` is any component which is built in the world, which processes a recipe of some kind. Even conveyor belts function as "buildings" in this context.
+`Building`s are the base class for most constructions in Satisfactory. A `Building` is any component which occupies physical space in the world and which processes a recipe of some kind. Even conveyor belts function as "buildings" in this context.
 
 A `Building` has the following properties:
 
@@ -140,7 +141,7 @@ A `Building` has the following properties:
 
 A `Building` has the following methods:
 
-- `can_process()`: Checks the building to see if the basic requirements to operate the building are present. Returns `True` if the building should be able to process its recipe.
+- `can_process()`: Checks the building to see if the basic requirements to operate the building are present. Returns `True` if the building should be able to process its recipe. If this returns `False`, factory traversal will not continue beyond this `Building`.
 - `process()`: Processes the recipe in the building, passing the recipe's `produces` content on to the outputs.
 
 It also has a `connect` function. This is a convenience function allowing you to connect this building directly to another one. Without this, you must connect buildings at the `Connection` level. Consider:
@@ -172,8 +173,7 @@ conveyor = smelter.connect(miner, ConveyorBeltMk1, connect_output=True)
 
 ##### base.Conveyance
 
-A `Conveyance` is anything you can build which transports `Item`s from one `Connection` to another without changing the contents being conveyed. When these components' `process` function is run, a special kind of recipe called a `base.ConveyanceRecipe` is created so that it `produces` whatever `Ingredient`s are on the conveyance. This can be a pipeline or conveyor belt, or represent vehicular transportation.
-
+A `Conveyance` is anything you can build which transports `Item`s from one `Connection` to another without changing the contents being conveyed. When these components' `process` function is run, a special kind of recipe called a `base.ConveyanceRecipe` is created so that it `produces` whatever `Ingredient`s are on the conveyance, limited by the conveyance's rate of transfer. This can be a pipeline or conveyor belt, or represent vehicular transportation.
 
 
 ##### base.Storage
@@ -218,7 +218,7 @@ This submodule contains specific `Recipe` implementations. Generally, these clas
 - `Screw`
 - `PersonalStorageBox`
 
-Recipes, Items, and Buildings, often have the same name. When importing these, you may find they conflict with each other. Try using prefixed import names to work around this:
+`Recipe`s, `Item`s, and `Building`s often have the same name. When importing these, you may find they conflict with each other. Try using prefixed import names to work around this:
 
 ```
 from satisfactor_py.buildings import Constructor as bConstructor
@@ -243,7 +243,7 @@ This submodule contains specific `Storage` implementations. Generally, these cla
 
 A `factory.Factory` is a collection of `Component`s which ideally work efficiently. This is the higher-level class from which you can act on your components in an organized fashion.
 
-Primarily, a `Factory` has a list of `Component`s. In the game world, we think of these as having a flow to them. Typically, a factory begins at a `ResourceNode` and flows through a series of `Buildings` which convert the resource into other `Item`s (although you are certainly not limited to this model). Here, though, all components exist as a flat list, whether they're connected to each other or not. Using a `Factory` you can access its components through simple Python list comprehensions.
+Primarily, a `Factory` has a list of `components`. In the game world, we think of these as having a flow to them. Typically, a factory begins at a `ResourceNode` and flows through a series of `Buildings` which convert the resource into other `Item`s (although you are certainly not limited to this model). Here, though, all components exist as a flat list, whether they're connected to each other or not. Using a `Factory` you can access its components through simple Python list comprehensions.
 
 For example, this returns a list of components which are `Building`s in standby mode:
 
@@ -281,7 +281,7 @@ As shown above, `factory.components` is a list and so you can run Python list co
 - `get_buildings_by_type(building_type)`: Given a `base.BuildingType`, returns a list of all buildings of that type in this factory.
 - `get_component_by_id(uuid)`: Returns the single factory component identified by the UUID.
 - `get_components_by_name(name, fuzzy)`: Returns a list of components in the factory whose name match the provied text. This defaults to an exact string match. Set `fuzzy=True` to enable substring matching.
-- `get_components_by_tag(key, value, fuzzy)`: Returns a list of components with tags where they value of the provided key matches the provided value. If no `value` is provided, this looks for components with the matching key set to anything at all. If a `value` is provided, this looks for an exact key/value match. If `fuzzy=True`, enables substring matching on the value only; the key name must still match completely. This enables you to arbitrarily tag components and then retrieve them by those tags later.
+- `get_components_by_tag(key, value, fuzzy)`: Returns a list of components with tags where the value of the provided key matches the provided value. If no `value` is provided, this looks for components with the matching key set to anything at all. If a `value` is provided, this looks for an exact key/value match. If `fuzzy=True`, enables substring matching on the value only; the key name must still match completely. This enables you to arbitrarily tag components and then retrieve them by those tags later.
 
 
 #### Traversing factories
@@ -355,7 +355,7 @@ This ultimately produces output like this, showing that the storage container at
       "upgrade": 3
     },
     "wiki_path": "/Screw",
-    "wiki_url": "https://satisfactory.fandom.com/wiki/Screw",
+    "wiki_url": "https://satisfactory.wiki.gg/wiki/Screw",
     "tags": {},
     "conveyance_type": "BELT",
     "stack_size": 500,
