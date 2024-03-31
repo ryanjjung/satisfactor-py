@@ -27,11 +27,15 @@ class Factory(Base):
 
     def __init__(self,
         components: list[Component] = list(),
+        tier: int = 0,
+        upgrade: int = 0,
         **kwargs
     ):
         super().__init__(**kwargs)
         self._components = components
         self._errors = list()
+        self.tier = tier
+        self.upgrade = upgrade
 
     def to_dict(self):
         base = super().to_dict()

@@ -12,6 +12,9 @@ from typing import Type
 from uuid import uuid4
 
 
+# The indices of this list line up with tiers (see Milestones wiki page)
+# The values are the number of upgrade levels within each tier.
+TIERS = [ 6, 3, 5, 4, 5, 4, 4, 5, 4 ]
 WIKI_URL_BASE = 'https://satisfactory.wiki.gg/wiki'
 
 
@@ -43,6 +46,17 @@ class Availability(object):
             'tier': self.tier,
             'upgrade': self.upgrade
         }
+    
+    @staticmethod
+    def get_tier_strings():
+        return [str(i) for i in range(len(TIERS))]
+
+    @staticmethod
+    def get_upgrade_strings(tier):
+        '''
+        Returns strigified versions of upgrade levels for the given tier
+        '''
+        return [str(i + 1) for i in range(TIERS[tier])]
 
 
 class BuildingType(Enum):

@@ -4,8 +4,9 @@ GTK_APP_ID="com.github.ryanjjung.satisfactor_py"
 
 import gi
 gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
-from gi.repository import Gtk, Adw
+
+from gi.repository import Gtk
+from satisfactor_py.base import Availability
 
 
 class MainWindow(Gtk.ApplicationWindow):
@@ -13,54 +14,82 @@ class MainWindow(Gtk.ApplicationWindow):
         super().__init__(*args, **kwargs)
         self.set_default_size(1000, 800)
         self.set_title('Satisfactory Designer')
-        self.__build_layout()
+        self.__build_window()
 
-    def __build_layout(self):
+    def __build_window(self):
+        '''
+        Builds the contents of the main window. A strip of factory-level functions appear across
+        the top. A column along the left displays building options. A column along the right
+        displays info based on the current context. A space through the middle is the main factory
+        designer area.
+        '''
+
         # Build a vertical box layout to give us a strip on top for factory tools
         self.boxMain = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.btnTop = Gtk.Button(label='Top')
-        self.boxMain.append(self.btnTop)
+        self.boxMain.append(self.__top_bar())
 
         # Build the main split panel container
-        self.paneMain = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self.boxMain.append(self.paneMain)
+        self.paneLeft = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxMain.append(self.paneLeft)
 
-        # Build the left-hand frame containing the list of buildings
-        self.frameBuildings = Gtk.Frame()
-        self.paneMain.set_start_child(self.frameBuildings)
-        self.paneMain.set_position(200)
+        # Build the left-hand panel containing the list of buildings
+        self.lblBuildings = Gtk.Label(label='Buildings Options')
+        self.paneLeft.set_start_child(self.lblBuildings)
+        self.paneLeft.set_position(200)
+        self.paneLeft.set_vexpand(True)
 
-        # Build the right-hand frame, which will be further split
-        self.frameRightLayout = Gtk.Frame()
-        self.paneMain.set_end_child(self.frameRightLayout)
-        self.paneMain.set_vexpand(True)
+        # Build the right-hand panel, containing context info
+        self.paneRight = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.paneRight.set_position(600)
+        self.paneLeft.set_end_child(self.paneRight)
 
-        # Split the right panel into two more panels
-        self.paneRightLayout = Gtk.Paned()
-        self.paneRightLayout.set_orientation(Gtk.Orientation.HORIZONTAL)
-        self.frameRightLayout.set_child(self.paneRightLayout)
+        lblDesigner = Gtk.Label(label='Factory Designer')  # Placeholder
+        self.paneRight.set_start_child(lblDesigner)
 
-        # Build out the right two panels
-        self.frameFactory = Gtk.Frame()
-        self.frameInfo = Gtk.Frame()
-        self.paneRightLayout.set_start_child(self.frameFactory)
-        self.paneRightLayout.set_end_child(self.frameInfo)
-        self.paneRightLayout.set_position(600)
-
-
-        self.btnBuildings = Gtk.Button(label='Buildings')
-        self.frameBuildings.set_child(self.btnBuildings)
-
-        self.btnFactory = Gtk.Button(label='Factory')
-        self.frameFactory.set_child(self.btnFactory)
-
-        self.btnInfo = Gtk.Button(label='Info')
-        self.frameInfo.set_child(self.btnInfo)
+        lblContext = Gtk.Label(label='Context Info')  # Placeholder
+        self.paneRight.set_end_child(lblContext)
 
         self.set_child(self.boxMain)
+    
+    def __cboTier_changed(self, cbo):
+        self.cboUpgrade.remove_all()
+        for upgrade in Availability.get_upgrade_strings(self.cboTier.get_active()):
+            self.cboUpgrade.append(upgrade, upgrade)
+
+    def __top_bar(self):
+        '''
+        Builds the UI controls which run across the top bar of the window.
+        '''
+
+        self.boxTopBar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxTopBar.set_spacing(10)
+        self.boxTopBar.set_margin_top(10)
+        self.boxTopBar.set_margin_bottom(10)
+        self.boxTopBar.set_margin_start(10)
+        self.boxTopBar.set_margin_end(10)
+
+        self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
+        self.boxTopBar.append(self.lblTierUpgrade)
+
+        self.cboTier = Gtk.ComboBoxText()
+        for tier in Availability.get_tier_strings():
+            self.cboTier.append(tier, tier)
+        self.cboTier.set_active(0)
+        self.boxTopBar.append(self.cboTier)
+
+        self.lblTierUpgradeSlash = Gtk.Label(label='/')
+        self.boxTopBar.append(self.lblTierUpgradeSlash)
+
+        self.cboUpgrade = Gtk.ComboBoxText()
+        self.__cboTier_changed(self.cboUpgrade)
+        self.boxTopBar.append(self.cboUpgrade)
+
+        self.cboTier.connect('changed', self.__cboTier_changed)
+
+        return self.boxTopBar
 
 
-class FactoryDesigner(Adw.Application):
+class FactoryDesigner(Gtk.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.connect('activate', self.on_activate)
