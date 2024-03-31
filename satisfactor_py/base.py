@@ -583,8 +583,11 @@ class ResourceNode(Component):
         item: Item,
         **kwargs
     ):
+        wiki_path = kwargs['wiki_path'] or '/Resource_Node',
+        del(kwargs['wiki_path'])
+
         super().__init__(
-            wiki_path='/Resource_Node',
+            wiki_path=wiki_path,
             **kwargs
         )
         self.purity = purity
@@ -596,14 +599,11 @@ class ResourceNode(Component):
         )]
 
     def to_dict(self):
-        outputs = [output.id for output in self.outputs]
-        base = super().to_dict()
-        base.update({
+        return super().to_dict().update({
             'purity': self.purity.name,
             'item': self.item.to_dict(),
-            'outputs': outputs
+            'outputs': [output.id for output in self.outputs]
         })
-        return base
 
     def process(self):
         '''
@@ -656,6 +656,85 @@ class ResourceNode(Component):
                                 ComponentErrorLevel.IMPOSSIBLE,
                                 f'The connected Miner must produce {self.item.name}, but it does not.'
                             ))
+
+
+class InfiniteSupplyNode(ResourceNode):
+    '''
+    An InfiniteSupplyNode is a "fake" ResourceNode capable of producing an infinite amount of any
+    Item in the game. This does not represent a real in-game building. Instead, it is used as a
+    stand-in for other factories that might exist in the actual game but which we do not want to
+    fully design in this tool.
+
+        - item: The item this node supplies
+        - rate: The rate at which the node supplies the item. If set to `None`, this will output the
+            item at the fastest rate it can convey it along the connected conveyance.
+    '''
+
+    def __init__(self,
+        item: Item,
+        rate: float,
+        conveyance_type: ConveyanceType,
+        **kwargs
+    ):
+        super().__init__(
+            purity=Purity.NORMAL,
+            item=item,
+            wiki_path=item.wiki_path,
+            **kwargs
+        )
+        self.item = item
+        self.rate = rate
+        self.outputs = [Output(
+            conveyance_type=conveyance_type,
+            attached_to=self
+        )]
+
+    def to_dict(self):
+        return super().to_dict().update({
+            'rate': self.rate
+        })
+
+    def can_process(self):
+        can_process = True
+        if not self.item:
+            self.add_error(ComponentError(
+                level=ComponentErrorLevel.IMPOSSIBLE,
+                message='Node doesn\'t supply an item.'
+            ))
+            self.can_process = False
+
+        if not self.outputs[0].target:
+            self.add_error(ComponentError(
+                level=ComponentErrorLevel.WARNING,
+                message='Node is not connected to a conveyance.'
+            ))
+            self.can_process = False
+
+        return can_process
+
+    def process(self):
+        self.clear_errors()
+
+        if not self.can_process():
+            return False
+
+        # Set the output rate to either the defined rate or the fastest the connected
+        # conveyance can carry it.
+        rate = self.rate
+        if not rate:
+            rate = self.outputs[0].target.attached_to.rate
+        else:
+            rate = min(rate, self.outputs[0].target.attached_to.rate)
+
+        self.outputs[0].ingredients = [
+            Ingredient(
+                item=self.item,
+                amount=None,
+                rate=rate
+            )
+        ]
+
+        return True
 
 
 class Building(Component):
