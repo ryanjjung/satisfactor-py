@@ -123,6 +123,11 @@ component.inputs[0].source.attached_to
 A `ResourceNode` is a special `Component` with no inputs and one output. It's special because unlike other factory components, it doesn't process a recipe and can only be attached to a miner. This makes for slightly different logic than other components, so it gets its own base class.
 
 
+##### base.InfiniteSupplyNode
+
+Functionally, this is a `base.ResourceNode` (in the sense that it acts as a component which starts a factory's traversal). It supplies an infinite amount of any Item in the game. This is used as a stand-in for other factories which you might not want to fully model in this tool. It has one output, and when it's connected to a conveyance, outputs the resource as fast as that conveyance can take it.
+
+
 ##### base.Building
 
 `Building`s are the base class for most constructions in Satisfactory. A `Building` is any component which occupies physical space in the world and which processes a recipe of some kind. Even conveyor belts function as "buildings" in this context.

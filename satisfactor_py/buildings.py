@@ -43,7 +43,8 @@ class Assembler(Building):
             outputs=[Output(
                 conveyance_type=ConveyanceType.BELT,
                 attached_to=self
-            )]
+            )],
+            **kwargs
         )
 
 
