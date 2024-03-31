@@ -2,7 +2,6 @@
 
 GTK_APP_ID="com.github.ryanjjung.satisfactor_py"
 
-import sys
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -61,20 +60,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.set_child(self.boxMain)
 
 
-class MyApp(Adw.Application):
+class FactoryDesigner(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.connect('activate', self.on_activate)
 
     def on_activate(self, app):
-        self.win = MainWindow(application=app)
-        self.win.present()
+        self.mainWindow = MainWindow(application=app)
+        self.mainWindow.present()
 
-
-def main():
-    app = MyApp(application_id="com.example.GtkApplication")
-    app.run(sys.argv)
-
-
-if __name__ == '__main__':
-    main()
