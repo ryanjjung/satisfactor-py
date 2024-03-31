@@ -316,7 +316,7 @@ errors = {
 
 After simulating a factory, you can coalesce its errors easily through two convenience functions:
 
-`Factory.get_errors()` produces a dict where they keys are UUIDs mapping to the `id` of a component in the factory. The values are lists of all `base.ComponentError`s associated with that component.
+`Factory.get_errors()` produces a dict where the keys are UUIDs mapping to the `id` of a component in the factory. The values are lists of all `base.ComponentError`s associated with that component.
 
 If you need a version of this which is better suited for textual output, use `Factory.get_errors_as_dict()` instead. Instead of the error objects themselves, it gives dicts containing the name of component, the type of building, and dictionary representations of the errors.
 
