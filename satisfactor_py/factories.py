@@ -147,6 +147,34 @@ class Factory(Base):
 
         return matches
 
+    def get_errors(self) -> dict[str, list[ComponentError]]:
+        '''
+        Returns a dictionary where the keys are UUIDs which correspond to components in this factory
+        and the values are lists of `base.ComponentError`s occuring on those components. Use this
+        when programmatically reviewing errors in the factory.
+        '''
+
+        return {
+            component.id: component.errors
+            for component in self.components
+            if len(component.errors) > 0
+        }
+
+    def get_errors_as_dict(self) -> dict[str, dict]:
+        '''
+        Returns a dictionary where the keys are UUIDs which correspond to components in this factory
+        and where the values are dictionary representations of `base.ComponentError` objects. Use
+        this when preparing textual output about errors in the factory.
+        '''
+
+        return {
+            component.id: {
+                'component': component.name,
+                'building_type': component.building_type.name.title(),
+                'errors': [ error.to_dict() for error in component.errors ]
+            } for component in self.components if len(component.errors) > 0
+        }
+
 
     def traverse_all(self,
         func: Callable
@@ -159,7 +187,6 @@ class Factory(Base):
         '''
 
         self.traverse_multi(self.resource_nodes, func)
-
 
     def traverse_multi(self,
         components: list[Component],
