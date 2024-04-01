@@ -1,5 +1,6 @@
 import json
 import pdb
+import pickle
 
 from threading import Thread
 from typing import Callable
@@ -179,7 +180,6 @@ class Factory(Base):
             } for component in self.components if len(component.errors) > 0
         }
 
-
     def traverse_all(self,
         func: Callable
     ):
@@ -305,6 +305,23 @@ class Factory(Base):
         Runs factory simulation beginning at the specified list of components.
         '''
         self.traverse_multi(components, simulate_component)
+
+    def save(self, filename: str):
+        '''
+        Pickles the given factory and saves that content to the specified file
+        '''
+
+        with open(filename, 'wb') as fh:
+            pickle.dump(self, fh, pickle.HIGHEST_PROTOCOL)
+    
+    @staticmethod
+    def load(filename: str):
+        with open(filename, 'rb') as fh:
+            factory = pickle.load(fh)
+    
+        return factory
+
+
 
 def drain_component(component):
     '''

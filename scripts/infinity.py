@@ -54,8 +54,7 @@ factory.add([
     storRIP
 ])
 
-from satisfactor_ui.files import save_factory
-save_factory(factory, '/home/ryan/tmp/factory.sat')
+factory.save('/home/ryan/tmp/factory.sat')
 
 factory.simulate()
 print(json.dumps(factory.get_errors_as_dict(), indent=2))

@@ -7,7 +7,7 @@ gi.require_version('Gtk', '4.0')
 
 from gi.repository import Gtk, Gio
 from satisfactor_py.base import Availability
-from satisfactor_ui import files
+from satisfactor_py.factories import Factory
 
 
 class MainWindow(Gtk.ApplicationWindow):
@@ -21,7 +21,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.__build_window()
 
     def load_factory(self, filename):
-        self.factory = files.load_factory(filename) if filename else None
+        self.factory = Factory.load(filename) if filename else None
         self.set_title(f'Satisfactory Designer ({self.factory.name})')
         self.boxTopBar.set_sensitive(True)
         self.cboTier.set_active(self.factory.tier)
