@@ -54,7 +54,7 @@ factory.add([
     storRIP
 ])
 
-factory.save('/home/ryan/tmp/factory.sat')
+factory.save('/home/ryan/tmp/infinity.sat')
 
 factory.simulate()
 print(json.dumps(factory.get_errors_as_dict(), indent=2))

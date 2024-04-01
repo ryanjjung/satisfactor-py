@@ -29,7 +29,7 @@ class Factory(Base):
     def __init__(self,
         components: list[Component] = list(),
         tier: int = 0,
-        upgrade: int = 0,
+        upgrade: int = 1,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -313,12 +313,12 @@ class Factory(Base):
 
         with open(filename, 'wb') as fh:
             pickle.dump(self, fh, pickle.HIGHEST_PROTOCOL)
-    
+
     @staticmethod
     def load(filename: str):
         with open(filename, 'rb') as fh:
             factory = pickle.load(fh)
-    
+
         return factory
 
 

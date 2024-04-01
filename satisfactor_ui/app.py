@@ -8,12 +8,14 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, Gio
 from satisfactor_py.base import Availability
 from satisfactor_py.factories import Factory
+from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
 
 
 class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, filename=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.factory = None
+        self.unsaved_changes = True
         if filename:
             self.__load_factory(filename)
         self.set_default_size(1000, 800)
@@ -22,11 +24,16 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def load_factory(self, filename):
         self.factory = Factory.load(filename) if filename else None
+        self.window_update_for_factory_change()
+
+    def window_update_for_factory_change(self):
         self.set_title(f'Satisfactory Designer ({self.factory.name})')
         self.boxTopBar.set_sensitive(True)
         self.cboTier.set_active(self.factory.tier)
         self.__cboTier_changed(self.cboTier)
         self.cboUpgrade.set_active(self.factory.upgrade - 1)
+
+    # Layout construction
 
     def __build_window(self):
         '''
@@ -62,11 +69,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneRight.set_end_child(lblContext)
 
         self.set_child(self.boxMain)
-    
-    def __cboTier_changed(self, cbo):
-        self.cboUpgrade.remove_all()
-        for upgrade in Availability.get_upgrade_strings(self.cboTier.get_active()):
-            self.cboUpgrade.append(upgrade, upgrade)
 
     def __top_bar(self):
         '''
@@ -80,6 +82,22 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxTopBar.set_margin_start(10)
         self.boxTopBar.set_margin_end(10)
         self.boxTopBar.set_sensitive(True if self.factory else False)
+
+        self.btnNewFactory = Gtk.Button()
+        self.btnNewFactory.set_icon_name('document-new')
+        self.btnNewFactory.connect('clicked', self.__btnNew_clicked)
+
+        self.btnOpenFactory = Gtk.Button()
+        self.btnOpenFactory.set_icon_name('document-open')
+        self.btnOpenFactory.connect('clicked', self.__btnOpen_clicked)
+
+        self.btnSaveFactory = Gtk.Button()
+        self.btnSaveFactory.set_icon_name('document-save')
+        self.btnSaveFactory.connect('clicked', self.__btnSave_clicked)
+
+        self.boxTopBar.append(self.btnNewFactory)
+        self.boxTopBar.append(self.btnOpenFactory)
+        self.boxTopBar.append(self.btnSaveFactory)
 
         self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
         self.boxTopBar.append(self.lblTierUpgrade)
@@ -100,6 +118,31 @@ class MainWindow(Gtk.ApplicationWindow):
         self.cboTier.connect('changed', self.__cboTier_changed)
 
         return self.boxTopBar
+
+    # Widget action hooks
+
+    def __cboTier_changed(self, cbo):
+        self.cboUpgrade.remove_all()
+        for upgrade in Availability.get_upgrade_strings(self.cboTier.get_active()):
+            self.cboUpgrade.append(upgrade, upgrade)
+
+    def __btnNew_clicked(self, btn):
+        if self.unsaved_changes:
+            self.newFactoryDiscardChangesDialog = ConfirmDiscardChangesWindow(self)
+            self.newFactoryDiscardChangesDialog.connect('response',
+                self.__newFactoryDiscardChangesDialog_response)
+            self.newFactoryDiscardChangesDialog.present()
+
+    def __newFactoryDiscardChangesDialog_response(self, dialog, user_data):
+        if dialog.response == True:
+            self.factory = Factory(name='New Factory')
+            self.window_update_for_factory_change()
+
+    def __btnOpen_clicked(self, btn):
+        print('btnOpen clicked')
+
+    def __btnSave_clicked(self, btn):
+        print('btnSave clicked')
 
 
 class FactoryDesigner(Gtk.Application):
