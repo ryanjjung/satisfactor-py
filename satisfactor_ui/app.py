@@ -28,7 +28,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def window_update_for_factory_change(self):
         self.set_title(f'Satisfactory Designer ({self.factory.name})')
-        self.boxTopBar.set_sensitive(True)
+        self.boxFactoryFunctions.set_sensitive(True)
         self.cboTier.set_active(self.factory.tier)
         self.__cboTier_changed(self.cboTier)
         self.cboUpgrade.set_active(self.factory.upgrade - 1)
@@ -81,7 +81,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxTopBar.set_margin_bottom(10)
         self.boxTopBar.set_margin_start(10)
         self.boxTopBar.set_margin_end(10)
-        self.boxTopBar.set_sensitive(True if self.factory else False)
 
         self.btnNewFactory = Gtk.Button()
         self.btnNewFactory.set_icon_name('document-new')
@@ -99,32 +98,31 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxTopBar.append(self.btnOpenFactory)
         self.boxTopBar.append(self.btnSaveFactory)
 
+        self.boxFactoryFunctions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxFactoryFunctions.set_sensitive(True if self.factory else False)
+        self.boxTopBar.append(self.boxFactoryFunctions)
+
         self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
-        self.boxTopBar.append(self.lblTierUpgrade)
+        self.boxFactoryFunctions.append(self.lblTierUpgrade)
 
         self.cboTier = Gtk.ComboBoxText()
         for tier in Availability.get_tier_strings():
             self.cboTier.append(tier, tier)
         self.cboTier.set_active(0)
-        self.boxTopBar.append(self.cboTier)
+        self.boxFactoryFunctions.append(self.cboTier)
 
         self.lblTierUpgradeSlash = Gtk.Label(label='/')
-        self.boxTopBar.append(self.lblTierUpgradeSlash)
+        self.boxFactoryFunctions.append(self.lblTierUpgradeSlash)
 
         self.cboUpgrade = Gtk.ComboBoxText()
         self.__cboTier_changed(self.cboUpgrade)
-        self.boxTopBar.append(self.cboUpgrade)
+        self.boxFactoryFunctions.append(self.cboUpgrade)
 
         self.cboTier.connect('changed', self.__cboTier_changed)
 
         return self.boxTopBar
 
     # Widget action hooks
-
-    def __cboTier_changed(self, cbo):
-        self.cboUpgrade.remove_all()
-        for upgrade in Availability.get_upgrade_strings(self.cboTier.get_active()):
-            self.cboUpgrade.append(upgrade, upgrade)
 
     def __btnNew_clicked(self, btn):
         if self.unsaved_changes:
@@ -133,16 +131,22 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.__newFactoryDiscardChangesDialog_response)
             self.newFactoryDiscardChangesDialog.present()
 
+    def __btnOpen_clicked(self, btn):
+        fileChooser = Gtk.FileChooserDialog()
+        file = fileChooser.get_file()
+
+    def __btnSave_clicked(self, btn):
+        print('btnSave clicked')
+
+    def __cboTier_changed(self, cbo):
+        self.cboUpgrade.remove_all()
+        for upgrade in Availability.get_upgrade_strings(self.cboTier.get_active()):
+            self.cboUpgrade.append(upgrade, upgrade)
+
     def __newFactoryDiscardChangesDialog_response(self, dialog, user_data):
         if dialog.response == True:
             self.factory = Factory(name='New Factory')
             self.window_update_for_factory_change()
-
-    def __btnOpen_clicked(self, btn):
-        print('btnOpen clicked')
-
-    def __btnSave_clicked(self, btn):
-        print('btnSave clicked')
 
 
 class FactoryDesigner(Gtk.Application):
