@@ -132,8 +132,18 @@ class MainWindow(Gtk.ApplicationWindow):
             self.newFactoryDiscardChangesDialog.present()
 
     def __btnOpen_clicked(self, btn):
-        fileChooser = Gtk.FileChooserDialog()
-        file = fileChooser.get_file()
+        self.fdOpenFactory = Gtk.FileDialog()
+        self.fdOpenFactory.set_title('Open Factory')
+        filter = Gtk.FileFilter()
+        filter.set_name('SatisFactories (*.sat)')
+        filter.add_mime_type('application/octet-stream')
+        filter.add_pattern('*.sat')
+        listStore = Gio.ListStore.new(Gtk.FileFilter)
+        listStore.append(filter)
+        self.fdOpenFactory.set_filters(listStore)
+        self.fdOpenFactory.set_default_filter(filter)
+        self.fdOpenFactory.open(self, None, self.__fcOpenFactory_response)
+
 
     def __btnSave_clicked(self, btn):
         print('btnSave clicked')
@@ -142,6 +152,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.cboUpgrade.remove_all()
         for upgrade in Availability.get_upgrade_strings(self.cboTier.get_active()):
             self.cboUpgrade.append(upgrade, upgrade)
+
+    def __fcOpenFactory_response(self, dialog, response):
+        print(response)
 
     def __newFactoryDiscardChangesDialog_response(self, dialog, user_data):
         if dialog.response == True:
