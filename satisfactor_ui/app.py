@@ -11,6 +11,7 @@ from satisfactor_py.factories import Factory
 from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
 
 
+APP_ID='com.github.ryanjjung.satisfactory.FactoryDesigner'
 MAIN_WINDOW_DEFAULT_WIDTH = 1000
 MAIN_WINDOW_DEFAULT_HEIGHT = 800
 MAIN_WINDOW_TITLE_BASE = 'Satisfactory Designer'
@@ -290,7 +291,7 @@ class FactoryDesigner(Gtk.Application):
     '''
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(application_id=APP_ID, **kwargs)
         self.mainWindow = None
         self.set_flags(Gio.ApplicationFlags.HANDLES_OPEN)
         self.connect('activate', self.on_activate)
