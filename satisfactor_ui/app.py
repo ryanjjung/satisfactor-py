@@ -123,8 +123,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxMain.append(self.paneLeft)
 
         # Build the left-hand panel containing the list of buildings
-        self.lblBuildings = Gtk.Label(label='Buildings Options')
-        self.paneLeft.set_start_child(self.lblBuildings)
+        self.__buildings_options()
+        self.paneLeft.set_start_child(self.paneBuildingsOptions)
         self.paneLeft.set_position(200)
         self.paneLeft.set_vexpand(True)
 
@@ -144,6 +144,19 @@ class MainWindow(Gtk.ApplicationWindow):
         # The main vbox becomes the top level element on the window
         self.set_child(self.boxMain)
 
+    def __buildings_options(self):
+        '''
+        Builds the contents of the left-hand pane, primarily containing a list of buildings
+        available to the user.
+        '''
+
+        # Start with two vertical panes
+        self.paneBuildingsOptions = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
+        self.paneBuildingsOptions.set_position(300)
+        self.lblBuildingsFilters = Gtk.Label(label='Filters')
+        self.lblBuildings = Gtk.Label(label='Buildings Options')
+        self.paneBuildingsOptions.set_start_child(self.lblBuildingsFilters)
+        self.paneBuildingsOptions.set_end_child(self.lblBuildings)
 
     def __top_bar(self):
         '''
