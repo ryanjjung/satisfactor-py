@@ -29,6 +29,8 @@ class Assembler(Building):
     def __init__(self, **kwargs):
         super().__init__(
             building_type=BuildingType.ASSEMBLER,
+            wiki_path='/Assembler',
+            image_path='/a/ae/Assembler.png',
             availability=Availability(2, 1),
             base_power_usage=15,
             dimensions=Dimension(
@@ -56,6 +58,8 @@ class AwesomeSink(Building):
     def __init__(self, **kwargs):
         super().__init__(
             building_type=BuildingType.AWESOME_SINK,
+            wiki_path='/AWESOME_Sink',
+            image_path='/8/85/AWESOME_Sink.png',
             recipe=None,
             overclockable=False,
             dimensions=Dimension(
@@ -115,6 +119,8 @@ class BiomassBurner(Building):
     def __init__(self, **kwargs):
         super().__init__(
             building_type=BuildingType.BIOMASS_GENERATOR,
+            wiki_path='/Biomass_Burner',
+            image_path='/2/20/Biomass_Burner.png',
             availability=Availability(0, 6),
             dimensions=Dimension(
                 width=8,
@@ -133,6 +139,8 @@ class CoalGenerator(Building):
     def __init__(self, **kwargs):
         super().__init__(
             building_type=BuildingType.COAL_GENERATOR,
+            wiki_path='/Coal_Generator',
+            image_path='/b/ba/Coal_Generator.png',
             availability=Availability(3, 1),
             dimensions=Dimension(
                 width=10,
@@ -167,6 +175,8 @@ class Constructor(Building):
     def __init__(self, **kwargs):
         super().__init__(
             building_type=BuildingType.CONSTRUCTOR,
+            wiki_path='Constructor',
+            image_path='/6/61/Constructor.png',
             availability=Availability(0, 3),
             base_power_usage=4,
             dimensions=Dimension(
@@ -192,6 +202,8 @@ class ConveyorMerger(Building):
     def __init__(self, **kwargs):
         super().__init__(
             building_type=BuildingType.CONVEYANCE,
+            wiki_path='/Conveyor_Merger',
+            image_path='/a/aa/Conveyor_Merger.png',
             availability=Availability(1, 2),
             dimensions=Dimension(
                 width=4,
@@ -268,6 +280,8 @@ class ConveyorSplitter(Building):
         super().__init__(
             building_type=BuildingType.CONVEYANCE,
             availability=Availability(1, 2),
+            wiki_path='/Conveyor_Splitter',
+            image_path='/4/41/Conveyor_Splitter.png',
             dimensions=Dimension(
                 width=4,
                 length=4,
@@ -382,6 +396,8 @@ class ConveyorPole(Building):
         super().__init__(
             building_type=BuildingType.OTHER,
             availability=Availability(0, 4),
+            wiki_path='/Conveyor_Pole',
+            image_path='/7/73/Conveyor_Pole.png',
             dimensions=Dimension(
                 width=2,
                 length=1,
@@ -403,6 +419,7 @@ class Foundry(Building):
             name=name,
             availability=Availability(0, 2),
             wiki_path='/Foundry',
+            image_path='/1/19/Foundry.png',
             base_power_usage=16,
             building_type=BuildingType.FOUNDRY,
             dimensions=Dimension(
@@ -432,6 +449,7 @@ class MAM(Building):
             name=name,
             availability=Availability(1, 3),
             wiki_path='/MAM',
+            image_path='/b/b4/MAM.png',
             building_type=BuildingType.WORKSHOP,
             dimensions=Dimension(
                 width=5,
@@ -454,6 +472,7 @@ class PersonalStorageBox(Building):
             name=name,
             availability=Availability(1, 3),
             wiki_path='/Personal_Storage_Box',
+            image_path='/4/4d/Personal_Storage_Box.png',
             building_type=BuildingType.WORKSHOP,
             dimensions=Dimension(
                 width=2,
@@ -471,8 +490,22 @@ class Miner(Building):
     '''
 
     def __init__(self, **kwargs):
+        if 'image_path' in kwargs:
+            image_path = kwargs['image_path']
+            del(kwargs['image_path'])
+        else:
+            image_path = '/c/cf/Miner_Mk.1.png'
+
+        if 'wiki_path' in kwargs:
+            wiki_path = kwargs['wiki_path']
+            del(kwargs['wiki_path'])
+        else:
+            wiki_path = '/Miner'
+
         super().__init__(
             building_type=BuildingType.MINER,
+            wiki_path=wiki_path,
+            image_path=image_path,
             dimensions=Dimension(
                 width=6,
                 length=14,
@@ -532,7 +565,6 @@ class Miner(Building):
                 * self.clock_rate
 
 
-
 class MinerMk1(Miner):
     '''
     A first-tier Miner
@@ -543,6 +575,7 @@ class MinerMk1(Miner):
             name=name,
             availability=Availability(0, 1),
             wiki_path='/Miner#Mk.1',
+            image_path='/c/cf/Miner_Mk.1.png',
             base_power_usage=5,
             **kwargs
         )
@@ -556,6 +589,8 @@ class PipelineSupport(Building):
     def __init__(self, **kwargs):
         super().__init__(
             building_type=BuildingType.OTHER,
+            wiki_path='/Pipeline_Support',
+            image_path='/c/c5/Pipeline_Support.png',
             availability=Availability(3, 1),
             dimensions=Dimension(
                 width=2,
@@ -581,6 +616,8 @@ class PipelineJunctionCross(Building):
     ):
         super().__init__(
             building_type=BuildingType.OTHER,
+            wiki_path='/Pipeline_Junction_Cross',
+            image_path='/8/8c/Pipeline_Junction_Cross.png',
             availability=Availability(3, 1),
             dimensions=Dimension(
                 width=2,
@@ -713,6 +750,7 @@ class Smelter(Building):
             name=name,
             availability=Availability(0, 2),
             wiki_path='/Smelter',
+            image_path='/4/45/Smelter.png',
             base_power_usage=4,
             building_type=BuildingType.SMELTER,
             dimensions=Dimension(
@@ -742,6 +780,7 @@ class SpaceElevator(Building):
             name=name,
             availability=Availability(0, 6),
             wiki_path='/Space_Elevator',
+            image_path='/a/a4/Space_Elevator.png',
             building_type=BuildingType.SPACE_ELEVATOR,
             dimensions=Dimension(
                 width=54,
@@ -769,6 +808,7 @@ class TruckStation(Building):
             name=name,
             availability=Availability(3, 2),
             wiki_path='/Truck_Station',
+            image_path='/a/a6/Truck_Station.png',
             building_type=BuildingType.OTHER,
             dimensions=Dimension(
                 width=16,
@@ -793,6 +833,7 @@ class UJellyLandingPad(Building):
             name=name,
             availability=Availability(2, 3),
             wiki_path='/U-Jelly_Landing_Pad',
+            image_path='/d/de/U-Jelly_Landing_Pad.png',
             building_type=BuildingType.OTHER,
             dimensions=Dimension(
                 width=10,
@@ -818,6 +859,7 @@ class WaterExtractor(Miner):
             name=name,
             availability=Availability(3, 1),
             wiki_path='/Water_Extractor',
+            image_path='/6/6b/Water_Extractor.png',
             base_power_usage=20,
             **kwargs
         )

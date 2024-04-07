@@ -22,6 +22,7 @@ class FluidBuffer(Storage):
             name=name,
             availability=Availability(3, 1),
             wiki_path='/Fluid_Buffer#Normal-0',
+            image_path='/5/53/Fluid_Buffer.png',
             stacks=400,
             dimensions=Dimension(
                 width=6,
@@ -53,6 +54,7 @@ class StorageContainer(Storage):
             name=name,
             availability=Availability(0, 5),
             wiki_path='/Storage_Container#Normal-0',
+            image_path='/2/20/Storage_Container.png',
             stacks=24,
             dimensions=Dimension(
                 width=5,

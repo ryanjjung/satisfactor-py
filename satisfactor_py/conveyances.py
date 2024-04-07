@@ -18,6 +18,7 @@ class ConveyorBeltMk1(Conveyance):
             name='Conveyor Belt Mk.1',
             availability=Availability(0, 4),
             wiki_path='/Conveyor_Belts#Mk.1-0',
+            image_path='/c/c9/Conveyor_Belt_Mk.1.png',
             conveyance_type=ConveyanceType.BELT,
             rate=60,
             dimensions=Dimension(
@@ -47,6 +48,7 @@ class ConveyorBeltMk2(Conveyance):
             name='Conveyor Belt Mk.2',
             availability=Availability(2, 5),
             wiki_path='/Conveyor_Belts#Mk.2-0',
+            image_path='/e/e9/Conveyor_Belt_Mk.2.png',
             conveyance_type=ConveyanceType.BELT,
             rate=120,
             dimensions=Dimension(
@@ -72,6 +74,7 @@ class ConveyorLiftMk1(Conveyance):
             name='Conveyor Lift Mk.1',
             availability=Availability(1, 2),
             wiki_path='/Conveyor_Lifts#Mk.1-0',
+            image_path='/2/2d/Conveyor_Lift_Mk.1.png',
             conveyance_type=ConveyanceType.BELT,
             rate=60,
             dimensions=Dimension(
@@ -101,6 +104,7 @@ class PipelineMk1(Conveyance):
             name='Pipeline Mk. 1',
             availability=Availability(0, 4),
             wiki_path='/Pipelines#Mk.1-0',
+            image_path='/5/54/Pipeline_Mk.1.png',
             conveyance_type=ConveyanceType.PIPE,
             rate=300,
             dimensions=Dimension(
@@ -118,4 +122,3 @@ class PipelineMk1(Conveyance):
             )],
             **kwargs
         )
-    

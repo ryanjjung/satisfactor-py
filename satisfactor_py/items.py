@@ -15,7 +15,8 @@ AlienProtein = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
     sink_value=None,
-    wiki_path='/Alien_Protein'
+    wiki_path='/Alien_Protein',
+    image_path='/6/6f/Alien_Protein.png',
 )
 
 Assembler = Item(
@@ -24,7 +25,8 @@ Assembler = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Assembler'
+    wiki_path='/Assembler',
+    image_path='/a/ae/Assembler.png',
 )
 
 AwesomeSink = Item(
@@ -33,7 +35,8 @@ AwesomeSink = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/AWESOME_Sink'
+    wiki_path='/AWESOME_Sink',
+    image_path='/8/85/AWESOME_Sink.png',
 )
 
 AwesomeSinkPoint = Item(
@@ -42,25 +45,8 @@ AwesomeSinkPoint = Item(
     conveyance_type=ConveyanceType.AWESOME_SINK,
     stack_size=None,
     sink_value=None,
-    wiki_path='/AWESOME_Sink'
-)
-
-Biomass = Item(
-    name='Biomass',
-    availability=Availability(0, 6),
-    conveyance_type=ConveyanceType.BELT,
-    stack_size=200,
-    sink_value=12,
-    wiki_path='/Biomass'
-)
-
-BiomassBurner = Item(
-    name='Biomass Burner',
-    availability=Availability(0, 6),
-    conveyance_type=None,
-    stack_size=None,
-    sink_value=None,
-    wiki_path='/Biomass_Burner'
+    wiki_path='/AWESOME_Sink',
+    image_path='/c/c3/Satisfactory_logo_full_color_square.png',
 )
 
 BasicWall1mFicsit = Item(
@@ -69,7 +55,8 @@ BasicWall1mFicsit = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Walls'
+    wiki_path='/Walls',
+    image_path='/3/32/Basic_Wall_4m_(FICSIT).png', # Can't find image of 1m wall
 )
 
 BasicWall4mFicsit = Item(
@@ -78,7 +65,8 @@ BasicWall4mFicsit = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Walls'
+    wiki_path='/Walls',
+    image_path='/3/32/Basic_Wall_4m_(FICSIT).png',
 )
 
 Beacon = Item(
@@ -87,7 +75,28 @@ Beacon = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Beacon'
+    wiki_path='/Beacon',
+    image_path='/b/b3/Beacon.png',
+)
+
+Biomass = Item(
+    name='Biomass',
+    availability=Availability(0, 6),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=200,
+    sink_value=12,
+    wiki_path='/Biomass',
+    image_path='/f/f0/Biomass.png',
+)
+
+BiomassBurner = Item(
+    name='Biomass Burner',
+    availability=Availability(0, 6),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Biomass_Burner',
+    image_path='/2/20/Biomass_Burner.png',
 )
 
 Cable = Item(
@@ -96,7 +105,8 @@ Cable = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=24,
-    wiki_path='/Cable'
+    wiki_path='/Cable',
+    image_path='/4/49/Cable.png',
 )
 
 Chainsaw = Item(
@@ -105,7 +115,8 @@ Chainsaw = Item(
     conveyance_type=None,
     stack_size=1,
     sink_value=2760,
-    wiki_path='/Copper_Sheet'
+    wiki_path='/Chainsaw',
+    image_path='/c/cc/Chainsaw.png',
 )
 
 Coal = Item(
@@ -114,7 +125,8 @@ Coal = Item(
     conveyance_type=None,
     stack_size=100,
     sink_value=3,
-    wiki_path='/Coal'
+    wiki_path='/Coal',
+    image_path='/a/a7/Coal.png',
 )
 
 CoalGenerator = Item(
@@ -123,7 +135,8 @@ CoalGenerator = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Coal_Generator'
+    wiki_path='/Coal_Generator',
+    image_path='/b/ba/Coal_Generator.png',
 )
 
 CompactedCoal = Item(
@@ -132,7 +145,8 @@ CompactedCoal = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
     sink_value=28,
-    wiki_path='/Compacted_Coal'
+    wiki_path='/Compacted_Coal',
+    image_path='/5/52/Compacted_Coal.png',
 )
 
 Concrete = Item(
@@ -141,16 +155,8 @@ Concrete = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=500,
     sink_value=12,
-    wiki_path='/Concrete'
-)
-
-CopperOre = Item(
-    name='Copper Ore',
-    availability=Availability(0, 2),
-    conveyance_type=ConveyanceType.BELT,
-    stack_size=100,
-    sink_value=3,
-    wiki_path='/Copper_Ore'
+    wiki_path='/Concrete',
+    image_path='/c/c3/Concrete.png',
 )
 
 ColorCartridge = Item(
@@ -159,16 +165,8 @@ ColorCartridge = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=10,
-    wiki_path='/Color_Cartridge'
-)
-
-CopperIngot = Item(
-    name='Copper Ingot',
-    availability=Availability(0, 2),
-    conveyance_type=ConveyanceType.BELT,
-    stack_size=100,
-    sink_value=6,
-    wiki_path='/Copper_Ingot'
+    wiki_path='/Color_Cartridge',
+    image_path='/3/38/Color_Cartridge.png',
 )
 
 Constructor = Item(
@@ -177,7 +175,8 @@ Constructor = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Constructor'
+    wiki_path='/Constructor',
+    image_path='/6/61/Constructor.png',
 )
 
 ConveyorBeltMk1 = Item(
@@ -186,7 +185,8 @@ ConveyorBeltMk1 = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Conveyor_Belt#Mk.1'
+    wiki_path='/Conveyor_Belt#Mk.1-0',
+    image_path='/c/c9/Conveyor_Belt_Mk.1.png',
 )
 
 ConveyorBeltMk2 = Item(
@@ -195,7 +195,8 @@ ConveyorBeltMk2 = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Conveyor_Belt#Mk.2'
+    wiki_path='/Conveyor_Belt#Mk.2-0',
+    image_path='/e/e9/Conveyor_Belt_Mk.2.png',
 )
 
 ConveyorLiftMk1 = Item(
@@ -204,7 +205,8 @@ ConveyorLiftMk1 = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Conveyor_Lift'
+    wiki_path='/Conveyor_Lift#Mk.1-0',
+    image_path='/2/2d/Conveyor_Lift_Mk.1.png',
 )
 
 ConveyorLiftMk2 = Item(
@@ -213,7 +215,8 @@ ConveyorLiftMk2 = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Conveyor_Lift#Mk.2'
+    wiki_path='/Conveyor_Lift#Mk.2-0',
+    image_path='/8/8a/Conveyor_Lift_Mk.2.png',
 )
 
 ConveyorMerger = Item(
@@ -222,7 +225,8 @@ ConveyorMerger = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Conveyor_Merger'
+    wiki_path='/Conveyor_Merger',
+    image_path='/a/aa/Conveyor_Merger.png',
 )
 
 ConveyorPole = Item(
@@ -231,7 +235,8 @@ ConveyorPole = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Conveyor_Poles#Simple'
+    wiki_path='/Conveyor_Poles#Simple-0',
+    image_path='/7/73/Conveyor_Pole.png',
 )
 
 ConveyorSplitter = Item(
@@ -240,7 +245,28 @@ ConveyorSplitter = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Conveyor_Splitter'
+    wiki_path='/Conveyor_Splitter',
+    image_path='/4/41/Conveyor_Splitter.png',
+)
+
+CopperIngot = Item(
+    name='Copper Ingot',
+    availability=Availability(0, 2),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=100,
+    sink_value=6,
+    wiki_path='/Copper_Ingot',
+    image_path='/0/00/Copper_Ingot.png',
+)
+
+CopperOre = Item(
+    name='Copper Ore',
+    availability=Availability(0, 2),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=100,
+    sink_value=3,
+    wiki_path='/Copper_Ore',
+    image_path='/7/78/Copper_Ore.png',
 )
 
 CopperSheet = Item(
@@ -249,7 +275,8 @@ CopperSheet = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=24,
-    wiki_path='/Copper_Sheet'
+    wiki_path='/Copper_Sheet',
+    image_path='/e/e1/Copper_Sheet.png',
 )
 
 CraftBench = Item(
@@ -257,7 +284,8 @@ CraftBench = Item(
     conveyance_type=None,
     stack_size=0,
     sink_value=0,
-    wiki_path='/Craft_Bench'
+    wiki_path='/Craft_Bench',
+    image_path='/7/75/Craft_Bench.png',
 )
 
 DoubleWallOutletMk1 = Item(
@@ -266,7 +294,8 @@ DoubleWallOutletMk1 = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Power_Pole#Double_Wall_Outlets'
+    wiki_path='/Wall_Outlets#Double_Wall_Outlets-0',
+    image_path='/2/21/Double_Wall_Outlet_Mk.1.png'
 )
 
 EquipmentWorkshop = Item(
@@ -275,7 +304,8 @@ EquipmentWorkshop = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Equipment_Workshop'
+    wiki_path='/Equipment_Workshop',
+    image_path='/d/d9/Equipment_Workshop.png'
 )
 
 FlowerPetals = Item(
@@ -283,7 +313,8 @@ FlowerPetals = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=500,
     sink_value=10,
-    wiki_path='/Flower_Petals'
+    wiki_path='/Flower_Petals',
+    image_path='/8/83/Flower_Petals.png'
 )
 
 FluidBuffer = Item(
@@ -291,7 +322,8 @@ FluidBuffer = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Fluid_Buffer#Normal-0'
+    wiki_path='/Fluid_Buffer#Normal-0',
+    image_path='/5/53/Fluid_Buffer.png'
 )
 
 Foundation1mFicsit = Item(
@@ -300,7 +332,8 @@ Foundation1mFicsit = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Foundations'
+    wiki_path='/Foundations',
+    image_path='/0/00/Foundation_4m_(FICSIT).png'
 )
 
 Foundation2mFicsit = Item(
@@ -309,7 +342,8 @@ Foundation2mFicsit = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Foundations'
+    wiki_path='/Foundations',
+    image_path='/0/00/Foundation_4m_(FICSIT).png'
 )
 
 Foundation4mFicsit = Item(
@@ -318,7 +352,8 @@ Foundation4mFicsit = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Foundations'
+    wiki_path='/Foundations',
+    image_path='/0/00/Foundation_4m_(FICSIT).png'
 )
 
 Foundry = Item(
@@ -327,7 +362,8 @@ Foundry = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Foundry'
+    wiki_path='/Foundry',
+    image_path='/1/19/Foundry.png'
 )
 
 HatcherRemains = Item(
@@ -335,7 +371,8 @@ HatcherRemains = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
     sink_value=None,
-    wiki_path='/Alien_Remains#Hatcher'
+    wiki_path='/Alien_Remains#Hatcher-0',
+    image_path='/4/4d/Hatcher_Remains.png'
 )
 
 HeavyOilResidue = Item(
@@ -344,7 +381,8 @@ HeavyOilResidue = Item(
     conveyance_type=ConveyanceType.PIPE,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Heavy_Oil_Residue'
+    wiki_path='/Heavy_Oil_Residue',
+    image_path='/b/bd/Heavy_Oil_Residue.png'
 )
 
 HogRemains = Item(
@@ -352,7 +390,8 @@ HogRemains = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
     sink_value=None,
-    wiki_path='/Alien_Remains#Hog'
+    wiki_path='/Alien_Remains#Hog-0',
+    image_path='/e/e0/Hog_Remains.png'
 )
 
 IronIngot = Item(
@@ -360,7 +399,8 @@ IronIngot = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
     sink_value=2,
-    wiki_path='/Iron_Ingot'
+    wiki_path='/Iron_Ingot',
+    image_path='/0/0a/Iron_Ingot.png'
 )
 
 IronOre = Item(
@@ -368,7 +408,8 @@ IronOre = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
     sink_value=1,
-    wiki_path='/Iron_Ore'
+    wiki_path='/Iron_Ore',
+    image_path='/8/87/Iron_Ore.png'
 )
 
 IronPlate = Item(
@@ -376,7 +417,8 @@ IronPlate = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=6,
-    wiki_path='Iron_Plate'
+    wiki_path='/Iron_Plate',
+    image_path='/5/51/Iron_Plate.png'
 )
 
 IronRod = Item(
@@ -384,7 +426,8 @@ IronRod = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=4,
-    wiki_path='/Iron_Rod'
+    wiki_path='/Iron_Rod',
+    image_path='/5/5f/Iron_Rod.png'
 )
 
 JumpPad = Item(
@@ -393,7 +436,8 @@ JumpPad = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Jump_Pad'
+    wiki_path='/Jump_Pad',
+    image_path='/4/4c/Jump_Pad.png',
 )
 
 Leaves = Item(
@@ -401,7 +445,8 @@ Leaves = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=500,
     sink_value=3,
-    wiki_path='Leaves'
+    wiki_path='/Leaves',
+    image_path='/f/f1/Leaves.png',
 )
 
 Limestone = Item(
@@ -410,7 +455,8 @@ Limestone = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
     sink_value=2,
-    wiki_path='/Limestone'
+    wiki_path='/Limestone',
+    image_path='/4/4e/Limestone.png',
 )
 
 LookoutTower = Item(
@@ -419,7 +465,8 @@ LookoutTower = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='Lookout_Tower'
+    wiki_path='/Lookout_Tower',
+    image_path='/c/cc/Lookout_Tower.png',
 )
 
 MAM = Item(
@@ -428,7 +475,8 @@ MAM = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/MAM'
+    wiki_path='/MAM',
+    image_path='/b/b4/MAM.png',
 )
 
 MinerMk1 = Item(
@@ -437,7 +485,8 @@ MinerMk1 = Item(
     conveyance_type=None,
     stack_size=0,
     sink_value=0,
-    wiki_path='/Miner#Mk.1'
+    wiki_path='/Miner#Mk.1-0',
+    image_path='/c/cf/Miner_Mk.1.png',
 )
 
 ModularFrame = Item(
@@ -446,7 +495,8 @@ ModularFrame = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
     sink_value=408,
-    wiki_path='/Modular_Frame'
+    wiki_path='/Modular_Frame',
+    image_path='/8/81/Modular_Frame.png',
 )
 
 Mycelia = Item(
@@ -454,7 +504,8 @@ Mycelia = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=10,
-    wiki_path='/Mycelia'
+    wiki_path='/Mycelia',
+    image_path='/e/e0/Mycelia.png',
 )
 
 ObjectScanner = Item(
@@ -463,7 +514,8 @@ ObjectScanner = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Object_Scanner'
+    wiki_path='/Object_Scanner',
+    image_path='/2/2a/Object_Scanner.png',
 )
 
 PersonalStorageBox = Item(
@@ -472,7 +524,8 @@ PersonalStorageBox = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Personal_Storage_Box'
+    wiki_path='/Personal_Storage_Box#Personal-0',
+    image_path='/4/4d/Personal_Storage_Box.png',
 )
 
 PetroleumCoke = Item(
@@ -481,16 +534,8 @@ PetroleumCoke = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=20,
-    wiki_path='/Petroleum_Coke'
-)
-
-PipelineMk1 = Item(
-    name='Pipeline Mk.1',
-    availability=Availability(3, 1),
-    conveyance_type=None,
-    stack_size=None,
-    sink_value=None,
-    wiki_path='/Pipelines#Mk.1-0'
+    wiki_path='/Petroleum_Coke',
+    image_path='/5/5c/Petroleum_Coke.png',
 )
 
 PipelineJunctionCross = Item(
@@ -499,7 +544,18 @@ PipelineJunctionCross = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Pipeline_Junction_Cross'
+    wiki_path='/Pipeline_Junction_Cross',
+    image_path='/8/8c/Pipeline_Junction_Cross.png',
+)
+
+PipelineMk1 = Item(
+    name='Pipeline Mk.1',
+    availability=Availability(3, 1),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/Pipelines#Mk.1-0',
+    image_path='/5/54/Pipeline_Mk.1.png',
 )
 
 PipelinePump = Item(
@@ -508,7 +564,8 @@ PipelinePump = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Pipeline_Pump'
+    wiki_path='/Pipeline_Pump',
+    image_path='/2/2d/Pipeline_Pump_Mk.1.png',
 )
 
 PipelineSupport = Item(
@@ -517,7 +574,8 @@ PipelineSupport = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Pipeline_Supports#Simple-0'
+    wiki_path='/Pipeline_Supports#Simple-0',
+    image_path='/c/c5/Pipeline_Support.png',
 )
 
 PortableMiner = Item(
@@ -526,7 +584,8 @@ PortableMiner = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=1,
     sink_value=60,
-    wiki_path='/Miner#Portable_Miner'
+    wiki_path='/Miner#Portable_Miner',
+    image_path='/b/b3/Portable_Miner.png',
 )
 
 Power = Item(
@@ -534,7 +593,8 @@ Power = Item(
     conveyance_type=ConveyanceType.POWER_LINE,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Power'
+    wiki_path='/Power',
+    image_path='/c/c3/Satisfactory_logo_full_color_square.png',
 )
 
 PowerLine = Item(
@@ -543,7 +603,8 @@ PowerLine = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Power_Line'
+    wiki_path='/Power_Line',
+    image_path='/0/09/Power_Line.png',
 )
 
 PowerPoleMk1 = Item(
@@ -552,7 +613,8 @@ PowerPoleMk1 = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Power_Pole#Ground_Poles'
+    wiki_path='/Power_Poles#Mk.1-0',
+    image_path='/a/af/Power_Pole_Mk.1.png',
 )
 
 Ramp1mFicsit = Item(
@@ -561,7 +623,8 @@ Ramp1mFicsit = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Foundations#Ramps'
+    wiki_path='/Foundations',
+    image_path='/3/33/Ramp_4m_(FICSIT).png',
 )
 
 Ramp2mFicsit = Item(
@@ -570,7 +633,8 @@ Ramp2mFicsit = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Foundations#Ramps'
+    wiki_path='/Foundations',
+    image_path='/3/33/Ramp_4m_(FICSIT).png',
 )
 
 Ramp4mFicsit = Item(
@@ -579,7 +643,8 @@ Ramp4mFicsit = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Foundations#Ramps'
+    wiki_path='/Foundations',
+    image_path='/3/33/Ramp_4m_(FICSIT).png',
 )
 
 ReinforcedIronPlate = Item(
@@ -588,7 +653,8 @@ ReinforcedIronPlate = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
     sink_value=120,
-    wiki_path='/Reinforced_Iron_Plate'
+    wiki_path='/Reinforced_Iron_Plate',
+    image_path='/2/29/Reinforced_Iron_Plate.png',
 )
 
 Rotor = Item(
@@ -597,7 +663,8 @@ Rotor = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
     sink_value=140,
-    wiki_path='/Rotor'
+    wiki_path='/Rotor',
+    image_path='/3/3d/Rotor.png',
 )
 
 Screw = Item(
@@ -606,7 +673,8 @@ Screw = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=500,
     sink_value=2,
-    wiki_path='/Screw'
+    wiki_path='/Screw',
+    image_path='/5/59/Screw.png',
 )
 
 SmartPlating = Item(
@@ -615,7 +683,8 @@ SmartPlating = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
     sink_value=520,
-    wiki_path='/Smart_Plating'
+    wiki_path='/Smart_Plating',
+    image_path='/d/d5/Smart_Plating.png',
 )
 
 Smelter = Item(
@@ -624,7 +693,8 @@ Smelter = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Smelter'
+    wiki_path='/Smelter',
+    image_path='/4/45/Smelter.png',
 )
 
 SolidBiofuel = Item(
@@ -633,7 +703,8 @@ SolidBiofuel = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=48,
-    wiki_path='/Solit_Biofuel'
+    wiki_path='/Solid_Biofuel',
+    image_path='/b/bb/Solid_Biofuel.png',
 )
 
 SpaceElevator = Item(
@@ -642,7 +713,8 @@ SpaceElevator = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Space_Elevator'
+    wiki_path='/Space_Elevator',
+    image_path='/a/a4/Space_Elevator.png',
 )
 
 SpitterRemains = Item(
@@ -650,7 +722,8 @@ SpitterRemains = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
     sink_value=None,
-    wiki_path='/Alien_Remains#Spitter'
+    wiki_path='/Alien_Remains#Spitter-0',
+    image_path='/5/5a/Plasma_Spitter_Remains.png',
 )
 
 StackableConveyorPole = Item(
@@ -659,7 +732,8 @@ StackableConveyorPole = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Conveyor_Poles#Stackable'
+    wiki_path='/Conveyor_Poles#Stackable-0',
+    image_path='/4/49/Stackable_Conveyor_Pole.png',
 )
 
 SteelBeam = Item(
@@ -668,7 +742,8 @@ SteelBeam = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=64,
-    wiki_path='/Steel_Beam'
+    wiki_path='/Steel_Beam',
+    image_path='/6/6f/Steel_Beam.png',
 )
 
 SteelIngot = Item(
@@ -677,7 +752,8 @@ SteelIngot = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
     sink_value=8,
-    wiki_path='/Steel_Ingot'
+    wiki_path='/Steel_Ingot',
+    image_path='/b/bd/Steel_Ingot.png',
 )
 
 SteelPipe = Item(
@@ -686,7 +762,8 @@ SteelPipe = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=24,
-    wiki_path='/Steel_Pipe'
+    wiki_path='/Steel_Pipe',
+    image_path='/a/aa/Steel_Pipe.png',
 )
 
 StingerRemains = Item(
@@ -694,7 +771,8 @@ StingerRemains = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
     sink_value=None,
-    wiki_path='/Alien_Remains#Stinger'
+    wiki_path='/Alien_Remains#Stinger-0',
+    image_path='/f/fb/Stinger_Remains.png',
 )
 
 StorageContainer = Item(
@@ -703,7 +781,8 @@ StorageContainer = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Storage_Container'
+    wiki_path='/Storage_Container',
+    image_path='/2/20/Storage_Container.png',
 )
 
 Sulfur = Item(
@@ -712,7 +791,8 @@ Sulfur = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
     sink_value=11,
-    wiki_path='/Sulfur'
+    wiki_path='/Sulfur',
+    image_path='/1/1d/Sulfur.png',
 )
 
 Tractor = Item(
@@ -721,7 +801,8 @@ Tractor = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Tractor'
+    wiki_path='/Tractor',
+    image_path='/7/7a/Tractor.png',
 )
 
 TruckStation = Item(
@@ -730,7 +811,8 @@ TruckStation = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Truck_Station'
+    wiki_path='/Truck_Station',
+    image_path='/a/a6/Truck_Station.png',
 )
 
 UJellyLandingPad = Item(
@@ -739,7 +821,8 @@ UJellyLandingPad = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/U-Jelly_Landing_Pad'
+    wiki_path='/U-Jelly_Landing_Pad',
+    image_path='/d/de/U-Jelly_Landing_Pad.png',
 )
 
 VersatileFramework = Item(
@@ -748,7 +831,8 @@ VersatileFramework = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=50,
     sink_value=1176,
-    wiki_path='/Versatile_Framework'
+    wiki_path='/Versatile_Framework',
+    image_path='/7/74/Versatile_Framework.png',
 )
 
 WallOutletMk1 = Item(
@@ -757,7 +841,8 @@ WallOutletMk1 = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Power_Pole#Wall_Outlets'
+    wiki_path='/Wall_Outlets',
+    image_path='/8/82/Wall_Outlet_Mk.1.png',
 )
 
 Water = Item(
@@ -766,7 +851,8 @@ Water = Item(
     conveyance_type=ConveyanceType.PIPE,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Power_Pole#Wall_Outlets'
+    wiki_path='/Water',
+    image_path='/9/9d/Water.png',
 )
 
 WaterExtractor = Item(
@@ -775,7 +861,8 @@ WaterExtractor = Item(
     conveyance_type=None,
     stack_size=None,
     sink_value=None,
-    wiki_path='/Water_Extractor'
+    wiki_path='/Water_Extractor',
+    image_path='/6/6b/Water_Extractor.png',
 )
 
 Wire = Item(
@@ -784,7 +871,8 @@ Wire = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=500,
     sink_value=6,
-    wiki_path='/Wire'
+    wiki_path='/Wire',
+    image_path='/7/77/Wire.png',
 )
 
 Wood = Item(
@@ -792,7 +880,8 @@ Wood = Item(
     conveyance_type=ConveyanceType.BELT,
     stack_size=200,
     sink_value=30,
-    wiki_path='/Wood'
+    wiki_path='/Wood',
+    image_path='/d/df/Wood.png',
 )
 
 XenoBasher = Item(
@@ -801,7 +890,8 @@ XenoBasher = Item(
     conveyance_type=None,
     stack_size=1,
     sink_value=18800,
-    wiki_path='/Xeno-Basher'
+    wiki_path='/Xeno-Basher',
+    image_path='/8/83/Xeno-Basher.png',
 )
 
 XenoZapper = Item(
@@ -809,5 +899,6 @@ XenoZapper = Item(
     conveyance_type=None,
     stack_size=1,
     sink_value=1880,
-    wiki_path='/Xeno-Zapper'
+    wiki_path='/Xeno-Zapper',
+    image_path='/5/5d/Xeno-Zapper.png',
 )
