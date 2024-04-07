@@ -25,7 +25,11 @@ from satisfactor_py.storages import (
 )
 
 
-factory = Factory(name='Infinite Reinforced Iron Plates')
+factory = Factory(
+    name='Infinite Reinforced Iron Plates',
+    tier=1,
+    upgrade=2
+)
 infiniteIronPlates = InfiniteSupplyNode(iIronPlate, -1, ConveyanceType.BELT)
 infiniteScrews = InfiniteSupplyNode(iScrew, -1, ConveyanceType.BELT)
 assRIP = Assembler(
@@ -49,6 +53,8 @@ factory.add([
     assRIP,
     storRIP
 ])
+
+factory.save('/home/ryan/tmp/infinity.sat')
 
 factory.simulate()
 print(json.dumps(factory.get_errors_as_dict(), indent=2))

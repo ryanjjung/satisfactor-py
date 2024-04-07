@@ -363,6 +363,8 @@ def tier_2_biofuel_factory():
     '''
 
     factory = Factory(name='Tier 2 Solid Biofuel Factory')
+    factory.tier = 2
+    factory.upgrade = 5
 
     # Start with storage containers in which we will place mycelium, leaves, and wood
     mycelia_storage = StorageContainer(

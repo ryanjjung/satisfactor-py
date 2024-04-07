@@ -1,5 +1,6 @@
 import json
 import pdb
+import pickle
 
 from threading import Thread
 from typing import Callable
@@ -27,11 +28,15 @@ class Factory(Base):
 
     def __init__(self,
         components: list[Component] = list(),
+        tier: int = 0,
+        upgrade: int = 1,
         **kwargs
     ):
         super().__init__(**kwargs)
         self._components = components
         self._errors = list()
+        self.tier = tier
+        self.upgrade = upgrade
 
     def to_dict(self):
         base = super().to_dict()
@@ -75,6 +80,21 @@ class Factory(Base):
         '''
 
         self._errors.append(error)
+
+    def debug(self):
+        '''
+        Steps through each component, breaking with a debugger
+        '''
+
+        self.traverse_all(debug_component)
+
+    def drain(self):
+        '''
+        Steps through each connection in the factory, clearing all ingredients out of each one. This
+        process begins with any resource nodes in the factory.
+        '''
+        self.traverse_all(drain_component)
+        self.errors = list()
 
     def get_buildings_by_type(self,
         building_type: BuildingType
@@ -175,38 +195,57 @@ class Factory(Base):
             } for component in self.components if len(component.errors) > 0
         }
 
+    @staticmethod
+    def load(filename: str):
+        with open(filename, 'rb') as fh:
+            factory = pickle.load(fh)
 
-    def traverse_all(self,
-        func: Callable
+        return factory
+
+    def purge(self):
+        '''
+        Clears ingredients out of all components in the factory, even if they're not traversible.
+        '''
+
+        for component in self.components:
+            component.clear_errors()
+            component.ingredients = list()
+            if isinstance(component, Building):
+                for input in component.inputs:
+                    input.ingredients = list()
+                for output in component.outputs:
+                    output.ingredients = list()
+            if isinstance(component, Conveyance):
+                component.recipe = None
+
+    def save(self, filename: str):
+        '''
+        Pickles the given factory and saves that content to the specified file
+        '''
+
+        with open(filename, 'wb') as fh:
+            pickle.dump(self, fh, pickle.HIGHEST_PROTOCOL)
+
+    def simulate(self):
+        '''
+        Steps through each connection in the factory, simulating each building.
+        '''
+        self.traverse_all(simulate_component)
+
+        excluded = [component for component in self.components if not component.traversed]
+        if len(excluded) > 0:
+            self.add_error(ComponentError(
+                ComponentErrorLevel.WARNING,
+                f'Some components were not traversed: {excluded}'
+            ))
+
+    def simulate_multi(self,
+        components: list[Component]
     ):
         '''
-        Initiates factory traversal beginning at its ResourceNodes, running the `func` function on
-        each Component and Connection in the flow.
-
-            - func: A function to run on each Component and Connection in the flow
+        Runs factory simulation beginning at the specified list of components.
         '''
-
-        self.traverse_multi(self.resource_nodes, func)
-
-    def traverse_multi(self,
-        components: list[Component],
-        func: Callable
-    ):
-        '''
-        Initiates factory traversal beginning with a list of arbitrary components, running the
-        `func` function on each Component and Connection in the flow.
-
-            - components: A list of Components to begin traversal at
-            - func: A function to run on each component
-        '''
-
-        # Start up traversal threads.
-        threads = list()
-        for component in components:
-            threads.append(Thread(target=self.traverse, args=[component, func]))
-        for thread in threads:
-            thread.start()
-            thread.join()
+        self.traverse_multi(components, simulate_component)
 
     def traverse(self,
         cursor: Component,
@@ -250,57 +289,38 @@ class Factory(Base):
                     thread.start()
                     thread.join()
 
-    def debug(self):
-        '''
-        Steps through each component, breaking with a debugger
-        '''
-
-        self.traverse_all(debug_component)
-
-    def drain(self):
-        '''
-        Steps through each connection in the factory, clearing all ingredients out of each one. This
-        process begins with any resource nodes in the factory.
-        '''
-        self.traverse_all(drain_component)
-        self.errors = list()
-
-    def purge(self):
-        '''
-        Clears ingredients out of all components in the factory, even if they're not traversible.
-        '''
-
-        for component in self.components:
-            component.clear_errors()
-            component.ingredients = list()
-            if isinstance(component, Building):
-                for input in component.inputs:
-                    input.ingredients = list()
-                for output in component.outputs:
-                    output.ingredients = list()
-            if isinstance(component, Conveyance):
-                component.recipe = None
-
-    def simulate(self):
-        '''
-        Steps through each connection in the factory, simulating each building.
-        '''
-        self.traverse_all(simulate_component)
-
-        excluded = [component for component in self.components if not component.traversed]
-        if len(excluded) > 0:
-            self.add_error(ComponentError(
-                ComponentErrorLevel.WARNING,
-                f'Some components were not traversed: {excluded}'
-            ))
-
-    def simulate_multi(self,
-        components: list[Component]
+    def traverse_all(self,
+        func: Callable
     ):
         '''
-        Runs factory simulation beginning at the specified list of components.
+        Initiates factory traversal beginning at its ResourceNodes, running the `func` function on
+        each Component and Connection in the flow.
+
+            - func: A function to run on each Component and Connection in the flow
         '''
-        self.traverse_multi(components, simulate_component)
+
+        self.traverse_multi(self.resource_nodes, func)
+
+    def traverse_multi(self,
+        components: list[Component],
+        func: Callable
+    ):
+        '''
+        Initiates factory traversal beginning with a list of arbitrary components, running the
+        `func` function on each Component and Connection in the flow.
+
+            - components: A list of Components to begin traversal at
+            - func: A function to run on each component
+        '''
+
+        # Start up traversal threads.
+        threads = list()
+        for component in components:
+            threads.append(Thread(target=self.traverse, args=[component, func]))
+        for thread in threads:
+            thread.start()
+            thread.join()
+
 
 def drain_component(component):
     '''
