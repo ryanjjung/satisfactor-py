@@ -39,6 +39,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.unsaved_changes = False
 
         self.set_default_size(width, height)
+        self.__ui_helpers()
         self.__build_window()
 
         if filename:
@@ -90,11 +91,13 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.set_window_title()
         if self.factory:
+            self.btnSaveFactory.set_sensitive(self.unsaved_changes)
             self.boxFactoryFunctions.set_sensitive(True)
             self.cboTier.set_active(self.factory.tier)
             self.__cboTier_changed(self.cboTier)
             self.cboUpgrade.set_active(self.factory.upgrade - 1)
         else:
+            self.btnSaveFactory.set_sensitive(False)
             self.boxFactoryFunctions.set_sensitive(False)
 
 
@@ -138,6 +141,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # The main vbox becomes the top level element on the window
         self.set_child(self.boxMain)
 
+
     def __top_bar(self):
         '''
         Builds the UI controls which run across the top bar of the window.
@@ -166,10 +170,16 @@ class MainWindow(Gtk.ApplicationWindow):
         self.btnSaveFactory.set_icon_name('document-save')
         self.btnSaveFactory.connect('clicked', self.__btnSaveFactory_clicked)
 
+        # Build the "Save As" button
+        self.btnSaveFactoryAs = Gtk.Button()
+        self.btnSaveFactoryAs.set_icon_name('document-save-as')
+        self.btnSaveFactoryAs.connect('clicked', self.__btnSaveFactoryAs_clicked)
+
         # Add all the buttons to the main hbox
         self.boxTopBar.append(self.btnNewFactory)
         self.boxTopBar.append(self.btnOpenFactory)
         self.boxTopBar.append(self.btnSaveFactory)
+        self.boxTopBar.append(self.btnSaveFactoryAs)
 
         # Contain all the factory-level functions within a box so they can all be enabled and
         # disabled by doing so to this one widget
@@ -200,6 +210,16 @@ class MainWindow(Gtk.ApplicationWindow):
 
         return self.boxTopBar
 
+    def __ui_helpers(self):
+        '''
+        Builds reusable items which are unique to this application
+        '''
+
+        self.satFileFilter = Gtk.FileFilter()
+        self.satFileFilter.set_name('SatisFactories (*.sat)')
+        self.satFileFilter.add_pattern('*.sat')
+        self.fileFilters = Gio.ListStore.new(Gtk.FileFilter)
+        self.fileFilters.append(self.satFileFilter)
 
     # + "New" button signal handlers
 
@@ -222,6 +242,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         if response:
             self.factory = Factory(name='New Factory')
+            self.unsaved_changes = True
             self.update_window_after_factory_change()
 
 
@@ -247,13 +268,8 @@ class MainWindow(Gtk.ApplicationWindow):
         if response:
             dlgOpenFactory = Gtk.FileDialog()
             dlgOpenFactory.set_title('Open Factory')
-            filter = Gtk.FileFilter()
-            filter.set_name('SatisFactories (*.sat)')
-            filter.add_pattern('*.sat')
-            filters = Gio.ListStore.new(Gtk.FileFilter)
-            filters.append(filter)
-            dlgOpenFactory.set_filters(filters)
-            dlgOpenFactory.set_default_filter(filter)
+            dlgOpenFactory.set_filters(self.fileFilters)
+            dlgOpenFactory.set_default_filter(self.satFileFilter)
             dlgOpenFactory.open(self, None, self.__dlgOpenFactory_response)
 
     def __dlgOpenFactory_response(self, dlg, response):
@@ -270,7 +286,40 @@ class MainWindow(Gtk.ApplicationWindow):
         The user has clicked the "Save" button
         '''
 
-        print('btnSave clicked')
+        if self.unsaved_changes:
+            self.factory.save(self.factoryFile)
+            self.unsaved_changes = False
+            self.update_window_after_factory_change()
+
+    def __btnSaveFactoryAs_clicked(self, btn):
+        '''
+        The user cliked the "Save As" button.
+        '''
+
+        dlgSaveFactoryAs = Gtk.FileDialog()
+        dlgSaveFactoryAs.set_title('Save Factory As...')
+        dlgSaveFactoryAs.set_filters(self.fileFilters)
+        dlgSaveFactoryAs.set_default_filter(self.satFileFilter)
+        dlgSaveFactoryAs.save(self, None, self.__dlgSaveFactoryAs_response)
+    
+    def __dlgSaveFactoryAs_response(self, dlg, response):
+        '''
+        The user clicked "Save As" and then either selected a file (response is True) or canceled
+        the window (response is False).
+        '''
+
+        if response:
+            factoryFile = dlg.save_finish(response).get_path()
+            try:
+                # Try the save first so we don't change the app context if it fails
+                self.factory.save(factoryFile)
+                self.factoryFile = factoryFile
+                self.unsaved_changes = False
+                self.update_window_after_factory_change()
+            except IOError as ex:
+                print(f'[DEBUG] Error saving factory at file {factoryFile}:\n  {ex}')
+                # TODO: Replace with real error dialog
+
 
     # + "Tier" combo box signal handlers
     def __cboTier_changed(self, cbo):
