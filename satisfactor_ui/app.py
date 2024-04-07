@@ -290,8 +290,11 @@ class MainWindow(Gtk.ApplicationWindow):
         The user has selected a factory file to open
         '''
 
-        factoryFile = dlg.open_finish(response)
-        self.load_factory(factoryFile.get_path())
+        try:
+            factoryFile = dlg.open_finish(response)
+            self.load_factory(factoryFile.get_path())
+        except Exception as ex:
+            print(f'[DEBUG] Couldn\'t finish open: {ex}')
 
     # + "Save" button signal handlers
     def __btnSaveFactory_clicked(self, btn):
@@ -314,7 +317,7 @@ class MainWindow(Gtk.ApplicationWindow):
         dlgSaveFactoryAs.set_filters(self.fileFilters)
         dlgSaveFactoryAs.set_default_filter(self.satFileFilter)
         dlgSaveFactoryAs.save(self, None, self.__dlgSaveFactoryAs_response)
-    
+
     def __dlgSaveFactoryAs_response(self, dlg, response):
         '''
         The user clicked "Save As" and then either selected a file (response is True) or canceled
@@ -322,9 +325,9 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if response:
-            factoryFile = dlg.save_finish(response).get_path()
             try:
                 # Try the save first so we don't change the app context if it fails
+                factoryFile = dlg.save_finish(response).get_path()
                 self.factory.save(factoryFile)
                 self.factoryFile = factoryFile
                 self.unsaved_changes = False
@@ -332,6 +335,8 @@ class MainWindow(Gtk.ApplicationWindow):
             except IOError as ex:
                 print(f'[DEBUG] Error saving factory at file {factoryFile}:\n  {ex}')
                 # TODO: Replace with real error dialog
+            except Exception as ex:
+                print(f'[DEBUG] Could not finish the save action: {ex}')
 
 
     # + Factory Name Entry signal handlers
