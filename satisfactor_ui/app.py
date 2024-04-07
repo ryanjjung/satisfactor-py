@@ -84,7 +84,7 @@ class MainWindow(Gtk.ApplicationWindow):
         title_suffix = f' ({self.factoryFile.split('/')[-1]})' if self.factoryFile else ''
         self.set_title(f'{title_prefix}{MAIN_WINDOW_TITLE_BASE}{title_suffix}')
 
-    def update_window_after_factory_change(self):
+    def update_window_after_factory_change(self, skipFactoryName: bool = False):
         '''
         When the factory context of the MainWindow changes, call this function to update all of the
         UI elements depending on that context.
@@ -94,6 +94,8 @@ class MainWindow(Gtk.ApplicationWindow):
         if self.factory:
             self.btnSaveFactory.set_sensitive(self.unsaved_changes)
             self.boxFactoryFunctions.set_sensitive(True)
+            if not skipFactoryName:
+                self.entryFactoryName.get_buffer().set_text(self.factory.name, -1)
             self.cboTier.set_active(self.factory.tier)
             self.__cboTier_changed(self.cboTier)
             self.cboUpgrade.set_active(self.factory.upgrade - 1)
@@ -187,6 +189,15 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxFactoryFunctions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.boxFactoryFunctions.set_sensitive(True if self.factory else False)
         self.boxTopBar.append(self.boxFactoryFunctions)
+
+        # Build the text box showing the name of the factory
+        self.entryFactoryName = Gtk.Entry()
+        self.entryFactoryName.set_size_request(300, -1)
+        self.entryFactoryName.get_buffer().connect_after('deleted-text',
+            self.__entryFactoryName_deleted)
+        self.entryFactoryName.get_buffer().connect('inserted-text',
+            self.__entryFactoryName_inserted)
+        self.boxFactoryFunctions.append(self.entryFactoryName)
 
         # Build the controls allowing tier/upgrade selection
         self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
@@ -322,6 +333,22 @@ class MainWindow(Gtk.ApplicationWindow):
                 print(f'[DEBUG] Error saving factory at file {factoryFile}:\n  {ex}')
                 # TODO: Replace with real error dialog
 
+
+    # + Factory Name Entry signal handlers
+
+    def __entryFactoryName_deleted(self, buffer, position, chars):
+        newName = self.entryFactoryName.get_buffer().get_text()
+        if newName != self.factory.name and newName != '':
+            self.factory.name = buffer.get_text()
+            self.unsaved_changes = True
+            self.update_window_after_factory_change(skipFactoryName=True)
+
+    def __entryFactoryName_inserted(self, buffer, position, chars, nchars):
+        newName = self.entryFactoryName.get_buffer().get_text()
+        if newName != self.factory.name and newName != '':
+            self.factory.name = buffer.get_text()
+            self.unsaved_changes = True
+            self.update_window_after_factory_change(skipFactoryName=True)
 
     # + "Tier" combo box signal handlers
     def __cboTier_changed(self, cbo):
