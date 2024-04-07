@@ -69,6 +69,7 @@ class MainWindow(Gtk.ApplicationWindow):
             loadedFactory = Factory.load(filename)
             self.factoryFile = filename
             self.factory = loadedFactory
+            self.unsaved_changes = False
             self.update_window_after_factory_change()
         except IOError as ex:
             print(f'[DEBUG] An error occurred when loading a factory from file {filename}\n  {ex}')
@@ -80,7 +81,7 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         title_prefix = f'{"*" if self.unsaved_changes else ""}'
-        title_suffix = f' ({self.factory.name})' if self.factory else ''
+        title_suffix = f' ({self.factoryFile.split('/')[-1]})' if self.factoryFile else ''
         self.set_title(f'{title_prefix}{MAIN_WINDOW_TITLE_BASE}{title_suffix}')
 
     def update_window_after_factory_change(self):
@@ -189,6 +190,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # Build the controls allowing tier/upgrade selection
         self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
+        self.lblTierUpgrade.set_margin_end(10)
         self.boxFactoryFunctions.append(self.lblTierUpgrade)
 
         # The "Tier" combo box is populated from the satisfactor_py.base.Availability class
