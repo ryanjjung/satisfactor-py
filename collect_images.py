@@ -23,19 +23,13 @@ def get_all_classes():
     ]
 
     # Buildings
-    buildings = [ mbr[1] for mbr in inspect.getmembers(satisfactor_py.buildings, inspect.isclass)
-        if issubclass(mbr[1], satisfactor_py.base.Building) \
-        and mbr[1] is not satisfactor_py.base.Building ]
+    buildings = satisfactor_py.buildings.get_all()
 
     # Conveyances
-    conveyances = [ mbr[1] for mbr in inspect.getmembers(satisfactor_py.conveyances, inspect.isclass)
-        if issubclass(mbr[1], satisfactor_py.base.Conveyance) \
-        and mbr[1] is not satisfactor_py.base.Conveyance ]
+    conveyances = satisfactor_py.conveyances.get_all()
 
     # Storages
-    storages = [ mbr[1] for mbr in inspect.getmembers(satisfactor_py.storages, inspect.isclass)
-        if issubclass(mbr[1], satisfactor_py.base.Storage) \
-        and mbr[1] is not satisfactor_py.base.Storage ]
+    storages = satisfactor_py.storages.get_all()
 
     all_classes = []
     all_classes.extend(base)
@@ -47,8 +41,7 @@ def get_all_classes():
 
 def get_all_instances():
     # Items
-    items = [ mbr for mbr in inspect.getmembers(satisfactor_py.items)
-         if isinstance(mbr[1], satisfactor_py.base.Item) ]
+    items = satisfactor_py.items.get_all()
 
     all_instances = []
     all_instances.extend(items)

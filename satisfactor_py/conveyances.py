@@ -8,6 +8,22 @@ from satisfactor_py.base import (
     Output
 )
 
+
+ALL = None
+
+def get_all():
+    '''
+    Returns a list of all Conveyances defined in this module; caches the results for quick access.
+    '''
+
+    global ALL
+    if ALL is None:
+        import inspect
+        import sys
+        ALL = [ mbr[1] for mbr in inspect.getmembers(sys.modules[__name__], inspect.isclass)
+            if issubclass(mbr[1], Conveyance) and mbr[1] is not Conveyance ]
+    return ALL
+
 class ConveyorBeltMk1(Conveyance):
     '''
     A first-tier conveyor belt carrying 60 Items per minute.

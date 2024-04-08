@@ -9,6 +9,23 @@ from satisfactor_py.base import (
 )
 
 
+ALL = None
+
+def get_all():
+    '''
+    Returns a list of all Storages defined in this module; caches the results for quick access.
+    '''
+
+    global ALL
+    if ALL is None:
+        import inspect
+        import sys
+        ALL = [ mbr[1] for mbr in inspect.getmembers(sys.modules[__name__], inspect.isclass)
+            if issubclass(mbr[1], Storage) and mbr[1] is not Storage ]
+    return ALL
+
+
+
 class FluidBuffer(Storage):
     '''
     Storage for liquids with a single input and output and a 400m³ capacity.

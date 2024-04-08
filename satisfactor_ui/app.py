@@ -6,12 +6,22 @@ import gi
 gi.require_version('Gtk', '4.0')
 
 from gi.repository import Gtk, Gio
-from satisfactor_py.base import Availability
+from gi.repository.GdkPixbuf import Pixbuf
+from satisfactor_py.base import (
+    Availability,
+    ResourceNode,
+    InfiniteSupplyNode
+)
+from satisfactor_py.buildings import get_all as get_all_buildings
+from satisfactor_py.conveyances import get_all as get_all_conveyances
 from satisfactor_py.factories import Factory
+from satisfactor_py.items import get_all as get_all_items
+from satisfactor_py.storages import get_all as get_all_storages
 from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
 
 
 APP_ID='com.github.ryanjjung.satisfactory.FactoryDesigner'
+ALL_BUILDINGS = None
 MAIN_WINDOW_DEFAULT_WIDTH = 1000
 MAIN_WINDOW_DEFAULT_HEIGHT = 800
 MAIN_WINDOW_TITLE_BASE = 'Satisfactory Designer'
@@ -37,6 +47,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.factory = None
         self.factoryFile = None
         self.unsaved_changes = False
+        self.updating = False
 
         self.set_default_size(width, height)
         self.__ui_helpers()
@@ -45,7 +56,7 @@ class MainWindow(Gtk.ApplicationWindow):
         if filename:
             self.load_factory(filename)
         else:
-            self.update_window_after_factory_change()
+            self.update_window()
 
 
     # Common Functions
@@ -57,6 +68,19 @@ class MainWindow(Gtk.ApplicationWindow):
 
         dlgDiscardChanges = ConfirmDiscardChangesWindow(self, callback)
         dlgDiscardChanges.present()
+
+    def get_building_options(self):
+        '''
+        Returns a list of all buildings the library is aware of; caches the result for quick access.
+        '''
+
+        global ALL_BUILDINGS
+        if ALL_BUILDINGS is None:
+            ALL_BUILDINGS = [ ResourceNode(), InfiniteSupplyNode() ]
+            ALL_BUILDINGS.extend([ bldg() for bldg in get_all_buildings()])
+            ALL_BUILDINGS.extend([ bldg() for bldg in get_all_conveyances()])
+            ALL_BUILDINGS.extend([ bldg() for bldg in get_all_storages()])
+        return ALL_BUILDINGS
 
     def load_factory(self, filename: str):
         '''
@@ -70,7 +94,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.factoryFile = filename
             self.factory = loadedFactory
             self.unsaved_changes = False
-            self.update_window_after_factory_change()
+            self.update_window()
         except IOError as ex:
             print(f'[DEBUG] An error occurred when loading a factory from file {filename}\n  {ex}')
             # TODO: Replace with an actual ErrorDialog
@@ -84,24 +108,52 @@ class MainWindow(Gtk.ApplicationWindow):
         title_suffix = f' ({self.factoryFile.split('/')[-1]})' if self.factoryFile else ''
         self.set_title(f'{title_prefix}{MAIN_WINDOW_TITLE_BASE}{title_suffix}')
 
-    def update_window_after_factory_change(self, skipFactoryName: bool = False):
+    def update_buildings_list(self):
+        '''
+        Updates the list of buildings in the left panel, taking into account all filters.
+        '''
+
+        filterAvailability = True
+
+        availTier = int(self.cboTier.get_active())
+        availUpgrade = int(self.cboUpgrade.get_active())
+
+        buildings = self.get_building_options()
+        if filterAvailability:
+            buildings = [ building for building in buildings
+                if building.availability.tier >= availTier
+                and building.availability.upgrade >= availUpgrade ]
+
+        listStore = Gtk.ListStore(Pixbuf, str)
+        for building in buildings:
+            listStore.append((None, building.name))
+        self.icovwBuildings.set_model(listStore)
+        self.icovwBuildings.set_pixbuf_column(0)
+        self.icovwBuildings.set_text_column(1)
+
+
+    def update_window(self, skipFactoryName: bool = False):
         '''
         When the factory context of the MainWindow changes, call this function to update all of the
         UI elements depending on that context.
         '''
 
-        self.set_window_title()
-        if self.factory:
-            self.btnSaveFactory.set_sensitive(self.unsaved_changes)
-            self.boxFactoryFunctions.set_sensitive(True)
-            if not skipFactoryName:
-                self.entryFactoryName.get_buffer().set_text(self.factory.name, -1)
-            self.cboTier.set_active(self.factory.tier)
-            self.__cboTier_changed(self.cboTier)
-            self.cboUpgrade.set_active(self.factory.upgrade - 1)
-        else:
-            self.btnSaveFactory.set_sensitive(False)
-            self.boxFactoryFunctions.set_sensitive(False)
+        if not self.updating:
+            self.updating = True
+            self.set_window_title()
+            if self.factory:
+                self.btnSaveFactory.set_sensitive(self.unsaved_changes)
+                self.boxFactoryFunctions.set_sensitive(True)
+                if not skipFactoryName:
+                    self.entryFactoryName.get_buffer().set_text(self.factory.name, -1)
+                self.cboTier.set_active(self.factory.tier)
+                self.__cboTier_changed(self.cboTier)
+                self.cboUpgrade.set_active(self.factory.upgrade - 1)
+                self.update_buildings_list()
+            else:
+                self.btnSaveFactory.set_sensitive(False)
+                self.boxFactoryFunctions.set_sensitive(False)
+            self.updating = False
 
 
     # Layout Construction
@@ -116,7 +168,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # Build a vertical box layout to give us a strip on top for factory tools
         self.boxMain = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.boxMain.append(self.__top_bar())
 
         # Add the main split panel container on the bottom of the vbox
         self.paneLeft = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
@@ -141,6 +192,9 @@ class MainWindow(Gtk.ApplicationWindow):
         lblContext = Gtk.Label(label='Context Info')  # Placeholder
         self.paneRight.set_end_child(lblContext)
 
+        # Add the top bar last since it causes the rest of the UI to update
+        self.boxMain.prepend(self.__top_bar())
+
         # The main vbox becomes the top level element on the window
         self.set_child(self.boxMain)
 
@@ -154,9 +208,13 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneBuildingsOptions = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.paneBuildingsOptions.set_position(300)
         self.lblBuildingsFilters = Gtk.Label(label='Filters')
-        self.lblBuildings = Gtk.Label(label='Buildings Options')
+
+        # Bottom pane: list of buildings
+        self.icovwBuildings = Gtk.IconView()
+
+        # Compile panel contents
         self.paneBuildingsOptions.set_start_child(self.lblBuildingsFilters)
-        self.paneBuildingsOptions.set_end_child(self.lblBuildings)
+        self.paneBuildingsOptions.set_end_child(self.icovwBuildings)
 
     def __top_bar(self):
         '''
@@ -231,6 +289,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # The "Upgrade" combo box gets populated based on the "Tier" selection
         self.cboUpgrade = Gtk.ComboBoxText()
+        self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)
         self.__cboTier_changed(self.cboUpgrade)
         self.boxFactoryFunctions.append(self.cboUpgrade)
 
@@ -269,7 +328,7 @@ class MainWindow(Gtk.ApplicationWindow):
         if response:
             self.factory = Factory(name='New Factory')
             self.unsaved_changes = True
-            self.update_window_after_factory_change()
+            self.update_window()
 
 
     # + "Open" button signal handlers
@@ -318,7 +377,7 @@ class MainWindow(Gtk.ApplicationWindow):
         if self.unsaved_changes:
             self.factory.save(self.factoryFile)
             self.unsaved_changes = False
-            self.update_window_after_factory_change()
+            self.update_window()
 
     def __btnSaveFactoryAs_clicked(self, btn):
         '''
@@ -344,7 +403,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.factory.save(factoryFile)
                 self.factoryFile = factoryFile
                 self.unsaved_changes = False
-                self.update_window_after_factory_change()
+                self.update_window()
             except IOError as ex:
                 print(f'[DEBUG] Error saving factory at file {factoryFile}:\n  {ex}')
                 # TODO: Replace with real error dialog
@@ -359,14 +418,14 @@ class MainWindow(Gtk.ApplicationWindow):
         if newName != self.factory.name and newName != '':
             self.factory.name = buffer.get_text()
             self.unsaved_changes = True
-            self.update_window_after_factory_change(skipFactoryName=True)
+            self.update_window(skipFactoryName=True)
 
     def __entryFactoryName_inserted(self, buffer, position, chars, nchars):
         newName = self.entryFactoryName.get_buffer().get_text()
         if newName != self.factory.name and newName != '':
             self.factory.name = buffer.get_text()
             self.unsaved_changes = True
-            self.update_window_after_factory_change(skipFactoryName=True)
+            self.update_window(skipFactoryName=True)
 
     # + "Tier" combo box signal handlers
     def __cboTier_changed(self, cbo):
@@ -378,6 +437,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.cboUpgrade.remove_all()
         for upgrade in Availability.get_upgrade_strings(self.cboTier.get_active()):
             self.cboUpgrade.append(upgrade, upgrade)
+        self.update_window()
+
+
+    # + "Upgrade" combo box signal handlers
+    def __cboUpgrade_changed(self, cbo):
+        self.update_window()
 
 
 class FactoryDesigner(Gtk.Application):

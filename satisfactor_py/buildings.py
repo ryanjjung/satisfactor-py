@@ -19,6 +19,21 @@ from satisfactor_py.items import (
 )
 
 
+ALL = None
+
+def get_all():
+    '''
+    Returns a list of all Buildings defined in this module; caches the results for quick access.
+    '''
+
+    global ALL
+    if ALL is None:
+        import inspect
+        import sys
+        ALL = [ mbr[1] for mbr in inspect.getmembers(sys.modules[__name__], inspect.isclass)
+            if issubclass(mbr[1], Building) and mbr[1] is not Building ]
+    return ALL
+
 
 class Assembler(Building):
     '''

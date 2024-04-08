@@ -8,6 +8,23 @@ from satisfactor_py.base import (
 Here are defined all of the items we care about.
 '''
 
+ALL = None
+
+def get_all():
+    '''
+    Returns a list of all Items defined in this module; caches the results for quick access.
+    '''
+
+    global ALL
+    if ALL is None:
+        import inspect
+        import sys
+        ALL = [ mbr for mbr in inspect.getmembers(sys.modules[__name__])
+            if isinstance(mbr[1], Item) ]
+    return ALL
+
+
+
 
 AlienProtein = Item(
     name='Alien Protein',
