@@ -263,11 +263,11 @@ class MainWindow(Gtk.ApplicationWindow):
             self.btnSaveFactoryAs,
             self.btnSaveFactoryAs.connect('clicked', self.__btnSaveFactoryAs_clicked)))
         self.windowSignals.append((
-            self.entryFactoryName,
+            self.entryFactoryName.get_buffer(),
             self.entryFactoryName.get_buffer().connect_after('deleted-text',
                 self.__entryFactoryName_deleted)))
         self.windowSignals.append((
-            self.entryFactoryName,
+            self.entryFactoryName.get_buffer(),
             self.entryFactoryName.get_buffer().connect('inserted-text',
                 self.__entryFactoryName_inserted)))
         self.windowSignals.append((
