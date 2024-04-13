@@ -606,10 +606,17 @@ class ResourceNode(Component):
             del(kwargs['wiki_path'])
         else:
             wiki_path = '/Resource_Node'
+        
+        if 'name' in kwargs:
+            name = kwargs['name']
+            del(kwargs['name'])
+        else:
+            name = 'Resource Node'
 
         super().__init__(
             wiki_path=wiki_path,
             image_path='/8/87/Iron_Ore.png',
+            name=name,
             **kwargs
         )
         self.purity = purity
@@ -703,10 +710,17 @@ class InfiniteSupplyNode(ResourceNode):
         else:
             wiki_path = '/Resource_Node'
 
+        if 'name' in kwargs:
+            name = kwargs['name']
+            del(kwargs['name'])
+        else:
+            name = 'Infinite Supply Node'
+
         super().__init__(
             purity=Purity.NORMAL,
             item=item,
             wiki_path=wiki_path,
+            name=name,
             **kwargs
         )
         self.item = item

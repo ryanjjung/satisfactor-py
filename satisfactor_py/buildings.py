@@ -27,11 +27,14 @@ def get_all():
     '''
 
     global ALL
+    unbuildable = [Miner]
     if ALL is None:
         import inspect
         import sys
         ALL = [ mbr[1] for mbr in inspect.getmembers(sys.modules[__name__], inspect.isclass)
-            if issubclass(mbr[1], Building) and mbr[1] is not Building ]
+            if issubclass(mbr[1], Building)
+            and mbr[1] is not Building
+            and mbr[1] not in unbuildable ]
     return ALL
 
 
@@ -41,8 +44,12 @@ class Assembler(Building):
     output.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name: str = 'Assembler',
+        **kwargs
+    ):
         super().__init__(
+            name=name,
             building_type=BuildingType.ASSEMBLER,
             wiki_path='/Assembler',
             image_path='/a/ae/Assembler.png',
@@ -70,8 +77,12 @@ class AwesomeSink(Building):
     An AWESOME Sink
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name: str = 'AWESOME Sink',
+        **kwargs
+    ):
         super().__init__(
+            name=name,
             building_type=BuildingType.AWESOME_SINK,
             wiki_path='/AWESOME_Sink',
             image_path='/8/85/AWESOME_Sink.png',
@@ -131,8 +142,12 @@ class BiomassBurner(Building):
     A type of Building where biomass can be burned into power
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name: str = 'Biomass Burner',
+        **kwargs
+    ):
         super().__init__(
+            name=name,
             building_type=BuildingType.BIOMASS_GENERATOR,
             wiki_path='/Biomass_Burner',
             image_path='/2/20/Biomass_Burner.png',
@@ -151,8 +166,12 @@ class CoalGenerator(Building):
     A Building where various coal products can be converted to power
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name: str = 'Coal Generator',
+        **kwargs
+    ):
         super().__init__(
+            name=name,
             building_type=BuildingType.COAL_GENERATOR,
             wiki_path='/Coal_Generator',
             image_path='/b/ba/Coal_Generator.png',
@@ -187,8 +206,12 @@ class Constructor(Building):
     A type of Building which converts an item of one type into an item of another. Has one input and
     one output.
     '''
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name: str = 'Constructor',
+        **kwargs
+    ):
         super().__init__(
+            name=name,
             building_type=BuildingType.CONSTRUCTOR,
             wiki_path='Constructor',
             image_path='/6/61/Constructor.png',
@@ -214,8 +237,12 @@ class ConveyorMerger(Building):
     A building which merges the contents of up to three inputs into a single output.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name: str = 'Conveyor Merger',
+        **kwargs
+    ):
         super().__init__(
+            name=name,
             building_type=BuildingType.CONVEYANCE,
             wiki_path='/Conveyor_Merger',
             image_path='/a/aa/Conveyor_Merger.png',
@@ -291,8 +318,12 @@ class ConveyorSplitter(Building):
     A building which splits the contents of its single input evenly across up to three outputs.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name: str = 'Conveyor Splitter',
+        **kwargs
+    ):
         super().__init__(
+            name=name,
             building_type=BuildingType.CONVEYANCE,
             availability=Availability(1, 2),
             wiki_path='/Conveyor_Splitter',
@@ -407,8 +438,12 @@ class ConveyorPole(Building):
     A building which supports a conveyor belt
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name: str = 'Conveyor Pole',
+        **kwargs
+    ):
         super().__init__(
+            name=name,
             building_type=BuildingType.OTHER,
             availability=Availability(0, 4),
             wiki_path='/Conveyor_Pole',
@@ -429,7 +464,10 @@ class Foundry(Building):
     A Foundry Building
     '''
 
-    def __init__(self, name='Foundry', **kwargs):
+    def __init__(self,
+        name: str = 'Foundry',
+        **kwargs
+    ):
         super().__init__(
             name=name,
             availability=Availability(0, 2),
@@ -459,7 +497,10 @@ class MAM(Building):
     MAM building for performing field research
     '''
 
-    def __init__(self, name='MAM', **kwargs):
+    def __init__(self,
+        name: str = 'MAM',
+        **kwargs
+    ):
         super().__init__(
             name=name,
             availability=Availability(1, 3),
@@ -482,7 +523,10 @@ class PersonalStorageBox(Building):
     neither inputs nor outputs nor power connections.
     '''
 
-    def __init__(self, name='Personal Storage Box', **kwargs):
+    def __init__(self,
+        name: str = 'Personal Storage Box',
+        **kwargs
+    ):
         super().__init__(
             name=name,
             availability=Availability(1, 3),
@@ -504,23 +548,17 @@ class Miner(Building):
     A type of Building that takes input from a ResourceNode and outputs Items on a Conveyor Belt.
     '''
 
-    def __init__(self, **kwargs):
-        if 'image_path' in kwargs:
-            image_path = kwargs['image_path']
-            del(kwargs['image_path'])
-        else:
-            image_path = '/c/cf/Miner_Mk.1.png'
-
-        if 'wiki_path' in kwargs:
-            wiki_path = kwargs['wiki_path']
-            del(kwargs['wiki_path'])
-        else:
-            wiki_path = '/Miner'
-
+    def __init__(self,
+        image_path: str = '/c/cf/Miner_Mk.1.png',
+        wiki_path: str = '/Miner',
+        name: str = 'Miner',
+        **kwargs
+    ):
         super().__init__(
             building_type=BuildingType.MINER,
-            wiki_path=wiki_path,
             image_path=image_path,
+            wiki_path=wiki_path,
+            name=name,
             dimensions=Dimension(
                 width=6,
                 length=14,
@@ -585,7 +623,10 @@ class MinerMk1(Miner):
     A first-tier Miner
     '''
 
-    def __init__(self, name='Miner Mk.1-0', **kwargs):
+    def __init__(self,
+        name: str = 'Miner Mk.1-0',
+        **kwargs
+    ):
         super().__init__(
             name=name,
             availability=Availability(0, 1),
@@ -601,11 +642,15 @@ class PipelineSupport(Building):
     A building which supports a pipeline
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name: str = 'Pipeline Support',
+        **kwargs
+    ):
         super().__init__(
             building_type=BuildingType.OTHER,
             wiki_path='/Pipeline_Support',
             image_path='/c/c5/Pipeline_Support.png',
+            name=name,
             availability=Availability(3, 1),
             dimensions=Dimension(
                 width=2,
@@ -627,9 +672,11 @@ class PipelineJunctionCross(Building):
     def __init__(self,
         inputs: int = 1,
         outputs: int = 1,
+        name: str = 'Pipeline Junction Cross',
         **kwargs
     ):
         super().__init__(
+            name=name,
             building_type=BuildingType.OTHER,
             wiki_path='/Pipeline_Junction_Cross',
             image_path='/8/8c/Pipeline_Junction_Cross.png',
@@ -760,7 +807,10 @@ class Smelter(Building):
     A Smelter Building
     '''
 
-    def __init__(self, name='Smelter', **kwargs):
+    def __init__(self,
+        name: str = 'Smelter',
+        **kwargs
+    ):
         super().__init__(
             name=name,
             availability=Availability(0, 2),
@@ -790,7 +840,10 @@ class SpaceElevator(Building):
     A Space Elevator Building
     '''
 
-    def __init__(self, name='Space Elevator', **kwargs):
+    def __init__(self,
+        name: str = 'Space Elevator',
+        **kwargs
+    ):
         super().__init__(
             name=name,
             availability=Availability(0, 6),
@@ -843,7 +896,10 @@ class UJellyLandingPad(Building):
     A landing pad building
     '''
 
-    def __init__(self, name='U-Jelly Landing Pad', **kwargs):
+    def __init__(self,
+        name: str = 'U-Jelly Landing Pad',
+        **kwargs
+    ):
         super().__init__(
             name=name,
             availability=Availability(2, 3),
@@ -866,7 +922,10 @@ class WaterExtractor(Miner):
     A kind of Miner that produces Water
     '''
 
-    def __init__(self, name='Water Extractor', **kwargs):
+    def __init__(self,
+        name: str = 'Water Extractor',
+        **kwargs
+    ):
         '''
         This should be, at a base level, a Miner, but we have to override some special things
         '''
