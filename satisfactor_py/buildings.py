@@ -21,7 +21,7 @@ from satisfactor_py.items import (
 
 ALL = None
 
-def get_all():
+def get_all() -> list[Building]:
     '''
     Returns a list of all Buildings defined in this module; caches the results for quick access.
     '''
@@ -104,7 +104,7 @@ class AwesomeSink(Building):
             )]
         )
 
-    def can_process(self):
+    def can_process(self) -> bool:
         '''
         Determine if this Sink can process
         '''
@@ -119,7 +119,7 @@ class AwesomeSink(Building):
 
         return True
 
-    def process(self):
+    def process(self) -> bool:
         '''
         Convert items into points
         '''
@@ -207,6 +207,7 @@ class Constructor(Building):
     A type of Building which converts an item of one type into an item of another. Has one input and
     one output.
     '''
+
     def __init__(self,
         name: str = 'Constructor',
         **kwargs
@@ -264,7 +265,7 @@ class ConveyorMerger(Building):
             **kwargs
         )
 
-    def can_process(self, connected_inputs):
+    def can_process(self, connected_inputs) -> bool:
         success = True
         if len(connected_inputs) == 0:
             self.add_error(ComponentError(
@@ -282,7 +283,11 @@ class ConveyorMerger(Building):
 
         return success
 
-    def process(self):
+    def process(self) -> bool:
+        '''
+        Merges the contents of the inputs onto the output proportionately.
+        '''
+
         connected_inputs = [input for input in self.inputs if input.source]
         if not self.can_process(connected_inputs):
             return False
@@ -344,7 +349,11 @@ class ConveyorSplitter(Building):
             **kwargs
         )
 
-    def can_process(self, connected_outputs):
+    def can_process(self, connected_outputs: list[Output]) -> bool:
+        '''
+        Determines if the conditions required for processing are present.
+        '''
+
         success = True
         if len(connected_outputs) == 0:
             self.add_error(ComponentError(
@@ -362,7 +371,11 @@ class ConveyorSplitter(Building):
 
         return success
 
-    def process(self):
+    def process(self) -> bool:
+        '''
+        Splits the contents of a single input across all outputs proportionately.
+        '''
+
         connected_outputs = [output for output in self.outputs if output.target]
         if not self.can_process(connected_outputs):
             return False
@@ -471,7 +484,7 @@ class Foundry(Building):
     ):
         super().__init__(
             name=name,
-            availability=Availability(0, 2),
+            availability=Availability(3, 3),
             wiki_path='/Foundry',
             image_path='/1/19/Foundry.png',
             base_power_usage=16,
@@ -547,6 +560,7 @@ class PersonalStorageBox(Building):
 class Miner(Building):
     '''
     A type of Building that takes input from a ResourceNode and outputs Items on a Conveyor Belt.
+    Typically, you would rather build an implementation of this class instead, like a MinerMk1.
     '''
 
     def __init__(self,
@@ -576,7 +590,7 @@ class Miner(Building):
             **kwargs
         )
 
-    def can_process(self):
+    def can_process(self) -> bool:
         '''
         Returns True if the conditions are right for processing the Miner recipe.
         '''
@@ -602,7 +616,6 @@ class Miner(Building):
             return False
 
         return True
-
 
     def process(self):
         '''
@@ -732,7 +745,7 @@ class PipelineJunctionCross(Building):
             conveyance_type=ConveyanceType.PIPE
         ) for o in range(outputs)]
 
-    def can_process(self):
+    def can_process(self) -> bool:
         '''
         Determines if the junction can process normally.
         '''
@@ -755,6 +768,10 @@ class PipelineJunctionCross(Building):
         return True
 
     def process(self):
+        '''
+        Splits the incoming fluid proportionately among the outputs.
+        '''
+
         self.clear_errors()
         if not self.can_process():
             return False

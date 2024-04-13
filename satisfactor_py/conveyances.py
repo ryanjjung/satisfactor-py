@@ -11,7 +11,7 @@ from satisfactor_py.base import (
 
 ALL = None
 
-def get_all():
+def get_all() -> list[Conveyance]:
     '''
     Returns a list of all Conveyances defined in this module; caches the results for quick access.
     '''
@@ -23,6 +23,7 @@ def get_all():
         ALL = [ mbr[1] for mbr in inspect.getmembers(sys.modules[__name__], inspect.isclass)
             if issubclass(mbr[1], Conveyance) and mbr[1] is not Conveyance ]
     return ALL
+
 
 class ConveyorBeltMk1(Conveyance):
     '''

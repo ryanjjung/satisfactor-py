@@ -12,7 +12,8 @@ from typing import Type
 from uuid import uuid4
 
 
-# The indices of this list line up with tiers (see Milestones wiki page)
+# The indices of this list line up with tiers. See the Milestones wiki page
+# (https://satisfactory.wiki.gg/wiki/Milestones) for a complete tier list (which is zero-based).
 # The values are the number of upgrade levels within each tier.
 TIERS = [ 6, 3, 5, 4, 5, 4, 4, 5, 4 ]
 IMAGE_URL_BASE = 'https://satisfactory.wiki.gg/images'
@@ -37,12 +38,20 @@ class Availability(object):
     are unlocked by MAM research, set tier/upgrade to None, them set mam to True when it's unlocked.
     '''
 
-    def __init__(self, tier, upgrade, mam=False):
+    def __init__(self,
+        tier: int,
+        upgrade: int,
+        mam: bool = False
+    ):
         self.tier = tier
         self.upgrade = upgrade
         self.mam = mam
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         return {
             'tier': self.tier,
             'upgrade': self.upgrade
@@ -50,13 +59,20 @@ class Availability(object):
 
     @staticmethod
     def get_tier_strings():
+        '''
+        Returns a list of tier numbers in stringified form; that is, "1" instead of 1. This is
+        primarily used by satisfactor_ui to populate widgets.
+        '''
+
         return [str(i) for i in range(len(TIERS))]
 
     @staticmethod
-    def get_upgrade_strings(tier):
+    def get_upgrade_strings(tier: int):
         '''
-        Returns strigified versions of upgrade levels for the given tier
+        Returns strigified versions of upgrade levels for the given tier; that is "1" instead of 1.
+        This is primarily used by satisfactor_ui to populate widgets.
         '''
+
         return [str(i + 1) for i in range(TIERS[tier])]
 
 
@@ -119,17 +135,21 @@ class Dimension(object):
         self.length = length
         self.height = height
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         return {
             'width': self.width,
             'length': self.length,
             'height': self.height
         }
 
-    def area(self) -> int:
+    def area(self) -> float:
         return self.width * self.length
 
-    def volume(self) -> int:
+    def volume(self) -> float:
         return self.area() * self.height
 
 
@@ -176,7 +196,11 @@ class Base(object):
         self.wiki_path = wiki_path
         self.tags = tags
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         return {
             'id': self.id,
             'name': self.name,
@@ -221,7 +245,11 @@ class ComponentError(Exception):
         self.level = level
         self.message = message
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         return {
             'level': self.level.name,
             'message': self.message
@@ -248,13 +276,19 @@ class Component(Base):
         self.constructed = constructed
         self.traversed = traversed
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         base = super().to_dict()
         base.update({
             'errors': [error.to_dict() for error in self.errors]
         })
         return base
 
+    # Error management functions -- These ensure that component errors are always the right type
+    # and therefore meaningful to anything examining these errors later.
     def add_error(self,
         error: ComponentError
     ):
@@ -266,18 +300,43 @@ class Component(Base):
 
     @property
     def errors(self):
+        '''
+        Getter for component errors
+        '''
+
         return self._errors
 
     @errors.setter
     def errors(self,
         value: list[ComponentError]
     ):
+        '''
+        Setter for the entire list of errors, should one need to set the whole list at once
+        '''
+
         self._errors = value
 
     def clear_errors(self):
+        '''
+        Disposes of all errors
+        '''
+
         self._errors.clear()
 
     def process(self):
+        '''
+        Most Components should clear out their errors before being processed. This is because
+        Components may be traversed multiple times during a single factory traversal. The first
+        traversal may bring, for example, iron rods to an Assembler fitted with a recipe for
+        Reinforced Iron Plates. Without the iron plates, it can't be processed and may generate an
+        error when it's first traversed. Later, a separate traversal thread may bring the iron
+        plates, enabling the Assembler to process it. Errors from the first traversal are
+        meaningless, and should therefore be disposed of.
+
+        Because this is ordinarily the desired behavior, we do it here anytime an inheriting class
+        calls `super().process()`.
+        '''
+
         self.clear_errors()
 
 
@@ -306,7 +365,11 @@ class Item(Base):
         self.stack_size = stack_size
         self.sink_value = sink_value
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         base = super().to_dict()
         base.update({
             'conveyance_type': self.conveyance_type.name if self.conveyance_type else None,
@@ -341,7 +404,11 @@ class Ingredient(object):
         self.amount = amount
         self.rate = rate
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         return {
             'item': self.item.to_dict(),
             'amount': self.amount,
@@ -351,8 +418,8 @@ class Ingredient(object):
 
 class Recipe(Base):
     '''
-    When Items are combined to produce a different set of Items, you have a Recipe for producing
-    those Items. This class sets up a common interface for Recipes.
+    When Items are consumed to produce a different set of Items, you have a Recipe for those Items.
+    This class sets up a common interface for Recipes.
 
         - building_type: The type of building that this Recipe can be built in (such as Iron Ingots
             only being craftable in Smelters, or Smelters being craftable in a build gun).
@@ -373,13 +440,27 @@ class Recipe(Base):
 
     @property
     def consumed_items(self):
+        '''
+        Convenience function returning a list of items consumed by the recipe, regardless of their
+        amount or rate.
+        '''
+
         return [ingredient.item for ingredient in self.consumes]
 
     @property
     def produced_items(self):
+        '''
+        Convenience function returning a list of items produced by the recipe, regardless of their
+        amount or rate.
+        '''
+
         return [ingredient.item for ingredient in self.produces]
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         consumes = [ingredient.to_dict() for ingredient in self.consumes] if self.consumes else None
         produces = [ingredient.to_dict() for ingredient in self.produces] if self.produces else None
         base = super().to_dict()
@@ -402,7 +483,7 @@ class ConveyanceRecipe(Recipe):
 
     def __init__(self,
         max_rate: int,
-        ingredients: list[Ingredient] = list()
+        ingredients: list[Ingredient] = []
     ):
         super().__init__(building_type=BuildingType.CONVEYANCE)
         self.max_rate = max_rate
@@ -415,6 +496,7 @@ class ConveyanceRecipe(Recipe):
         self.consumes = self._ingredients
         self.produces = self._ingredients
         for ingredient in self.produces:
+            ingredient.amout = None
             ingredient.rate = min(ingredient.rate, self.max_rate)
 
 
@@ -442,8 +524,8 @@ class Connection(Component):
         attached_to: Component = None,
         conveyance_type: ConveyanceType = ConveyanceType.BELT,
         ingredients: list[Ingredient] = list(),
-        source = None,  # Type: Connection
-        target = None,  # Type: Connection
+        source = None,  # Type: Connection   # We cannot specify type here without creating a
+        target = None,  # Type: Connection   # problem of self-dependency.
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -453,7 +535,11 @@ class Connection(Component):
         self.source = source
         self.target = target
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         ingredients = [ingredient.to_dict() for ingredient in self.ingredients]
         base = super().to_dict()
         base.update({
@@ -465,21 +551,36 @@ class Connection(Component):
         })
         return base
 
-    def is_input(self):
+    def is_input(self) -> bool:
+        '''
+        Inheriting classes must implement `is_input` to return True or False, which indicates the
+        direction of item flow through this Connection.
+        '''
+
         raise NotImplementedError
 
     def is_output(self):
         '''
-        Downstream classes must implement `is_input`. This is a convenience function that simply
-        negates whatever that is so downstream classes don't also have to reimplement this.
+        Convenience function that simply negates the output of `is_input` so inheriting classes
+        don't also have to reimplement this.
         '''
 
         return not self.is_input()
 
     def connect(self) -> bool:
+        '''
+        Inheriting classes must implement `connect` to ensure proper Input/Output flow.
+        '''
+
         raise NotImplementedError
 
     def process(self):
+        '''
+        An unimplemented Connection doesn't do anything, but if an inheriting class calls this
+        (`super().process()`), we should call the same function up the chain to the Component this
+        Connection inherits from (which clears out component errors).
+        '''
+
         super().process()
         if not self.attached_to:
             self.add_error(ComponentError(
@@ -496,7 +597,11 @@ class Input(Connection):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def is_input(self):
+    def is_input(self) -> bool:
+        '''
+        Implementation of Connection.is_input
+        '''
+
         return True
 
     def connect(self,
@@ -519,6 +624,10 @@ class Input(Connection):
         connection.target = self
 
     def process(self):
+        '''
+        Pass the incoming ingredients on to whatever this Input is attached to.
+        '''
+
         super().process()
         # If the input is attached...
         if self.attached_to:
@@ -546,7 +655,11 @@ class Output(Connection):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def is_input(self):
+    def is_input(self) -> bool:
+        '''
+        Implementation of Component.is_input()
+        '''
+
         return False
 
     def connect(self,
@@ -569,6 +682,10 @@ class Output(Connection):
         connection.source = self
 
     def process(self):
+        '''
+        Pass the incoming ingredients on to the target Input
+        '''
+
         super().process()
         if not self.target:
             self.add_error(ComponentError(
@@ -578,11 +695,6 @@ class Output(Connection):
         else:
             # An output can only connect to an input, so just pass the ingredients along
             self.target.ingredients = self.ingredients
-
-    def test(self):
-        '''
-        Test for issues with outputs
-        '''
 
 
 class ResourceNode(Component):
@@ -598,21 +710,11 @@ class ResourceNode(Component):
 
     def __init__(self,
         purity: Purity = Purity.NORMAL,
+        wiki_path: str = '/Resource_Node',
+        name: str = 'Resource Node',
         item: Item = None,
         **kwargs
     ):
-        if 'wiki_path' in kwargs:
-            wiki_path = kwargs['wiki_path']
-            del(kwargs['wiki_path'])
-        else:
-            wiki_path = '/Resource_Node'
-        
-        if 'name' in kwargs:
-            name = kwargs['name']
-            del(kwargs['name'])
-        else:
-            name = 'Resource Node'
-
         super().__init__(
             wiki_path=wiki_path,
             image_path='/8/87/Iron_Ore.png',
@@ -627,7 +729,11 @@ class ResourceNode(Component):
             attached_to=self
         )]
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         return super().to_dict().update({
             'purity': self.purity.name,
             'item': self.item.to_dict(),
@@ -730,12 +836,20 @@ class InfiniteSupplyNode(ResourceNode):
             attached_to=self
         )]
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         return super().to_dict().update({
             'rate': self.rate
         })
 
-    def can_process(self):
+    def can_process(self) -> bool:
+        '''
+        Determines if the conditions required for processing are present.
+        '''
+
         can_process = True
         if not self.item:
             self.add_error(ComponentError(
@@ -753,14 +867,17 @@ class InfiniteSupplyNode(ResourceNode):
 
         return can_process
 
-    def process(self):
+    def process(self) -> bool:
+        '''
+        Set the ingredients on the output to the desired item and either the defined rate or the
+        fastest rate the attached conveyance can carry it.
+        '''
+
         self.clear_errors()
 
         if not self.can_process():
             return False
 
-        # Set the output rate to either the defined rate or the fastest the connected
-        # conveyance can carry it.
         rate = self.rate
         if not rate:
             rate = self.outputs[0].target.attached_to.rate
@@ -820,7 +937,11 @@ class Building(Component):
         self.base_power_usage = base_power_usage
         self.ingredients = list()
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         inputs = [input.id for input in self.inputs]
         outputs = [output.id for output in self.outputs]
         base = super().to_dict()
@@ -950,11 +1071,11 @@ class Building(Component):
         return success
 
     def connect(self,
-        target,  # Type: Building
-        conveyance, # Type: Type[Conveyance]
+        target,  # Type: Building             # Cannot use typing here because it creates a problem
+        conveyance, # Type: Type[Conveyance]  # of recursive dependency.
         conveyance_name: str = None,
         connect_output: bool = True,
-    ):
+    ):  # Returns an implementation of a Conveyance
         '''
         Connect this Building to another by creating a Conveyance between them. Throw exceptions if
         it cannot be done. Returns the conveyance created to connect the buildings, or None if the
@@ -1047,14 +1168,19 @@ class Conveyance(Building):
         self.rate = rate
         self.recipe = None
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         base = super().to_dict()
         base.update({
             'conveyance_type': self.conveyance_type.name,
             'rate': self.rate
         })
         return base
-    def process(self):
+
+    def process(self) -> bool:
         '''
         Ensures the Recipe is set up correctly and that the outputs match the inputs.
         '''
@@ -1103,7 +1229,11 @@ class Storage(Building):
         self.stacks = stacks
         self.ingredients = ingredients
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of this object
+        '''
+
         base = super().to_dict()
         base.update({
             'stacks': self.stacks

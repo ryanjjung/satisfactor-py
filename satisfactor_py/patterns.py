@@ -54,7 +54,7 @@ from satisfactor_py.storages import StorageContainer
 
 def tier_0_screw_factory(
     purity: Purity = Purity.NORMAL
-):
+) -> Factory:
     '''
     Returns a simple factory containing a series of Tier 0 components that produces screws and
     stores them as follows:
@@ -66,6 +66,8 @@ def tier_0_screw_factory(
     '''
 
     factory = Factory(name='Tier 0 Screw Factory')
+    factory.tier = 0
+    factory.availability = 5
 
     # Start by adding an iron resource node to the factory
     ironSource = ResourceNode(
@@ -126,7 +128,7 @@ def tier_0_screw_factory(
 
 def tier_0_cable_factory(
     purity: Purity = Purity.NORMAL
-):
+) -> Factory:
     '''
     Returns a simple factory containing a series of Tier 0 components that produces cable and stores
     them as follows:
@@ -138,6 +140,8 @@ def tier_0_cable_factory(
     '''
 
     factory = Factory(name='Tier 0 Cable Factory')
+    factory.tier = 0
+    factory.availability = 5
 
     # Start by adding a copper resource node to the factory
     copperSource = ResourceNode(
@@ -196,7 +200,7 @@ def tier_0_cable_factory(
 
 def tier_0_concrete_factory(
     purity: Purity = Purity.NORMAL
-):
+) -> Factory:
     '''
     Returns a simple factory producing concrete using only Tier 0 items as follows:
 
@@ -207,6 +211,8 @@ def tier_0_concrete_factory(
     '''
 
     factory = Factory(name='Tier 0 Concrete Factory')
+    factory.tier = 0
+    factory.availability = 5
 
     # Start with a limestone resource node
     limestoneSource = ResourceNode(
@@ -242,7 +248,7 @@ def tier_0_concrete_factory(
     ])
     return factory
 
-def tier_1_screw_factory():
+def tier_1_screw_factory() -> Factory:
     '''
     Builds a Tier 1 screw factory from a normal resource node, splitting various outputs to maximize
     efficiency.
@@ -256,6 +262,8 @@ def tier_1_screw_factory():
     '''
 
     factory = Factory(name='Tier 1 Screw Factory')
+    factory.tier = 1
+    factory.availability = 2
 
     # Start with a normal iron source, attach it to a miner
     ironSource = ResourceNode(
@@ -357,14 +365,14 @@ def tier_1_screw_factory():
     ])
     return factory
 
-def tier_2_biofuel_factory():
+def tier_2_biofuel_factory() -> Factory:
     '''
     Builds a not-very-efficient factory that produces biomass from various inputs.
     '''
 
     factory = Factory(name='Tier 2 Solid Biofuel Factory')
     factory.tier = 2
-    factory.upgrade = 5
+    factory.upgrade = 2
 
     # Start with storage containers in which we will place mycelium, leaves, and wood
     mycelia_storage = StorageContainer(
@@ -447,12 +455,14 @@ def tier_2_biofuel_factory():
 def tier_3_steel_beam_factory(
     ironPurity: Purity = Purity.NORMAL,
     coalPurity: Purity = Purity.NORMAL
-):
+) -> Factory:
     '''
     Builds a factory producing steel beams
     '''
 
     factory = Factory(name='Tier 3 Steel Beam Factory')
+    factory.tier = 3
+    factory.upgrade = 3
 
     # Start with resource nodes providing iron and coal
     ironSource = ResourceNode(
@@ -526,12 +536,14 @@ def tier_3_steel_beam_factory(
 
 def tier_3_coal_power_factory(
     purity: Purity = Purity.NORMAL
-):
+) -> Factory:
     '''
     A power factory made of coal generators
     '''
 
     factory = Factory(name='Coal Power Factory')
+    factory.tier = 3
+    factory.upgrade = 1
 
     # Start with coal and water resource nodes
     coalSource = ResourceNode(
