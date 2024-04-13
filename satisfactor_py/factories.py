@@ -24,6 +24,8 @@ class Factory(Base):
     A Factory is a collection of interconnected Components.
 
         - components: A list of Components in the factory.
+        - tier: The numerical tier the factory has been ugpraded to
+        - upgrade: The numerical upgrade level the factory has been upgraded to
     '''
 
     def __init__(self,
@@ -38,23 +40,30 @@ class Factory(Base):
         self.tier = tier
         self.upgrade = upgrade
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        '''
+        Returns a dict representation of the object
+        '''
+
         base = super().to_dict()
         base.update({
             'components': [component.to_dict() for component in self.components]
         })
         return base
 
-    # By making this a read-only property, we can use Python's type hinting in the `add` function to
-    # ensure we're only allowing Component types into the factory.
     @property
     def components(self):
+        '''
+        This is a read-only property so we can use Python's type hinting in the `add` function to
+        ensure we're only allowing Component types into the factory.
+        '''
+
         return self._components
 
     @property
-    def resource_nodes(self) -> list[Component]:
+    def resource_nodes(self) -> list[ResourceNode]:
         '''
-        Quick access to all ResourceNodes in the factory.
+        Quick access to all ResourceNodes and InfiniteSupplyNodes in the factory.
         '''
 
         return [component for component in self._components
@@ -63,6 +72,13 @@ class Factory(Base):
     def add(self,
         components: list[Component] | list[list[Component]]
     ):
+        '''
+        Add the provided components to the factory.
+
+            - components: Either a list of Components or a list of lists of Components, allowing
+                multiple factories to be merged conveniently.
+        '''
+
         for component in components:
             if issubclass(type(component), Component):
                 component.factory = self
@@ -93,6 +109,7 @@ class Factory(Base):
         Steps through each connection in the factory, clearing all ingredients out of each one. This
         process begins with any resource nodes in the factory.
         '''
+
         self.traverse_all(drain_component)
         self.errors = list()
 
@@ -197,6 +214,12 @@ class Factory(Base):
 
     @staticmethod
     def load(filename: str):
+        '''
+        Static method which loads a factory from a file previously saved by this library.
+
+            - filename: The path to the factory file
+        '''
+
         with open(filename, 'rb') as fh:
             factory = pickle.load(fh)
 
@@ -220,7 +243,7 @@ class Factory(Base):
 
     def save(self, filename: str):
         '''
-        Pickles the given factory and saves that content to the specified file
+        Serializes the factory using pickle and saves that content to the specified file
         '''
 
         with open(filename, 'wb') as fh:
@@ -230,6 +253,7 @@ class Factory(Base):
         '''
         Steps through each connection in the factory, simulating each building.
         '''
+
         self.traverse_all(simulate_component)
 
         excluded = [component for component in self.components if not component.traversed]
@@ -245,6 +269,7 @@ class Factory(Base):
         '''
         Runs factory simulation beginning at the specified list of components.
         '''
+
         self.traverse_multi(components, simulate_component)
 
     def traverse(self,
@@ -331,7 +356,6 @@ def drain_component(component):
     component.traversed = False
     if hasattr(component, 'ingredients'):
         component.ingredients.clear()
-    return
 
 def simulate_component(component):
     '''
