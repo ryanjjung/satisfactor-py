@@ -5,13 +5,20 @@ A Python utility for planning factories in the video game [Satisfactory](https:/
 
 ## Setup
 
-The `satisfactor_py` library has no dependencies.
+The `satisfactor_py` library has no dependencies and may be used as described in this Readme.
 
-`satisfactor_ui` requires GTK 4.0. Install it and the Python bindings for GObject. On Fedora, you run:
+Some other scripts depend on third party libraries. Install them with:
+
+```
+pip install -r requirements.txt
+```
+
+`satisfactor_ui` (the factotry designer) requires GTK 4.0. Install it and the Python bindings for GObject. On Fedora, you run:
 
 ```
 dnf install gtk4 python3-gobject
 ```
+
 
 ## Run Something
 
@@ -21,6 +28,23 @@ A good place to start is the [screw factory test script](./scripts/screw_factory
 
 ```
 PYTHONPATH=. ./scripts/screw_factory.py
+```
+
+
+### Factory Designer GTK Application
+
+The ultimate goal is a point-and-click GTK-based graphical desktop application allowing for easy factory desgin. Some work has been done, but not anything basically usable yet.
+
+It uses images which are copyrighted, and which I don't like the idea of storing in a git repo. In order to use these in the application, you'll need to run this command with an internet connection:
+
+```
+PYTHONPATH=. ./scripts/collect_images.py
+```
+
+To run the UI:
+
+```
+PYTHONPATH=. ./factory_designer.py
 ```
 
 
