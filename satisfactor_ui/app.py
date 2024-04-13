@@ -109,24 +109,42 @@ class MainWindow(Gtk.ApplicationWindow):
             loadedFactory = Factory.load(filename)
             self.factoryFile = filename
             self.factory = loadedFactory
-            self.set_tier_and_upgrade()
             self.unsaved_changes = False
             self.update_window()
         except IOError as ex:
             logging.error(f'An error occurred when loading a factory from file {filename}\n  {ex}')
             # TODO: Replace with an actual ErrorDialog
 
-    def set_tier_and_upgrade(self):
+    def set_tier_and_upgrade(self,
+        tier: int = None,
+        upgrade: int = None
+    ):
         '''
         Sets the active values in the combo boxes for tier and upgrade
+
+            - tier: The tier to set the factory unlock level to
+            - upgrade: The upgrade level to set in the factory
         '''
 
-        self.block_all_signals()
-        logging.debug(f'Selecting tier/upgrade values: {self.factory.tier}/{self.factory.upgrade}')
-        self.cboTier.set_active(self.factory.tier)
-        self.__cboTier_changed(self.cboTier)
-        self.cboUpgrade.set_active(self.factory.upgrade - 1)
-        self.unblock_all_signals()
+        if self.factory:
+            self.block_all_signals()
+            logging.debug(f'Selecting tier/upgrade values: {self.factory.tier}/{self.factory.upgrade}')
+
+            # Update the factory model first
+            if tier:
+                self.factory.tier = tier
+            if upgrade:
+                self.factory.upgrade = upgrade
+
+            # Set the tier value in the combo box
+            self.cboTier.set_active(self.factory.tier)
+
+            # Populate the appropriate upgrade values
+            self.cboUpgrade.remove_all()
+            for upgrade in Availability.get_upgrade_strings(self.factory.tier):
+                self.cboUpgrade.append(upgrade, upgrade)
+            self.cboUpgrade.set_active(self.factory.upgrade - 1)
+            self.unblock_all_signals()
 
     def set_window_title(self):
         '''
@@ -153,35 +171,36 @@ class MainWindow(Gtk.ApplicationWindow):
         Updates the list of buildings in the left panel, taking into account all filters.
         '''
 
-        filterAvailability = True
+        if self.factory:
+            filterAvailability = True
 
-        logging.debug('Updating building options list')
-        # Determine the available buildings
-        all_buildings = self.get_building_options()
-        if filterAvailability:
-            avail_buildings = []
-            for building in all_buildings:
-                if self.factory.tier > building.availability.tier:
-                    avail_buildings.append(building)
-                elif self.factory.tier == building.availability.tier:
-                    if self.factory.upgrade >= building.availability.upgrade:
+            logging.debug('Updating building options list')
+            # Determine the available buildings
+            all_buildings = self.get_building_options()
+            if filterAvailability:
+                avail_buildings = []
+                for building in all_buildings:
+                    if self.factory.tier > building.availability.tier:
                         avail_buildings.append(building)
+                    elif self.factory.tier == building.availability.tier:
+                        if self.factory.upgrade >= building.availability.upgrade:
+                            avail_buildings.append(building)
 
-        # Sort the list alphabetically
-        avail_buildings = sorted(avail_buildings, key=lambda x: x.name)
+            # Sort the list alphabetically
+            avail_buildings = sorted(avail_buildings, key=lambda x: x.name)
 
-        # Convert the list to a ListStore, pulling in images where possible
-        listStore = Gtk.ListStore(Pixbuf, str)
-        for building in avail_buildings:
-            listStore.append((
-                self.pixelBuffers['building_options'][building.__class__.__name__],
-                building.name))
-        self.lstBuildings = listStore
-        self.icovwBuildings.set_model(self.lstBuildings)
-        self.icovwBuildings.set_pixbuf_column(0)
-        self.icovwBuildings.set_text_column(1)
+            # Convert the list to a ListStore, pulling in images where possible
+            listStore = Gtk.ListStore(Pixbuf, str)
+            for building in avail_buildings:
+                listStore.append((
+                    self.pixelBuffers['building_options'][building.__class__.__name__],
+                    building.name))
+            self.lstBuildings = listStore
+            self.icovwBuildings.set_model(self.lstBuildings)
+            self.icovwBuildings.set_pixbuf_column(0)
+            self.icovwBuildings.set_text_column(1)
 
-    def update_window(self, skipFactoryName: bool = False):
+    def update_window(self):
         '''
         When the factory context of the MainWindow changes, call this function to update all of the
         UI elements depending on that context.
@@ -195,8 +214,8 @@ class MainWindow(Gtk.ApplicationWindow):
             if self.factory:
                 self.btnSaveFactory.set_sensitive(self.unsaved_changes)
                 self.boxFactoryFunctions.set_sensitive(True)
-                if not skipFactoryName:
-                    self.entryFactoryName.get_buffer().set_text(self.factory.name, -1)
+                self.entryFactoryName.get_buffer().set_text(self.factory.name, -1)
+                self.set_tier_and_upgrade()
                 self.update_buildings_list()
             else:
                 self.btnSaveFactory.set_sensitive(False)
@@ -531,14 +550,14 @@ class MainWindow(Gtk.ApplicationWindow):
         if newName != self.factory.name and newName != '':
             self.factory.name = buffer.get_text()
             self.unsaved_changes = True
-            self.update_window(skipFactoryName=True)
+            self.update_window()
 
     def __entryFactoryName_inserted(self, buffer, position, chars, nchars):
         newName = self.entryFactoryName.get_buffer().get_text()
         if newName != self.factory.name and newName != '':
             self.factory.name = buffer.get_text()
             self.unsaved_changes = True
-            self.update_window(skipFactoryName=True)
+            self.update_window()
 
     # + "Tier" combo box signal handlers
     def __cboTier_changed(self, cbo):
@@ -547,14 +566,8 @@ class MainWindow(Gtk.ApplicationWindow):
         accordingly.
         '''
 
-        if self.factory:
-            self.factory.tier = self.cboTier.get_active()
-            self.cboUpgrade.remove_all()
-            for upgrade in Availability.get_upgrade_strings(self.factory.tier):
-                self.cboUpgrade.append(upgrade, upgrade)
-            self.cboUpgrade.set_active(0)
-            self.unsaved_changes = True
-
+        self.set_tier_and_upgrade(tier=cbo.get_active())
+        self.update_buildings_list()
 
     # + "Upgrade" combo box signal handlers
     def __cboUpgrade_changed(self, cbo):
