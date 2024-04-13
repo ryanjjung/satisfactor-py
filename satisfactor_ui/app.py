@@ -131,12 +131,13 @@ class MainWindow(Gtk.ApplicationWindow):
             logging.debug(f'Selecting tier/upgrade values: {self.factory.tier}/{self.factory.upgrade}')
 
             # Update the factory model first
-            if tier:
+            if tier is not None:
                 self.factory.tier = tier
             if upgrade:
                 self.factory.upgrade = upgrade
 
             # Set the tier value in the combo box
+            #import pdb; pdb.set_trace()
             self.cboTier.set_active(self.factory.tier)
 
             # Populate the appropriate upgrade values
@@ -382,6 +383,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # Build the controls allowing tier/upgrade selection
         self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
+        self.lblTierUpgrade.set_margin_start(10)
         self.lblTierUpgrade.set_margin_end(10)
         self.boxFactoryFunctions.append(self.lblTierUpgrade)
 
