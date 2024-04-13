@@ -110,8 +110,8 @@ class MainWindow(Gtk.ApplicationWindow):
             loadedFactory = Factory.load(filename)
             self.factoryFile = filename
             self.factory = loadedFactory
-            self.unsaved_changes = False
             self.set_tier_and_upgrade()
+            self.unsaved_changes = False
             self.update_window()
         except IOError as ex:
             logging.error(f'An error occurred when loading a factory from file {filename}\n  {ex}')

@@ -83,6 +83,7 @@ class AwesomeSink(Building):
     ):
         super().__init__(
             name=name,
+            availability=Availability(2, 4),
             building_type=BuildingType.AWESOME_SINK,
             wiki_path='/AWESOME_Sink',
             image_path='/8/85/AWESOME_Sink.png',
@@ -624,13 +625,13 @@ class MinerMk1(Miner):
     '''
 
     def __init__(self,
-        name: str = 'Miner Mk.1-0',
+        name: str = 'Miner Mk.1',
         **kwargs
     ):
         super().__init__(
             name=name,
-            availability=Availability(0, 1),
-            wiki_path='/Miner#Mk.1',
+            availability=Availability(0, 5),
+            wiki_path='/Miner#Mk.1-0',
             image_path='/c/cf/Miner_Mk.1.png',
             base_power_usage=5,
             **kwargs
