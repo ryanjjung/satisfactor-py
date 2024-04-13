@@ -1,6 +1,5 @@
 #!/bin/env python3
 
-GTK_APP_ID="com.github.ryanjjung.satisfactor_py"
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -24,8 +23,8 @@ from satisfactor_py.storages import get_all as get_all_storages
 from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
 
 
-APP_ID='com.github.ryanjjung.satisfactory.FactoryDesigner'
 ALL_BUILDINGS = None
+GTK_APP_ID="com.github.ryanjjung.satisfactor_py.FactoryDesigner"
 MAIN_WINDOW_DEFAULT_WIDTH = 1920
 MAIN_WINDOW_DEFAULT_HEIGHT = 1080
 MAIN_WINDOW_TITLE_BASE = 'Satisfactory Designer'
@@ -156,12 +155,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
         filterAvailability = True
 
+        logging.debug('Updating building options list')
         # Determine the available buildings
         all_buildings = self.get_building_options()
         if filterAvailability:
-            logging.debug(
-                f'Updating filtered list of buildings for tier/upgrade '
-                f'{self.factory.tier}/{self.factory.upgrade}')
             avail_buildings = []
             for building in all_buildings:
                 if self.factory.tier > building.availability.tier:
@@ -176,13 +173,9 @@ class MainWindow(Gtk.ApplicationWindow):
         # Convert the list to a ListStore, pulling in images where possible
         listStore = Gtk.ListStore(Pixbuf, str)
         for building in avail_buildings:
-            imageFile = Path(f'./static/images/{building.__class__.__name__}.png')
-            if imageFile.exists():
-                pixbuf = Pixbuf()
-                pixbuf = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
-            else:
-                pixbuf = None
-            listStore.append((pixbuf, building.name))
+            listStore.append((
+                self.pixelBuffers['building_options'][building.__class__.__name__],
+                building.name))
         self.lstBuildings = listStore
         self.icovwBuildings.set_model(self.lstBuildings)
         self.icovwBuildings.set_pixbuf_column(0)
@@ -391,6 +384,25 @@ class MainWindow(Gtk.ApplicationWindow):
 
         return self.boxTopBar
 
+    def __load_images(self):
+        '''
+        Load all images that get used in this window from disk and store them in memory.
+        '''
+
+        logging.debug('Loading images')
+        pixbuf = Pixbuf()
+        self.pixelBuffers = {}
+        building_pixbufs = {}
+        all_buildings = self.get_building_options()
+        for building in all_buildings:
+            imageFile = Path(f'./static/images/{building.__class__.__name__}.png')
+            if imageFile.exists():
+                pixbuf = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
+            else:
+                pixbuf = None
+            building_pixbufs[building.__class__.__name__] = pixbuf
+        self.pixelBuffers['building_options'] = building_pixbufs
+
     def __ui_helpers(self):
         '''
         Builds reusable items which are unique to this application
@@ -402,6 +414,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.satFileFilter.add_pattern('*.sat')
         self.fileFilters = Gio.ListStore.new(Gtk.FileFilter)
         self.fileFilters.append(self.satFileFilter)
+        self.__load_images()
+
+
+    # Signal Handlers
 
     # + "New" button signal handlers
 
@@ -554,7 +570,7 @@ class FactoryDesigner(Gtk.Application):
 
     def __init__(self, **kwargs):
         logging.debug('Initializing GTK application')
-        super().__init__(application_id=APP_ID, **kwargs)
+        super().__init__(application_id=GTK_APP_ID, **kwargs)
         self.mainWindow = None
         self.set_flags(Gio.ApplicationFlags.HANDLES_OPEN)
         self.connect('activate', self.on_activate)
