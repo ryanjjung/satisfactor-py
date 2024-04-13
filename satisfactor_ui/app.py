@@ -10,6 +10,7 @@ gi.require_version('Gtk', '4.0')
 
 from gi.repository import Gtk, Gio, GObject
 from gi.repository.GdkPixbuf import Pixbuf
+from pathlib import Path
 from satisfactor_py.base import (
     Availability,
     ResourceNode,
@@ -25,8 +26,8 @@ from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
 
 APP_ID='com.github.ryanjjung.satisfactory.FactoryDesigner'
 ALL_BUILDINGS = None
-MAIN_WINDOW_DEFAULT_WIDTH = 1000
-MAIN_WINDOW_DEFAULT_HEIGHT = 800
+MAIN_WINDOW_DEFAULT_WIDTH = 1920
+MAIN_WINDOW_DEFAULT_HEIGHT = 1080
 MAIN_WINDOW_TITLE_BASE = 'Satisfactory Designer'
 
 
@@ -155,6 +156,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         filterAvailability = True
 
+        # Determine the available buildings
         all_buildings = self.get_building_options()
         if filterAvailability:
             logging.debug(
@@ -167,16 +169,22 @@ class MainWindow(Gtk.ApplicationWindow):
                 elif self.factory.tier == building.availability.tier:
                     if self.factory.upgrade >= building.availability.upgrade:
                         avail_buildings.append(building)
-        
+
         # Sort the list alphabetically
         avail_buildings = sorted(avail_buildings, key=lambda x: x.name)
 
+        # Convert the list to a ListStore, pulling in images where possible
         listStore = Gtk.ListStore(Pixbuf, str)
-        ct = 0
         for building in avail_buildings:
-            ct += 1
-            listStore.append((None, building.name))
-        self.icovwBuildings.set_model(listStore)
+            imageFile = Path(f'./static/images/{building.__class__.__name__}.png')
+            if imageFile.exists():
+                pixbuf = Pixbuf()
+                pixbuf = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
+            else:
+                pixbuf = None
+            listStore.append((pixbuf, building.name))
+        self.lstBuildings = listStore
+        self.icovwBuildings.set_model(self.lstBuildings)
         self.icovwBuildings.set_pixbuf_column(0)
         self.icovwBuildings.set_text_column(1)
 
@@ -228,12 +236,12 @@ class MainWindow(Gtk.ApplicationWindow):
         # Build the left-hand panel containing the list of buildings
         self.__buildings_options()
         self.paneLeft.set_start_child(self.paneBuildingsOptions)
-        self.paneLeft.set_position(300)
+        self.paneLeft.set_position(600)
         self.paneLeft.set_vexpand(True)
 
         # Build the right-hand panel as another split panel
         self.paneRight = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self.paneRight.set_position(600)
+        self.paneRight.set_position(800)
         self.paneLeft.set_end_child(self.paneRight)
 
         # Build the center panel containing the factory designer
@@ -268,6 +276,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # Bottom pane: list of buildings
         self.scrollBuildings = Gtk.ScrolledWindow()
         self.icovwBuildings = Gtk.IconView()
+        self.icovwBuildings.set_spacing(10)
         self.scrollBuildings.set_child(self.icovwBuildings)
         self.scrollBuildings.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
@@ -283,7 +292,7 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         logging.debug('Connecting widget signals')
-        
+
         self.windowSignals.append((
             self.btnNewFactory,
             self.btnNewFactory.connect('clicked', self.__btnNewFactory_clicked)))
