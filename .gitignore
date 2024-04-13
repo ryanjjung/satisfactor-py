@@ -161,3 +161,6 @@ cython_debug/
 
 # Pickled output
 *.pickle
+
+# Static images
+static/images/*.png

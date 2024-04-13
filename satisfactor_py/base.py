@@ -15,6 +15,7 @@ from uuid import uuid4
 # The indices of this list line up with tiers (see Milestones wiki page)
 # The values are the number of upgrade levels within each tier.
 TIERS = [ 6, 3, 5, 4, 5, 4, 4, 5, 4 ]
+IMAGE_URL_BASE = 'https://satisfactory.wiki.gg/images'
 WIKI_URL_BASE = 'https://satisfactory.wiki.gg/wiki'
 
 
@@ -46,7 +47,7 @@ class Availability(object):
             'tier': self.tier,
             'upgrade': self.upgrade
         }
-    
+
     @staticmethod
     def get_tier_strings():
         return [str(i) for i in range(len(TIERS))]
@@ -152,6 +153,7 @@ class Base(object):
         - name: A user-friendly name for the object
         - availability: The point at which the resource is unlocked
         - wiki_path: The URL path where the entry for this object can be found in the online wiki
+        - image_path: The URL path where an image representing this item can be found in the wiki
         - tags: A dictionary of arbitrary key:value pairs used as additional descriptors
     '''
 
@@ -159,7 +161,8 @@ class Base(object):
         id: str = None,
         name: str = '',
         availability: Availability = Availability(0, 0),
-        wiki_path: str ='/Satisfactory_Wiki',
+        wiki_path: str = '/Satisfactory_Wiki',
+        image_path: str = None,
         tags: dict[str, str] = dict(),
         **kwargs
     ):
@@ -169,6 +172,7 @@ class Base(object):
             self.id = id
         self.name = name
         self.availability = availability
+        self.image_path = image_path
         self.wiki_path = wiki_path
         self.tags = tags
 
@@ -593,15 +597,26 @@ class ResourceNode(Component):
     '''
 
     def __init__(self,
-        purity: Purity,
-        item: Item,
+        purity: Purity = Purity.NORMAL,
+        item: Item = None,
         **kwargs
     ):
-        wiki_path = kwargs['wiki_path'] or '/Resource_Node',
-        del(kwargs['wiki_path'])
+        if 'wiki_path' in kwargs:
+            wiki_path = kwargs['wiki_path']
+            del(kwargs['wiki_path'])
+        else:
+            wiki_path = '/Resource_Node'
+        
+        if 'name' in kwargs:
+            name = kwargs['name']
+            del(kwargs['name'])
+        else:
+            name = 'Resource Node'
 
         super().__init__(
             wiki_path=wiki_path,
+            image_path='/8/87/Iron_Ore.png',
+            name=name,
             **kwargs
         )
         self.purity = purity
@@ -685,15 +700,27 @@ class InfiniteSupplyNode(ResourceNode):
     '''
 
     def __init__(self,
-        item: Item,
-        rate: float,
-        conveyance_type: ConveyanceType,
+        item: Item = None,
+        rate: float = None,
+        conveyance_type: ConveyanceType = None,
         **kwargs
     ):
+        if item:
+            wiki_path = item.wiki_path
+        else:
+            wiki_path = '/Resource_Node'
+
+        if 'name' in kwargs:
+            name = kwargs['name']
+            del(kwargs['name'])
+        else:
+            name = 'Infinite Supply Node'
+
         super().__init__(
             purity=Purity.NORMAL,
             item=item,
-            wiki_path=item.wiki_path,
+            wiki_path=wiki_path,
+            name=name,
             **kwargs
         )
         self.item = item
