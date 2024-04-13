@@ -68,7 +68,6 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         for handler in self.windowSignals:
-            print(f'Handler: {handler}')
             GObject.signal_handler_block(handler[0], handler[1])
 
     def confirm_discard(self, callback):
