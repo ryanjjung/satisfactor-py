@@ -128,16 +128,14 @@ class MainWindow(Gtk.ApplicationWindow):
 
         if self.factory:
             self.block_all_signals()
-            logging.debug(f'Selecting tier/upgrade values: {self.factory.tier}/{self.factory.upgrade}')
-
             # Update the factory model first
             if tier is not None:
                 self.factory.tier = tier
             if upgrade:
                 self.factory.upgrade = upgrade
+            logging.debug(f'Selecting tier/upgrade values: {self.factory.tier}/{self.factory.upgrade}')
 
             # Set the tier value in the combo box
-            #import pdb; pdb.set_trace()
             self.cboTier.set_active(self.factory.tier)
 
             # Populate the appropriate upgrade values
@@ -328,7 +326,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.__entryFactoryName_inserted)))
         self.windowSignals.append((
             self.cboTier,
-            self.cboTier.connect('changed', self.__cboTier_changed)))
+            self.cboTier.connect_after('changed', self.__cboTier_changed)))
         self.windowSignals.append((
             self.cboUpgrade,
             self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)))
@@ -418,10 +416,10 @@ class MainWindow(Gtk.ApplicationWindow):
         for building in all_buildings:
             imageFile = Path(f'./static/images/{building.__class__.__name__}.png')
             if imageFile.exists():
-                pixbuf = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
+                pb = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
             else:
-                pixbuf = None
-            building_pixbufs[building.__class__.__name__] = pixbuf
+                pb = None
+            building_pixbufs[building.__class__.__name__] = pb
         self.pixelBuffers['building_options'] = building_pixbufs
 
     def __ui_helpers(self):

@@ -28,7 +28,7 @@ def get_all() -> list[Building]:
     '''
 
     global ALL
-    unbuildable = [Miner]
+    unbuildable = [Miner, NonProcessingBuilding]
     if ALL is None:
         import inspect
         import sys
@@ -490,8 +490,6 @@ class ConveyorPole(NonProcessingBuilding):
                 length=1,
                 height=1
             ),
-            inputs=[],
-            outputs=[],
             **kwargs
         )
 
@@ -861,8 +859,6 @@ class PipelineSupport(NonProcessingBuilding):
                 length=1,
                 height=1
             ),
-            inputs=[],
-            outputs=[],
             **kwargs
         )
 
