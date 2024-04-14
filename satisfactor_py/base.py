@@ -1142,6 +1142,35 @@ class Building(Component):
         return connector
 
 
+class NonProcessingBuilding(Building):
+    '''
+    This is a Building - something that can be built in the world by a build gun - but which cannot
+    process recipes. It has neither inputs nor outputs, and its processing functions are disabled.
+    '''
+
+    def __init__(self,
+        building_type: BuildingType = BuildingType.OTHER,
+        **kwargs
+    ):
+        super().__init__(
+            building_type=building_type,
+            recipe=None,
+            overclockable=False,
+            inputs=[],
+            outputs=[],
+            **kwargs
+        )
+
+    def can_process(self) -> bool:
+        return False
+
+    def process(self) -> bool:
+        return False
+
+    def connect(self):
+        return None
+
+
 class Conveyance(Building):
     '''
     A Conveyance is anything that can move Items from one Connection to another without changing

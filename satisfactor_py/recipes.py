@@ -7,6 +7,7 @@ from satisfactor_py.base import (
 from satisfactor_py.items import (
     AlienProtein as iAlienProtein,
     Assembler as iAssembler,
+    AwesomeShop as iAwesomeShop,
     AwesomeSink as iAwesomeSink,
     BasicWall1mFicsit as iBasicWall1mFicsit,
     BasicWall4mFicsit as iBasicWall4mFicsit,
@@ -110,6 +111,19 @@ Assembler = Recipe(
         Ingredient(iCable, 10, None)
     ],
     produces=[Ingredient(iAssembler, 1, None)]
+)
+
+AwesomeShop = Recipe(
+    name='AWESOME Shop',
+    availability=Availability(2, 4),
+    wiki_path='/AWESOME_Shop',
+    building_type=BuildingType.BUILD_GUN,
+    consumes=[
+        Ingredient(iScrew, 200, None),
+        Ingredient(iIronPlate, 10, None),
+        Ingredient(iCable, 10, None)
+    ],
+    produces=[Ingredient(iAwesomeShop, 1, None)]
 )
 
 AwesomeSink = Recipe(

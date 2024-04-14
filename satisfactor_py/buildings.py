@@ -9,6 +9,7 @@ from satisfactor_py.base import (
     Ingredient,
     Input,
     Item,
+    NonProcessingBuilding,
     Output,
     Recipe,
     ResourceNode
@@ -69,6 +70,28 @@ class Assembler(Building):
                 attached_to=self
             )],
             **kwargs
+        )
+
+
+class AwesomeShop(NonProcessingBuilding):
+    '''
+    That AWESOME Shop for spending your tickets
+    '''
+
+    def __init__(self,
+        name: str = 'AWESOME Shop',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            availability=Availability(2, 4),
+            wiki_path='/AWESOME_Shop',
+            image_path='/b/b1/AWESOME_Shop.png',
+            dimensions=Dimension(
+                width=4,
+                length=6,
+                height=5
+            )
         )
 
 
@@ -138,7 +161,7 @@ class AwesomeSink(Building):
         return True
 
 
-class BiomassBurner(Building):
+class BiomassBurner(NonProcessingBuilding):
     '''
     A type of Building where biomass can be burned into power
     '''
@@ -447,7 +470,7 @@ class ConveyorSplitter(Building):
         return True
 
 
-class ConveyorPole(Building):
+class ConveyorPole(NonProcessingBuilding):
     '''
     A building which supports a conveyor belt
     '''
@@ -506,7 +529,31 @@ class Foundry(Building):
         )
 
 
-class MAM(Building):
+class JumpPad(NonProcessingBuilding):
+    '''
+    A Jump Pad for launching the pilgrim
+    '''
+
+    def __init__(self,
+        name: str = 'Jump Pad',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            availability=Availability(2, 3),
+            wiki_path='/Jump_Pad',
+            image_path='/4/4c/Jump_Pad.png',
+            dimensions=Dimension(
+                width=6,
+                length=6,
+                height=6
+            ),
+            power_connections=1,
+            base_power_usage=5
+        )
+
+
+class MAM(NonProcessingBuilding):
     '''
     MAM building for performing field research
     '''
@@ -531,7 +578,7 @@ class MAM(Building):
         )
 
 
-class PersonalStorageBox(Building):
+class PersonalStorageBox(NonProcessingBuilding):
     '''
     Personal Storage Box for holding up to 25 items. This is not an automatable building, and has
     neither inputs nor outputs nor power connections.
@@ -647,32 +694,6 @@ class MinerMk1(Miner):
             wiki_path='/Miner#Mk.1-0',
             image_path='/c/cf/Miner_Mk.1.png',
             base_power_usage=5,
-            **kwargs
-        )
-
-
-class PipelineSupport(Building):
-    '''
-    A building which supports a pipeline
-    '''
-
-    def __init__(self,
-        name: str = 'Pipeline Support',
-        **kwargs
-    ):
-        super().__init__(
-            building_type=BuildingType.OTHER,
-            wiki_path='/Pipeline_Support',
-            image_path='/c/c5/Pipeline_Support.png',
-            name=name,
-            availability=Availability(3, 1),
-            dimensions=Dimension(
-                width=2,
-                length=1,
-                height=1
-            ),
-            inputs=[],
-            outputs=[],
             **kwargs
         )
 
@@ -820,6 +841,32 @@ class PipelineJunctionCross(Building):
             ))
 
 
+class PipelineSupport(NonProcessingBuilding):
+    '''
+    A building which supports a pipeline
+    '''
+
+    def __init__(self,
+        name: str = 'Pipeline Support',
+        **kwargs
+    ):
+        super().__init__(
+            building_type=BuildingType.OTHER,
+            wiki_path='/Pipeline_Support',
+            image_path='/c/c5/Pipeline_Support.png',
+            name=name,
+            availability=Availability(3, 1),
+            dimensions=Dimension(
+                width=2,
+                length=1,
+                height=1
+            ),
+            inputs=[],
+            outputs=[],
+            **kwargs
+        )
+
+
 class Smelter(Building):
     '''
     A Smelter Building
@@ -881,6 +928,30 @@ class SpaceElevator(Building):
         )
 
 
+class StackableConveyorPole(NonProcessingBuilding):
+    '''
+    A stackable conveyor pole for organizing conveyor belts
+    '''
+
+    def __init__(self,
+        name: str = 'Stackable Conveyor Pole',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            availability=Availability(2, 5),
+            wiki_path='Conveyor_Poles#Stackable-0',
+            image_path='/4/49/Stackable_Conveyor_Pole.png',
+            dimensions=Dimension(
+                width=2,
+                length=1,
+                height=3
+            ),
+            power_connections=0,
+            **kwargs
+        )
+
+
 class TruckStation(Building):
     '''
     A Truck Station Building
@@ -909,7 +980,7 @@ class TruckStation(Building):
         )
 
 
-class UJellyLandingPad(Building):
+class UJellyLandingPad(NonProcessingBuilding):
     '''
     A landing pad building
     '''

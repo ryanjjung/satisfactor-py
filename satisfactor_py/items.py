@@ -46,6 +46,16 @@ Assembler = Item(
     image_path='/a/ae/Assembler.png',
 )
 
+AwesomeShop = Item(
+    name='AWESOME Shop',
+    availability=Availability(2, 4),
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/AWESOME_Shop',
+    image_path='/b/b1/AWESOME_Shop.png'
+)
+
 AwesomeSink = Item(
     name='AWESOME Sink',
     availability=Availability(2, 4),
