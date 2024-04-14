@@ -111,6 +111,32 @@ class ConveyorLiftMk1(Conveyance):
         )
 
 
+class ConveyorLiftMk2(Conveyance):
+    def __init__(self, **kwargs):
+        super().__init__(
+            name='Conveyor Lift Mk.2',
+            availability=Availability(2, 5),
+            wiki_path='/Conveyor_Lifts#Mk.2-0',
+            image_path='/8/8a/Conveyor_Lift_Mk.2.png',
+            conveyance_type=ConveyanceType.BELT,
+            rate=120,
+            dimensions=Dimension(
+                width=2,
+                length=2,
+                height=7
+            ),
+            inputs=[Input(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT
+            )],
+            outputs=[Output(
+                attached_to=self,
+                conveyance_type=ConveyanceType.BELT
+            )],
+            **kwargs
+        )
+
+
 class PipelineMk1(Conveyance):
     '''
     A first-tier pipeline capable of moving up to 300m³ of fluid per minute.
@@ -127,6 +153,36 @@ class PipelineMk1(Conveyance):
             dimensions=Dimension(
                 width=2,
                 length=1,
+                height=2
+            ),
+            inputs=[Input(
+                attached_to=self,
+                conveyance_type=ConveyanceType.PIPE
+            )],
+            outputs=[Output(
+                attached_to=self,
+                conveyance_type=ConveyanceType.PIPE
+            )],
+            **kwargs
+        )
+
+
+class PipelinePump(Conveyance):
+    '''
+    In the game, a Pipeline Pump provides additional headlift to pipelines. This tool doesn't care
+    about headlift, so it acts here like any other pipeline conveyance.
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            name='Pipeline Pump Mk. 1',
+            availability=Availability(3, 1),
+            wiki_path='/Pipeline_Pump',
+            image_path='/2/2d/Pipeline_Pump_Mk.1.png',
+            conveyance_type=ConveyanceType.PIPE,
+            dimensions=Dimension(
+                width=2,
+                length=4,
                 height=2
             ),
             inputs=[Input(
