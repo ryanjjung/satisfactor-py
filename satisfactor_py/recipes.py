@@ -100,6 +100,27 @@ from satisfactor_py.items import (
 Here are defined every recipe we care about
 '''
 
+ALL = None
+
+def get_all():
+    '''
+    Returns a list of all recipes
+    '''
+
+    global ALL
+    if ALL is None:
+        import inspect, sys
+        ALL = [ mbr for mbr in inspect.getmembers(sys.modules[__name__])
+            if isinstance(mbr[1], Recipe) ]
+    return ALL
+
+def get_all_unlockable():
+    '''
+    Returns a list of all recipes unlockable through the MAM
+    '''
+
+    return [ recipe for recipe in get_all() if recipe.availability.mam ]
+
 Assembler = Recipe(
     name='Assembler',
     availability=Availability(2, 1),

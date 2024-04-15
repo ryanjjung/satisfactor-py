@@ -17,13 +17,17 @@ def get_all():
 
     global ALL
     if ALL is None:
-        import inspect
-        import sys
+        import inspect, sys
         ALL = [ mbr for mbr in inspect.getmembers(sys.modules[__name__])
             if isinstance(mbr[1], Item) ]
     return ALL
 
+def get_all_unlockable():
+    '''
+    Returns a list of all Items which are unlockable through the MAM
+    '''
 
+    return [ item for item in get_all() if item[1].availability.mam ]
 
 
 AlienProtein = Item(

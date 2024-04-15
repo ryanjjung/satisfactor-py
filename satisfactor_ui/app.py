@@ -83,7 +83,8 @@ class MainWindow(Gtk.ApplicationWindow):
         dlgDiscardChanges = ConfirmDiscardChangesWindow(self, callback)
         dlgDiscardChanges.present()
 
-    def get_building_options(self):
+    @staticmethod
+    def get_building_options():
         '''
         Returns a list of all buildings the library is aware of; caches the result for quick access.
         '''
@@ -175,7 +176,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
             logging.debug('Updating building options list')
             # Determine the available buildings
-            all_buildings = self.get_building_options()
+            all_buildings = MainWindow.get_building_options()
             if filterAvailability:
                 avail_buildings = []
                 for building in all_buildings:
@@ -412,7 +413,7 @@ class MainWindow(Gtk.ApplicationWindow):
         pixbuf = Pixbuf()
         self.pixelBuffers = {}
         building_pixbufs = {}
-        all_buildings = self.get_building_options()
+        all_buildings = MainWindow.get_building_options()
         for building in all_buildings:
             imageFile = Path(f'./static/images/{building.__class__.__name__}.png')
             if imageFile.exists():
