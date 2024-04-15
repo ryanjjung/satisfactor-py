@@ -53,6 +53,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.unsaved_changes = False
         self.updating = False
 
+        self.filters = {
+            'availability': True,
+            'building_category': False,
+            'name': False
+        }
+
         self.set_default_size(width, height)
         self.__ui_helpers()
         self.__build_window()
@@ -172,12 +178,10 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if self.factory:
-            filterAvailability = True
-
             logging.debug('Updating building options list')
             # Determine the available buildings
             all_buildings = MainWindow.get_building_options()
-            if filterAvailability:
+            if self.filters['availability']:
                 avail_buildings = []
                 for building in all_buildings:
                     if self.factory.tier > building.availability.tier:
@@ -185,6 +189,8 @@ class MainWindow(Gtk.ApplicationWindow):
                     elif self.factory.tier == building.availability.tier:
                         if self.factory.upgrade >= building.availability.upgrade:
                             avail_buildings.append(building)
+            else:
+                avail_buildings = all_buildings
 
             # Sort the list alphabetically
             avail_buildings = sorted(avail_buildings, key=lambda x: x.name)
@@ -282,8 +288,34 @@ class MainWindow(Gtk.ApplicationWindow):
         logging.debug('Building widgets for building options')
         # Start with two vertical panes
         self.paneBuildingsOptions = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
-        self.paneBuildingsOptions.set_position(300)
-        self.lblBuildingsFilters = Gtk.Label(label='Filters')
+        self.paneBuildingsOptions.set_position(150)
+
+        # Top pane: filtering options for the bottom pane
+        self.scrollBuildingFilters = Gtk.ScrolledWindow()
+        self.boxFilters = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.boxFilters.set_spacing(10)
+
+        # Top pane: Factory availability checkbox
+        self.chkAvailability = Gtk.CheckButton(label='Availability')
+        self.chkAvailability.set_active(True)
+        self.boxFilters.append(self.chkAvailability)
+        self.scrollBuildingFilters.set_child(self.boxFilters)
+
+        # Top pane: Building Category selection
+        self.boxBuildingCategory = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.chkBuildingCategory = Gtk.CheckButton(label='Building category: ')
+        self.cboBuildingCategory = Gtk.ComboBox()
+        self.boxBuildingCategory.append(self.chkBuildingCategory)
+        self.boxBuildingCategory.append(self.cboBuildingCategory)
+        self.boxFilters.append(self.boxBuildingCategory)
+
+        # Top pane: Name filter
+        self.boxNameFilter = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.chkNameFilter = Gtk.CheckButton(label='Name: ')
+        self.entryNameFilter = Gtk.Entry()
+        self.boxNameFilter.append(self.chkNameFilter)
+        self.boxNameFilter.append(self.entryNameFilter)
+        self.boxFilters.append(self.boxNameFilter)
 
         # Bottom pane: list of buildings
         self.scrollBuildings = Gtk.ScrolledWindow()
@@ -293,7 +325,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.scrollBuildings.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
         # Compile panel contents
-        self.paneBuildingsOptions.set_start_child(self.lblBuildingsFilters)
+        self.paneBuildingsOptions.set_start_child(self.scrollBuildingFilters)
         self.paneBuildingsOptions.set_end_child(self.scrollBuildings)
 
     def __connect_handlers(self):
@@ -305,6 +337,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         logging.debug('Connecting widget signals')
 
+        # Signals for widgets in the top bar containing factory-level options
         self.windowSignals.append((
             self.btnNewFactory,
             self.btnNewFactory.connect('clicked', self.__btnNewFactory_clicked)))
@@ -331,6 +364,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.windowSignals.append((
             self.cboUpgrade,
             self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)))
+
+        # Signals for the building options filter panel
+        self.windowSignals.append((
+            self.chkAvailability,
+            self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)
+        ))
 
     def __top_bar(self):
         '''
@@ -575,6 +614,11 @@ class MainWindow(Gtk.ApplicationWindow):
         self.factory.upgrade = self.cboUpgrade.get_active() + 1
         self.unsaved_changes = True
         self.update_window()
+
+    # + Building option filters signal handlers
+    def __chkAvailability_toggled(self, chk):
+        self.filters['availability'] = chk.get_active()
+        self.update_buildings_list()
 
 
 class FactoryDesigner(Gtk.Application):
