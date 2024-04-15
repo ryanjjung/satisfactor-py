@@ -220,12 +220,14 @@ class MainWindow(Gtk.ApplicationWindow):
             if self.factory:
                 self.btnSaveFactory.set_sensitive(self.unsaved_changes)
                 self.boxFactoryFunctions.set_sensitive(True)
+                self.boxFilters.set_sensitive(True)
                 self.entryFactoryName.get_buffer().set_text(self.factory.name, -1)
                 self.set_tier_and_upgrade()
                 self.update_buildings_list()
             else:
                 self.btnSaveFactory.set_sensitive(False)
                 self.boxFactoryFunctions.set_sensitive(False)
+                self.boxFilters.set_sensitive(False)
             self.unblock_all_signals()
             self.updating = False
 
