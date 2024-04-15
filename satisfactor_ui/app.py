@@ -192,6 +192,11 @@ class MainWindow(Gtk.ApplicationWindow):
             else:
                 avail_buildings = all_buildings
 
+            # Filter out anything that doesn't match the name
+            if self.filters['name'] and self.entryNameFilter.get_buffer().get_text() != '':
+                avail_buildings = [ building for building in avail_buildings
+                    if self.entryNameFilter.get_buffer().get_text().lower() in building.name.lower() ]
+
             # Sort the list alphabetically
             avail_buildings = sorted(avail_buildings, key=lambda x: x.name)
 
@@ -371,6 +376,20 @@ class MainWindow(Gtk.ApplicationWindow):
         self.windowSignals.append((
             self.chkAvailability,
             self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)
+        ))
+        self.windowSignals.append((
+            self.chkNameFilter,
+            self.chkNameFilter.connect_after('toggled', self.__chkNameFilter_toggled)
+        ))
+        self.windowSignals.append((
+            self.entryNameFilter.get_buffer(),
+            self.entryNameFilter.get_buffer().connect_after('deleted-text',
+                self.__entryNameFilter_deleted)
+        ))
+        self.windowSignals.append((
+            self.entryNameFilter.get_buffer(),
+            self.entryNameFilter.get_buffer().connect_after('inserted-text',
+                self.__entryNameFilter_inserted)
         ))
 
     def __top_bar(self):
@@ -622,6 +641,17 @@ class MainWindow(Gtk.ApplicationWindow):
         self.filters['availability'] = chk.get_active()
         self.update_buildings_list()
 
+    def __chkNameFilter_toggled(self, chk):
+        self.filters['name'] = chk.get_active()
+        self.update_buildings_list()
+
+    def __entryNameFilter_deleted(self, buffer, position, chars):
+        if self.filters['name']:
+            self.update_buildings_list()
+
+    def __entryNameFilter_inserted(self, buffer, position, chars, nchars):
+        if self.filters['name']:
+            self.update_buildings_list()
 
 class FactoryDesigner(Gtk.Application):
     '''
