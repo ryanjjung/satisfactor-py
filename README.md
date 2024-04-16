@@ -13,7 +13,7 @@ Some other scripts depend on third party libraries. Install them with:
 pip install -r requirements.txt
 ```
 
-`satisfactor_ui` (the factotry designer) requires GTK 4.0. Install it and the Python bindings for GObject. On Fedora, you run:
+`satisfactor_ui` (the factory designer) requires GTK 4.0. Install it and the Python bindings for GObject. On Fedora, you run:
 
 ```
 dnf install gtk4 python3-gobject
@@ -29,6 +29,8 @@ A good place to start is the [screw factory test script](./scripts/screw_factory
 ```
 PYTHONPATH=. ./scripts/screw_factory.py
 ```
+
+This product has never been tested on Windows, though you may be able to [find help here](https://www.gtk.org/docs/installations/windows), or [here for Macs](https://www.gtk.org/docs/installations/macos/).
 
 
 ### Factory Designer GTK Application
@@ -200,6 +202,11 @@ conveyor = smelter.connect(miner, ConveyorBeltMk1, connect_output=True)
 ```
 
 
+##### base.NonProcessingBuilding
+
+This is a `Building` that you can construct in the world, but which does not process recipes. This includes things like the AWESOME Shop or a Personal Storage Box. This tool lets you track those things for resource calculations, but these cannot be used as part of a factory flow.
+
+
 ##### base.Conveyance
 
 A `Conveyance` is anything you can build which transports `Item`s from one `Connection` to another without changing the contents being conveyed. When these components' `process` function is run, a special kind of recipe called a `base.ConveyanceRecipe` is created so that it `produces` whatever `Ingredient`s are on the conveyance, limited by the conveyance's rate of transfer. This can be a pipeline or conveyor belt, or represent vehicular transportation.
@@ -325,17 +332,7 @@ At the core of this is a factory's `traverse` function. It takes two arguments:
 A few common traversal needs can be solved through a few other functions found here:
 
 - `traverse_all(func)`: Traverse the factory beginning at its resource nodes, running the arbitrary `func` against each `Component`.
-- `simulate()`: Traverse the factory beginning at its resource nodes. Run each component's `process` function, causing front-to-back simulation of the entire factory as it is designed. If any `ComponentError`s occur, they can be collected after the fact with comprehensions:
-
-```
-factory.simulate()
-errors = {
-    component.name: [error.to_dict() for error in component.errors]
-    for component in factory.components
-    if len(component.errors) > 0
-}
-```
-
+- `simulate()`: Traverse the factory beginning at its resource nodes. Run each component's `process` function, causing front-to-back simulation of the entire factory as it is designed. If any `ComponentError`s occur, they can be collected after the fact.
 - `drain()`: Traverse the factory beginning at its resource nodes, clearing out all of the working variables used for simulation, such as ingredients going through the connections.
 - `purge()`: This function doesn't actually traverse the factory. It acts on all components, even if they're not connected or otherwise traversible in the factory, and clears out all of the simulation variables. When resetting a factory, this is the preferred method of doing it, as it is a much more direct and complete clearing out of the memory state.
 - `debug()`: This function traverses the factory. At each component, it outputs some identifying information about the component and what stage of processing it's at (before or after processing it), then stops at a Python debugger prompt. From here, you can use [`pdb`](https://docs.python.org/3/library/pdb.html) as usual to debug the state of each component.
@@ -394,6 +391,8 @@ This ultimately produces output like this, showing that the storage container at
     },
     "wiki_path": "/Screw",
     "wiki_url": "https://satisfactory.wiki.gg/wiki/Screw",
+    "image_path": "/5/59/Screw.png",
+    "image_url": "https://satisfactory.wiki.gg/images/5/59/Screw.png',
     "tags": {},
     "conveyance_type": "BELT",
     "stack_size": 500,
