@@ -223,6 +223,8 @@ class Base(object):
             'availability': self.availability.to_dict(),
             'wiki_path': self.wiki_path,
             'wiki_url': f'{WIKI_URL_BASE}{self.wiki_path}',
+            'image_path': self.image_path,
+            'image_url': f'{IMAGE_URL_BASE}{self.image_path}',
             'tags': self.tags
         }
 
