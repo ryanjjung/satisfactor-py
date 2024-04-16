@@ -744,6 +744,7 @@ class ResourceNode(Component):
             conveyance_type=ConveyanceType.RESOURCE_NODE,
             attached_to=self
         )]
+        self.building_category = BuildingCategory.PRODUCTION
 
     def to_dict(self) -> dict:
         '''

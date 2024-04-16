@@ -12,6 +12,7 @@ from gi.repository.GdkPixbuf import Pixbuf
 from pathlib import Path
 from satisfactor_py.base import (
     Availability,
+    BuildingCategory,
     ResourceNode,
     InfiniteSupplyNode
 )
@@ -192,6 +193,11 @@ class MainWindow(Gtk.ApplicationWindow):
             else:
                 avail_buildings = all_buildings
 
+            # Filter out anything that doesn't match the building category
+            if self.filters['building_category'] and self.cboBuildingCategory.get_active() != -1:
+                avail_buildings = [ building for building in avail_buildings
+                    if building.building_category.name == self.cboBuildingCategory.get_active_text().upper() ]
+
             # Filter out anything that doesn't match the name
             if self.filters['name'] and self.entryNameFilter.get_buffer().get_text() != '':
                 avail_buildings = [ building for building in avail_buildings
@@ -311,7 +317,10 @@ class MainWindow(Gtk.ApplicationWindow):
         # Top pane: Building Category selection
         self.boxBuildingCategory = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.chkBuildingCategory = Gtk.CheckButton(label='Building category: ')
-        self.cboBuildingCategory = Gtk.ComboBox()
+        self.cboBuildingCategory = Gtk.ComboBoxText()
+        for category in BuildingCategory:
+            self.cboBuildingCategory.append(category.name, category.name.title())
+
         self.boxBuildingCategory.append(self.chkBuildingCategory)
         self.boxBuildingCategory.append(self.cboBuildingCategory)
         self.boxFilters.append(self.boxBuildingCategory)
@@ -376,6 +385,14 @@ class MainWindow(Gtk.ApplicationWindow):
         self.windowSignals.append((
             self.chkAvailability,
             self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)
+        ))
+        self.windowSignals.append((
+            self.chkBuildingCategory,
+            self.chkBuildingCategory.connect_after('toggled', self.__chkBuildingCategory_toggled)
+        ))
+        self.windowSignals.append((
+            self.cboBuildingCategory,
+            self.cboBuildingCategory.connect_after('changed', self.__cboBuildingCategory_changed)
         ))
         self.windowSignals.append((
             self.chkNameFilter,
@@ -640,6 +657,14 @@ class MainWindow(Gtk.ApplicationWindow):
     def __chkAvailability_toggled(self, chk):
         self.filters['availability'] = chk.get_active()
         self.update_buildings_list()
+
+    def __chkBuildingCategory_toggled(self, chk):
+        self.filters['building_category'] = chk.get_active()
+        self.update_buildings_list()
+
+    def __cboBuildingCategory_changed(self, cbo):
+        if self.filters['building_category']:
+            self.update_buildings_list()
 
     def __chkNameFilter_toggled(self, chk):
         self.filters['name'] = chk.get_active()
