@@ -1,6 +1,7 @@
 from satisfactor_py.base import (
     Availability,
     Building,
+    BuildingCategory,
     BuildingType,
     ComponentError,
     ComponentErrorLevel,
@@ -51,6 +52,7 @@ class Assembler(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.PRODUCTION,
             building_type=BuildingType.ASSEMBLER,
             wiki_path='/Assembler',
             image_path='/a/ae/Assembler.png',
@@ -84,6 +86,7 @@ class AwesomeShop(NonProcessingBuilding):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.SPECIAL,
             availability=Availability(2, 4),
             wiki_path='/AWESOME_Shop',
             image_path='/b/b1/AWESOME_Shop.png',
@@ -106,6 +109,7 @@ class AwesomeSink(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.SPECIAL,
             availability=Availability(2, 4),
             building_type=BuildingType.AWESOME_SINK,
             wiki_path='/AWESOME_Sink',
@@ -172,6 +176,7 @@ class BiomassBurner(NonProcessingBuilding):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.POWER,
             building_type=BuildingType.BIOMASS_GENERATOR,
             wiki_path='/Biomass_Burner',
             image_path='/2/20/Biomass_Burner.png',
@@ -196,6 +201,7 @@ class CoalGenerator(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.POWER,
             building_type=BuildingType.COAL_GENERATOR,
             wiki_path='/Coal_Generator',
             image_path='/b/ba/Coal_Generator.png',
@@ -237,6 +243,7 @@ class Constructor(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.PRODUCTION,
             building_type=BuildingType.CONSTRUCTOR,
             wiki_path='Constructor',
             image_path='/6/61/Constructor.png',
@@ -268,6 +275,7 @@ class ConveyorMerger(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.LOGISTICS,
             building_type=BuildingType.CONVEYANCE,
             wiki_path='/Conveyor_Merger',
             image_path='/a/aa/Conveyor_Merger.png',
@@ -353,6 +361,7 @@ class ConveyorSplitter(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.LOGISTICS,
             building_type=BuildingType.CONVEYANCE,
             availability=Availability(1, 2),
             wiki_path='/Conveyor_Splitter',
@@ -481,6 +490,7 @@ class ConveyorPole(NonProcessingBuilding):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.LOGISTICS,
             building_type=BuildingType.OTHER,
             availability=Availability(0, 4),
             wiki_path='/Conveyor_Pole',
@@ -505,6 +515,7 @@ class Foundry(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.PRODUCTION,
             availability=Availability(3, 3),
             wiki_path='/Foundry',
             image_path='/1/19/Foundry.png',
@@ -538,6 +549,7 @@ class JumpPad(NonProcessingBuilding):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.TRANSPORT,
             availability=Availability(2, 3),
             wiki_path='/Jump_Pad',
             image_path='/4/4c/Jump_Pad.png',
@@ -562,6 +574,7 @@ class MAM(NonProcessingBuilding):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.SPECIAL,
             availability=Availability(1, 3),
             wiki_path='/MAM',
             image_path='/b/b4/MAM.png',
@@ -588,6 +601,7 @@ class PersonalStorageBox(NonProcessingBuilding):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.ORGANIZATION,
             availability=Availability(1, 3),
             wiki_path='/Personal_Storage_Box',
             image_path='/4/4d/Personal_Storage_Box.png',
@@ -612,9 +626,11 @@ class Miner(Building):
         image_path: str = '/c/cf/Miner_Mk.1.png',
         wiki_path: str = '/Miner',
         name: str = 'Miner',
+        building_category: BuildingCategory = BuildingCategory.PRODUCTION,
         **kwargs
     ):
         super().__init__(
+            building_category=building_category,
             building_type=BuildingType.MINER,
             image_path=image_path,
             wiki_path=wiki_path,
@@ -710,6 +726,7 @@ class PipelineJunctionCross(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.LOGISTICS,
             building_type=BuildingType.OTHER,
             wiki_path='/Pipeline_Junction_Cross',
             image_path='/8/8c/Pipeline_Junction_Cross.png',
@@ -849,6 +866,7 @@ class PipelineSupport(NonProcessingBuilding):
         **kwargs
     ):
         super().__init__(
+            building_category=BuildingCategory.LOGISTICS,
             building_type=BuildingType.OTHER,
             wiki_path='/Pipeline_Support',
             image_path='/c/c5/Pipeline_Support.png',
@@ -874,11 +892,12 @@ class Smelter(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.PRODUCTION,
+            building_type=BuildingType.SMELTER,
             availability=Availability(0, 2),
             wiki_path='/Smelter',
             image_path='/4/45/Smelter.png',
             base_power_usage=4,
-            building_type=BuildingType.SMELTER,
             dimensions=Dimension(
                 width=6,
                 length=9,
@@ -907,10 +926,11 @@ class SpaceElevator(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.SPECIAL,
+            building_type=BuildingType.SPACE_ELEVATOR,
             availability=Availability(0, 6),
             wiki_path='/Space_Elevator',
             image_path='/a/a4/Space_Elevator.png',
-            building_type=BuildingType.SPACE_ELEVATOR,
             dimensions=Dimension(
                 width=54,
                 length=54,
@@ -935,6 +955,7 @@ class StackableConveyorPole(NonProcessingBuilding):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.LOGISTICS,
             availability=Availability(2, 5),
             wiki_path='Conveyor_Poles#Stackable-0',
             image_path='/4/49/Stackable_Conveyor_Pole.png',
@@ -959,10 +980,11 @@ class TruckStation(Building):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.TRANSPORT,
+            building_type=BuildingType.OTHER,
             availability=Availability(3, 2),
             wiki_path='/Truck_Station',
             image_path='/a/a6/Truck_Station.png',
-            building_type=BuildingType.OTHER,
             dimensions=Dimension(
                 width=16,
                 length=22,
@@ -987,10 +1009,11 @@ class UJellyLandingPad(NonProcessingBuilding):
     ):
         super().__init__(
             name=name,
+            building_category=BuildingCategory.TRANSPORT,
+            building_type=BuildingType.OTHER,
             availability=Availability(2, 3),
             wiki_path='/U-Jelly_Landing_Pad',
             image_path='/d/de/U-Jelly_Landing_Pad.png',
-            building_type=BuildingType.OTHER,
             dimensions=Dimension(
                 width=10,
                 length=11,
@@ -1016,6 +1039,7 @@ class WaterExtractor(Miner):
         '''
         super().__init__(
             name=name,
+            building_category=BuildingCategory.PRODUCTION,
             availability=Availability(3, 1),
             wiki_path='/Water_Extractor',
             image_path='/6/6b/Water_Extractor.png',

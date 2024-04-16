@@ -76,6 +76,22 @@ class Availability(object):
         return [str(i + 1) for i in range(TIERS[tier])]
 
 
+class BuildingCategory(Enum):
+    '''
+    A categorization of buildings, to match the categorization in the game's build menu.
+    '''
+
+    SPECIAL      = 1
+    PRODUCTION   = 2
+    POWER        = 3
+    LOGISTICS    = 4
+    ORGANIZATION = 5
+    TRANSPORT    = 6
+    FOUNDATIONS  = 7
+    WALLS        = 8
+    ARCHITECTURE = 9
+
+
 class BuildingType(Enum):
     '''
     A constraint for Recipes, which can only be built by certain types of Buildings.
@@ -728,6 +744,7 @@ class ResourceNode(Component):
             conveyance_type=ConveyanceType.RESOURCE_NODE,
             attached_to=self
         )]
+        self.building_category = BuildingCategory.PRODUCTION
 
     def to_dict(self) -> dict:
         '''
@@ -914,6 +931,7 @@ class Building(Component):
     '''
 
     def __init__(self,
+        building_category: BuildingCategory,
         building_type: BuildingType,
         recipe: Recipe = None,
         overclockable: bool = True,
@@ -927,6 +945,7 @@ class Building(Component):
         **kwargs
     ):
         super().__init__(**kwargs)
+        self.building_category = building_category
         self.building_type = building_type
         self.recipe = recipe
         self.clock_rate = clock_rate
@@ -1190,6 +1209,7 @@ class Conveyance(Building):
     ):
         super().__init__(
             building_type=BuildingType.CONVEYANCE,
+            building_category=BuildingCategory.LOGISTICS,
             ingredients=list(),
             **kwargs
         )
@@ -1252,6 +1272,7 @@ class Storage(Building):
     ):
         super().__init__(
             building_type=BuildingType.STORAGE,
+            building_category=BuildingCategory.ORGANIZATION,
             **kwargs
         )
         self.rate = None
