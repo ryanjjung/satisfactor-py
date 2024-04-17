@@ -57,7 +57,7 @@ class MainWindow(Gtk.ApplicationWindow):
         }
 
         self.set_default_size(width, height)
-        self.__ui_helpers()
+        self.__build_ui_helpers()
         self.__build_window()
 
         if filename:
@@ -261,7 +261,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxMain.append(self.paneLeft)
 
         # Build the left-hand panel containing the list of buildings
-        self.__buildings_options()
+        self.__build_buildings_options()
         self.paneLeft.set_start_child(self.paneBuildingsOptions)
         self.paneLeft.set_position(600)
         self.paneLeft.set_vexpand(True)
@@ -280,7 +280,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneRight.set_end_child(lblContext)
 
         # Add the top bar last since it causes the rest of the UI to update
-        self.boxMain.prepend(self.__top_bar())
+        self.boxMain.prepend(self.__build_top_bar())
 
         # Connect signal handlers only after constructing everything
         self.__connect_handlers()
@@ -288,7 +288,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # The main vbox becomes the top level element on the window
         self.set_child(self.boxMain)
 
-    def __buildings_options(self):
+    def __build_buildings_options(self):
         '''
         Builds the contents of the left-hand pane, primarily containing a list of buildings
         available to the user.
@@ -340,72 +340,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneBuildingsOptions.set_start_child(self.scrollBuildingFilters)
         self.paneBuildingsOptions.set_end_child(self.scrollBuildings)
 
-    def __connect_handlers(self):
-        '''
-        Connects signals for the widgets on this window. This is done as a separate task after the
-        window has been fully constructed. This prevents signals from being emitted before the
-        window is functional.
-        '''
-
-        logging.debug('Connecting widget signals')
-
-        # Signals for widgets in the top bar containing factory-level options
-        self.windowSignals.append((
-            self.btnNewFactory,
-            self.btnNewFactory.connect('clicked', self.__btnNewFactory_clicked)))
-        self.windowSignals.append((
-            self.btnOpenFactory,
-            self.btnOpenFactory.connect('clicked', self.__btnOpenFactory_clicked)))
-        self.windowSignals.append((
-            self.btnSaveFactory,
-            self.btnSaveFactory.connect('clicked', self.__btnSaveFactory_clicked)))
-        self.windowSignals.append((
-            self.btnSaveFactoryAs,
-            self.btnSaveFactoryAs.connect('clicked', self.__btnSaveFactoryAs_clicked)))
-        self.windowSignals.append((
-            self.entryFactoryName.get_buffer(),
-            self.entryFactoryName.get_buffer().connect_after('deleted-text',
-                self.__entryFactoryName_deleted)))
-        self.windowSignals.append((
-            self.entryFactoryName.get_buffer(),
-            self.entryFactoryName.get_buffer().connect('inserted-text',
-                self.__entryFactoryName_inserted)))
-        self.windowSignals.append((
-            self.cboTier,
-            self.cboTier.connect_after('changed', self.__cboTier_changed)))
-        self.windowSignals.append((
-            self.cboUpgrade,
-            self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)))
-
-        # Signals for the building options filter panel
-        self.windowSignals.append((
-            self.chkAvailability,
-            self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)
-        ))
-        self.windowSignals.append((
-            self.chkBuildingCategory,
-            self.chkBuildingCategory.connect_after('toggled', self.__chkBuildingCategory_toggled)
-        ))
-        self.windowSignals.append((
-            self.cboBuildingCategory,
-            self.cboBuildingCategory.connect_after('changed', self.__cboBuildingCategory_changed)
-        ))
-        self.windowSignals.append((
-            self.chkNameFilter,
-            self.chkNameFilter.connect_after('toggled', self.__chkNameFilter_toggled)
-        ))
-        self.windowSignals.append((
-            self.entryNameFilter.get_buffer(),
-            self.entryNameFilter.get_buffer().connect_after('deleted-text',
-                self.__entryNameFilter_deleted)
-        ))
-        self.windowSignals.append((
-            self.entryNameFilter.get_buffer(),
-            self.entryNameFilter.get_buffer().connect_after('inserted-text',
-                self.__entryNameFilter_inserted)
-        ))
-
-    def __top_bar(self):
+    def __build_top_bar(self):
         '''
         Builds the UI controls which run across the top bar of the window.
         '''
@@ -477,6 +412,71 @@ class MainWindow(Gtk.ApplicationWindow):
 
         return self.boxTopBar
 
+    def __connect_handlers(self):
+        '''
+        Connects signals for the widgets on this window. This is done as a separate task after the
+        window has been fully constructed. This prevents signals from being emitted before the
+        window is functional.
+        '''
+
+        logging.debug('Connecting widget signals')
+
+        # Signals for widgets in the top bar containing factory-level options
+        self.windowSignals.append((
+            self.btnNewFactory,
+            self.btnNewFactory.connect('clicked', self.__btnNewFactory_clicked)))
+        self.windowSignals.append((
+            self.btnOpenFactory,
+            self.btnOpenFactory.connect('clicked', self.__btnOpenFactory_clicked)))
+        self.windowSignals.append((
+            self.btnSaveFactory,
+            self.btnSaveFactory.connect('clicked', self.__btnSaveFactory_clicked)))
+        self.windowSignals.append((
+            self.btnSaveFactoryAs,
+            self.btnSaveFactoryAs.connect('clicked', self.__btnSaveFactoryAs_clicked)))
+        self.windowSignals.append((
+            self.entryFactoryName.get_buffer(),
+            self.entryFactoryName.get_buffer().connect_after('deleted-text',
+                self.__entryFactoryName_deleted)))
+        self.windowSignals.append((
+            self.entryFactoryName.get_buffer(),
+            self.entryFactoryName.get_buffer().connect('inserted-text',
+                self.__entryFactoryName_inserted)))
+        self.windowSignals.append((
+            self.cboTier,
+            self.cboTier.connect_after('changed', self.__cboTier_changed)))
+        self.windowSignals.append((
+            self.cboUpgrade,
+            self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)))
+
+        # Signals for the building options filter panel
+        self.windowSignals.append((
+            self.chkAvailability,
+            self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)
+        ))
+        self.windowSignals.append((
+            self.chkBuildingCategory,
+            self.chkBuildingCategory.connect_after('toggled', self.__chkBuildingCategory_toggled)
+        ))
+        self.windowSignals.append((
+            self.cboBuildingCategory,
+            self.cboBuildingCategory.connect_after('changed', self.__cboBuildingCategory_changed)
+        ))
+        self.windowSignals.append((
+            self.chkNameFilter,
+            self.chkNameFilter.connect_after('toggled', self.__chkNameFilter_toggled)
+        ))
+        self.windowSignals.append((
+            self.entryNameFilter.get_buffer(),
+            self.entryNameFilter.get_buffer().connect_after('deleted-text',
+                self.__entryNameFilter_deleted)
+        ))
+        self.windowSignals.append((
+            self.entryNameFilter.get_buffer(),
+            self.entryNameFilter.get_buffer().connect_after('inserted-text',
+                self.__entryNameFilter_inserted)
+        ))
+
     def __load_images(self):
         '''
         Load all images that get used in this window from disk and store them in memory.
@@ -496,7 +496,7 @@ class MainWindow(Gtk.ApplicationWindow):
             building_pixbufs[building.__class__.__name__] = pb
         self.pixelBuffers['building_options'] = building_pixbufs
 
-    def __ui_helpers(self):
+    def __build_ui_helpers(self):
         '''
         Builds reusable items which are unique to this application
         '''
