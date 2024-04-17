@@ -19,6 +19,7 @@ from satisfactor_py.factories import Factory
 from satisfactor_py.items import get_all as get_all_items
 from satisfactor_py.storages import get_all as get_all_storages
 from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
+from satisfactor_ui.factory_designer import FactoryDesignerWidget
 
 
 ALL_BUILDINGS = None
@@ -272,8 +273,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneLeft.set_end_child(self.paneRight)
 
         # Build the center panel containing the factory designer
-        lblDesigner = Gtk.Label(label='Factory Designer')  # Placeholder
-        self.paneRight.set_start_child(lblDesigner)
+        self.__build_factory_designer()
+        self.paneRight.set_start_child(self.scrollFactoryDesigner)
 
         # Build the content of the right-hand context panel
         lblContext = Gtk.Label(label='Context Info')  # Placeholder
@@ -339,6 +340,15 @@ class MainWindow(Gtk.ApplicationWindow):
         # Compile panel contents
         self.paneBuildingsOptions.set_start_child(self.scrollBuildingFilters)
         self.paneBuildingsOptions.set_end_child(self.scrollBuildings)
+
+    def __build_factory_designer(self):
+        '''
+        Builds the middle panel with the factory designer display
+        '''
+
+        self.scrollFactoryDesigner = Gtk.ScrolledWindow()
+        self.factoryDesigner = FactoryDesignerWidget()
+        self.scrollFactoryDesigner.set_child(self.factoryDesigner)
 
     def __build_top_bar(self):
         '''
@@ -411,6 +421,19 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxFactoryFunctions.append(self.cboUpgrade)
 
         return self.boxTopBar
+
+    def __build_ui_helpers(self):
+        '''
+        Builds reusable items which are unique to this application
+        '''
+
+        logging.debug('Building resuable UI helpers')
+        self.satFileFilter = Gtk.FileFilter()
+        self.satFileFilter.set_name('SatisFactories (*.sat)')
+        self.satFileFilter.add_pattern('*.sat')
+        self.fileFilters = Gio.ListStore.new(Gtk.FileFilter)
+        self.fileFilters.append(self.satFileFilter)
+        self.__load_images()
 
     def __connect_handlers(self):
         '''
@@ -495,19 +518,6 @@ class MainWindow(Gtk.ApplicationWindow):
                 pb = None
             building_pixbufs[building.__class__.__name__] = pb
         self.pixelBuffers['building_options'] = building_pixbufs
-
-    def __build_ui_helpers(self):
-        '''
-        Builds reusable items which are unique to this application
-        '''
-
-        logging.debug('Building resuable UI helpers')
-        self.satFileFilter = Gtk.FileFilter()
-        self.satFileFilter.set_name('SatisFactories (*.sat)')
-        self.satFileFilter.add_pattern('*.sat')
-        self.fileFilters = Gio.ListStore.new(Gtk.FileFilter)
-        self.fileFilters.append(self.satFileFilter)
-        self.__load_images()
 
 
     # Signal Handlers
