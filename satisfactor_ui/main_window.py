@@ -19,7 +19,8 @@ from satisfactor_py.factories import Factory
 from satisfactor_py.items import get_all as get_all_items
 from satisfactor_py.storages import get_all as get_all_storages
 from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
-from satisfactor_ui.factory_designer import FactoryDesignerWidget
+from satisfactor_ui.drawing import Blueprint
+from satisfactor_ui.widgets import FactoryDesignerWidget
 
 
 ALL_BUILDINGS = None
@@ -46,10 +47,9 @@ class MainWindow(Gtk.ApplicationWindow):
         super().__init__(*args, **kwargs)
 
         logging.debug('Initiating main window')
-        self.factory = None
-        self.factoryFile = None
+        self.blueprint = None
+        self.blueprintFile = None
         self.unsaved_changes = False
-        self.updating = False
 
         self.filters = {
             'availability': True,
@@ -62,7 +62,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.__build_window()
 
         if filename:
-            self.load_factory(filename)
+            self.load_blueprint(filename)
         else:
             self.update_window()
 
@@ -102,22 +102,24 @@ class MainWindow(Gtk.ApplicationWindow):
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_storages()])
         return ALL_BUILDINGS
 
-    def load_factory(self, filename: str):
+    def load_blueprint(self,
+        filename: str
+    ):
         '''
-        Opens a factory file for use with the application and triggers a UI update.
+        Opens a factory blueprint file for use with the application and triggers a UI update.
         '''
 
         try:
-            # Load the factory and store it in the class as separate actions,
+            # Load the blueprint and store it in the class as separate actions,
             # resulting in no change if an exception is thrown at load time.
-            logging.debug(f'Loading factory from file {filename}')
-            loadedFactory = Factory.load(filename)
-            self.factoryFile = filename
-            self.factory = loadedFactory
+            logging.debug(f'Loading blueprint from file {filename}')
+            loadedBlueprint = Blueprint.load(filename)
+            self.blueprintFile = filename
+            self.blueprint = loadedBlueprint
             self.unsaved_changes = False
             self.update_window()
         except IOError as ex:
-            logging.error(f'An error occurred when loading a factory from file {filename}\n  {ex}')
+            logging.error(f'An error occurred when loading a blueprint from file {filename}\n  {ex}')
             # TODO: Replace with an actual ErrorDialog
 
     def set_tier_and_upgrade(self,
@@ -131,23 +133,24 @@ class MainWindow(Gtk.ApplicationWindow):
             - upgrade: The upgrade level to set in the factory
         '''
 
-        if self.factory:
+        if self.blueprint:
             self.block_all_signals()
             # Update the factory model first
             if tier is not None:
-                self.factory.tier = tier
+                self.blueprint.factory.tier = tier
             if upgrade:
-                self.factory.upgrade = upgrade
-            logging.debug(f'Selecting tier/upgrade values: {self.factory.tier}/{self.factory.upgrade}')
+                self.blueprint.factory.upgrade = upgrade
+            logging.debug(f'Selecting tier/upgrade values: '
+                f'{self.blueprint.factory.tier}/{self.blueprint.factory.upgrade}')
 
             # Set the tier value in the combo box
-            self.cboTier.set_active(self.factory.tier)
+            self.cboTier.set_active(self.blueprint.factory.tier)
 
             # Populate the appropriate upgrade values
             self.cboUpgrade.remove_all()
-            for upgrade in Availability.get_upgrade_strings(self.factory.tier):
+            for upgrade in Availability.get_upgrade_strings(self.blueprint.factory.tier):
                 self.cboUpgrade.append(upgrade, upgrade)
-            self.cboUpgrade.set_active(self.factory.upgrade - 1)
+            self.cboUpgrade.set_active(self.blueprint.factory.upgrade - 1)
             self.unblock_all_signals()
 
     def set_window_title(self):
@@ -157,7 +160,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         logging.debug('Setting window title')
         title_prefix = f'{"*" if self.unsaved_changes else ""}'
-        title_suffix = f' ({self.factoryFile.split('/')[-1]})' if self.factoryFile else ''
+        title_suffix = f' ({self.blueprintFile.split('/')[-1]})' if self.blueprintFile else ''
         self.set_title(f'{title_prefix}{MAIN_WINDOW_TITLE_BASE}{title_suffix}')
 
     def unblock_all_signals(self):
@@ -175,17 +178,17 @@ class MainWindow(Gtk.ApplicationWindow):
         Updates the list of buildings in the left panel, taking into account all filters.
         '''
 
-        if self.factory:
+        if self.blueprint:
             logging.debug('Updating building options list')
             # Determine the available buildings
             all_buildings = MainWindow.get_building_options()
             if self.filters['availability']:
                 avail_buildings = []
                 for building in all_buildings:
-                    if self.factory.tier > building.availability.tier:
+                    if self.blueprint.factory.tier > building.availability.tier:
                         avail_buildings.append(building)
-                    elif self.factory.tier == building.availability.tier:
-                        if self.factory.upgrade >= building.availability.upgrade:
+                    elif self.blueprint.factory.tier == building.availability.tier:
+                        if self.blueprint.factory.upgrade >= building.availability.upgrade:
                             avail_buildings.append(building)
             else:
                 avail_buildings = all_buildings
@@ -221,23 +224,20 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         logging.debug('Updating window')
-        if not self.updating:
-            self.updating = True
-            self.block_all_signals()
-            self.set_window_title()
-            if self.factory:
-                self.btnSaveFactory.set_sensitive(self.unsaved_changes)
-                self.boxFactoryFunctions.set_sensitive(True)
-                self.boxFilters.set_sensitive(True)
-                self.entryFactoryName.get_buffer().set_text(self.factory.name, -1)
-                self.set_tier_and_upgrade()
-                self.update_buildings_list()
-            else:
-                self.btnSaveFactory.set_sensitive(False)
-                self.boxFactoryFunctions.set_sensitive(False)
-                self.boxFilters.set_sensitive(False)
-            self.unblock_all_signals()
-            self.updating = False
+        self.block_all_signals()
+        self.set_window_title()
+        if self.blueprint:
+            self.boxFactoryFunctions.set_sensitive(True)
+            self.btnSaveFactory.set_sensitive(self.unsaved_changes)
+            self.boxFilters.set_sensitive(True)
+            self.entryFactoryName.get_buffer().set_text(self.blueprint.factory.name, -1)
+            self.set_tier_and_upgrade()
+            self.update_buildings_list()
+        else:
+            self.btnSaveFactory.set_sensitive(False)
+            self.boxFactoryFunctions.set_sensitive(False)
+            self.boxFilters.set_sensitive(False)
+        self.unblock_all_signals()
 
 
     # Layout Construction
@@ -347,7 +347,7 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         self.scrollFactoryDesigner = Gtk.ScrolledWindow()
-        self.factoryDesigner = FactoryDesignerWidget()
+        self.factoryDesigner = FactoryDesignerWidget(self.blueprint)
         self.scrollFactoryDesigner.set_child(self.factoryDesigner)
 
     def __build_top_bar(self):
@@ -390,7 +390,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # Contain all the factory-level functions within a box so they can all be enabled and
         # disabled by doing so to this one widget
         self.boxFactoryFunctions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.boxFactoryFunctions.set_sensitive(True if self.factory else False)
+        self.boxFactoryFunctions.set_sensitive(True if self.blueprint else False)
         self.boxTopBar.append(self.boxFactoryFunctions)
 
         # Build the text box showing the name of the factory
@@ -429,7 +429,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         logging.debug('Building resuable UI helpers')
         self.satFileFilter = Gtk.FileFilter()
-        self.satFileFilter.set_name('SatisFactories (*.sat)')
+        self.satFileFilter.set_name('Satisfactory Blueprints (*.sat)')
         self.satFileFilter.add_pattern('*.sat')
         self.fileFilters = Gio.ListStore.new(Gtk.FileFilter)
         self.fileFilters.append(self.satFileFilter)
@@ -542,7 +542,7 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if response:
-            self.factory = Factory(name='New Factory')
+            self.blueprint = Blueprint(factory = Factory(name='New Factory'))
             self.unsaved_changes = True
             self.update_window()
 
@@ -579,10 +579,10 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         try:
-            factoryFile = dlg.open_finish(response)
-            self.load_factory(factoryFile.get_path())
+            blueprintFile = dlg.open_finish(response)
+            self.load_blueprint(blueprintFile.get_path())
         except Exception as ex:
-            print(f'[DEBUG] Couldn\'t finish open: {ex}')
+            print(f'[DEBUG] Couldn\'t open the blueprint: {ex}')
 
     # + "Save" button signal handlers
     def __btnSaveFactory_clicked(self, btn):
@@ -591,7 +591,7 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if self.unsaved_changes:
-            self.factory.save(self.factoryFile)
+            self.blueprint.save(self.blueprintFile)
             self.unsaved_changes = False
             self.set_window_title()
 
@@ -615,31 +615,31 @@ class MainWindow(Gtk.ApplicationWindow):
         if response:
             try:
                 # Try the save first so we don't change the app context if it fails
-                factoryFile = dlg.save_finish(response).get_path()
-                self.factory.save(factoryFile)
-                self.factoryFile = factoryFile
+                blueprintFile = dlg.save_finish(response).get_path()
+                self.blueprint.save(blueprintFile)
+                self.blueprintFile = blueprintFile
                 self.unsaved_changes = False
                 self.update_window()
             except IOError as ex:
-                print(f'[DEBUG] Error saving factory at file {factoryFile}:\n  {ex}')
+                print(f'[DEBUG] Error saving blueprint at file {blueprintFile}:\n  {ex}')
                 # TODO: Replace with real error dialog
             except Exception as ex:
-                print(f'[DEBUG] Could not finish the save action: {ex}')
+                print(f'[DEBUG] Could not save the blueprint: {ex}')
 
 
     # + Factory Name Entry signal handlers
 
     def __entryFactoryName_deleted(self, buffer, position, chars):
         newName = self.entryFactoryName.get_buffer().get_text()
-        if newName != self.factory.name and newName != '':
-            self.factory.name = buffer.get_text()
+        if newName != self.blueprint.factory.name and newName != '':
+            self.blueprint.factory.name = buffer.get_text()
             self.unsaved_changes = True
             self.update_window()
 
     def __entryFactoryName_inserted(self, buffer, position, chars, nchars):
         newName = self.entryFactoryName.get_buffer().get_text()
-        if newName != self.factory.name and newName != '':
-            self.factory.name = buffer.get_text()
+        if newName != self.blueprint.factory.name and newName != '':
+            self.blueprint.factory.name = buffer.get_text()
             self.unsaved_changes = True
             self.update_window()
 
@@ -655,7 +655,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     # + "Upgrade" combo box signal handlers
     def __cboUpgrade_changed(self, cbo):
-        self.factory.upgrade = self.cboUpgrade.get_active() + 1
+        self.blueprint.upgrade = self.cboUpgrade.get_active() + 1
         self.unsaved_changes = True
         self.update_window()
 
