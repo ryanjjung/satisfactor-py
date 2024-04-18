@@ -282,17 +282,23 @@ class Component(Base):
             actual game of Satisfactory.
         - traversed: Used internally to determine if a component is actually connected to a larger
             factory.
+        - blueprint_left: The location of this component's left edge in a factory blueprint
+        - blueprint_top: The location of this component's top edge in a factory blueprint
     '''
 
     def __init__(self,
         constructed: bool = False,
         traversed: bool = False,
+        blueprint_left: int = None,
+        blueprint_top: int = None,
         **kwargs
     ):
         super().__init__(**kwargs)
-        self._errors = list()
+        self._errors = []
         self.constructed = constructed
         self.traversed = traversed
+        self.blueprint_left = blueprint_left
+        self.blueprint_top = blueprint_top
 
     def to_dict(self) -> dict:
         '''
@@ -301,6 +307,10 @@ class Component(Base):
 
         base = super().to_dict()
         base.update({
+            'constructed': self.constructed,
+            'traversed': self.traversed,
+            'blueprint_left': self.blueprint_left,
+            'blueprint_top': self.blueprint_top,
             'errors': [error.to_dict() for error in self.errors]
         })
         return base

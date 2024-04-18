@@ -14,17 +14,15 @@ BASE_IMAGE_FILE_PATH = './static/images'
 COLOR_BACKGROUND = '#bbbbcc'
 
 
-class FactoryDesignerWidget(Gtk.Widget):
+class Blueprint(Gtk.Widget):
     '''
-    Custom widget that draws the factory and allows interaction with its
-    components.
+    A Blueprint is a GTK Widget that draws a factory's components in a 2D visible space and allows a
+    user to interact with those components.
     '''
 
     def __init__(self):
         super().__init__()
         self.textures = {}
-        self.scroll_x = 0
-        self.scroll_y = 0
         self.zoom = 1.0
 
         self.testComponent = Foundry()
