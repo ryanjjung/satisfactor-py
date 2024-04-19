@@ -15,6 +15,9 @@ from satisfactor_ui.geometry import Coordinate2D, Size2D
 BASE_IMAGE_FILE_PATH = './static/images'
 COLOR_BACKGROUND = '#383875'
 COLOR_LINES = '#a3a8fa'
+SIZE_COMPONENT = Size2D(128, 128)
+SIZE_COMPONENT_BADGE = Size2D(24, 24)
+SIZE_COMPONENT_IMAGE = Size2D(96, 96)
 
 
 class Blueprint(object):
@@ -39,7 +42,6 @@ class Blueprint(object):
 
         # Set up a few internals
         self.coordinateMap = {}    # Mapping of component UUIDs to Coordinate2Ds
-        self.default_component_size = Size2D(64, 64)
         self.selected = None       # Pointer to currently selected component, if any
         self.textures = {}         # Collection of pre-loaded images to draw with
         self.viewport = Viewport(size=viewport_size) # The currently visible area of the blueprint
@@ -109,25 +111,70 @@ class Blueprint(object):
 
     def draw_component(self,
         snapshot: Gdk.Snapshot,
-        component: Component
+        component: Component,
+        component_location: Coordinate2D
     ):
         '''
         Draws a graphical representation of a factory component on the screen.
         '''
 
-        location = self.get_component_location(component)
-        size = self.default_component_size
+        scale = self.viewport.scale
         texture = self.get_component_texture(component)
 
         if texture:
             rect = Graphene.Rect()
             rect.init(
-                location.x,
-                location.y,
-                size.width,
-                size.height
+                round(component_location.x * scale) - round(self.viewport.location.x * scale),
+                round(component_location.y * scale) - round(self.viewport.location.y * scale),
+                round(SIZE_COMPONENT.width * scale),
+                round(SIZE_COMPONENT.height * scale)
             )
             snapshot.append_texture(texture, rect)
+
+    def draw_frame(self, snapshot):
+        '''
+        Draws a single frame of the contents of the viewport.
+        '''
+        
+        self.draw_background(snapshot=snapshot)
+        visible_components = self.get_visible_components()
+        for component, component_location in visible_components:
+            self.draw_component(snapshot, component, component_location)
+        
+
+        # Is anything not in the viewport that is connected to something in the viewport? If so,
+        # we'll have to figure out the target of conveyance lines that come off such a component
+        # and draw it appropriately.
+
+        pass
+
+    def get_visible_components(self) -> list[Component]:
+        '''
+        Returns a list of tuples like so:
+            (component, coordinates).
+
+        The types are like so:
+            (satisfactor_py.base.Component, satisfactor_ui.geometry.Coordinate2D)
+        
+        These components are the ones which are partially or fully visible within the frame of the
+        viewport and must be drawn when updating the widget.
+        '''
+
+        # Filter out components without coordinate mappings
+        drawable_components = [ (component, self.coordinateMap[component.id]) \
+            for component in self.factory.components
+            if component.id in self.coordinateMap.keys() ]
+
+        # Find components which are visible based on canvas location and size
+        canvas_location, canvas_size = self.viewport.get_visible_canvas_region()
+        visible_components = []
+        for component, component_location in drawable_components:
+            if (component_location.x + SIZE_COMPONENT.width >= canvas_location.x
+                and component_location.y + SIZE_COMPONENT.height >= canvas_location.y) \
+            or (component_location.x <= canvas_location.x + canvas_size.width
+                and component_location.y <= canvas_location.y + canvas_size.height):
+                    visible_components.append((component, component_location))
+        return visible_components
 
     def get_component_location(self,
         component: Component
@@ -177,8 +224,14 @@ class Viewport(object):
     def __init__(self,
         location: Coordinate2D = Coordinate2D(),
         size: Size2D = Size2D(),
-        zoom: float = 1.0
+        scale: float = 1.0
     ):
         self.location = location
         self.size = size
-        self.zoom = zoom
+        self.scale = scale
+    
+    def get_visible_canvas_region(self):
+        return (self.location, Size2D(
+            round(self.size.width / self.scale), 
+            round(self.size.height / self.scale)
+        ))

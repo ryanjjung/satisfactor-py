@@ -31,5 +31,4 @@ class FactoryDesignerWidget(Gtk.Widget):
         '''
 
         self.blueprint.viewport.size = drawing.Size2D(self.get_width(), self.get_height())
-        self.blueprint.draw_background(snapshot)
-        self.blueprint.draw_component(snapshot, self.testComponent)
+        self.blueprint.draw_frame(snapshot)
