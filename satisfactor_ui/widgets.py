@@ -2,9 +2,49 @@ import gi
 gi.require_version('Gtk', '4.0')
 
 from gi.repository import Gtk, Gio, GObject
-from satisfactor_py.buildings import Foundry
-import satisfactor_ui.drawing as drawing
+from satisfactor_py import (
+    base,
+    buildings,
+    conveyances,
+    items,
+    recipes,
+    storages
+)
+from satisfactor_ui import (
+    drawing,
+    geometry
+)
 
+
+def build_test_blueprint():
+    '''
+    Builds a simple blueprint that we can test with
+    '''
+
+    # Build and connect the factory components
+    oreSupply = base.InfiniteSupplyNode(
+        item=items.IronOre,
+        conveyance_type=base.ConveyanceType.BELT,
+        name='Infinite Iron Ore Supply',
+    )
+    smelter = buildings.Smelter(
+        name='Iron Ore Smelter',
+        recipe=recipes.IronIngot
+    )
+    convOreToSmelter = conveyances.ConveyorBeltMk1()
+    oreSupply.outputs[0].connect(convOreToSmelter.inputs[0])
+    convOreToSmelter.outputs[0].connect(smelter.inputs[0])
+    storage = storages.StorageContainer(name='Iron Ore Storage')
+    convIngotsToStorage = smelter.connect(storage, conveyances.ConveyorBeltMk1)
+
+    # Add them to a blueprint with coordinates, except for Conveyances, which don't need them
+    blueprint = drawing.Blueprint()
+    blueprint.add_component(oreSupply, geometry.Coordinate2D(20, 20))
+    blueprint.add_component(convOreToSmelter, geometry.Coordinate2D())
+    blueprint.add_component(smelter, geometry.Coordinate2D(170, 20))
+    blueprint.add_component(convIngotsToStorage, geometry.Coordinate2D())
+    blueprint.add_component(storage, geometry.Coordinate2D(320, 20))
+    return blueprint
 
 
 class FactoryDesignerWidget(Gtk.Widget):
@@ -19,9 +59,8 @@ class FactoryDesignerWidget(Gtk.Widget):
         super().__init__()
         self.blueprint = blueprint if blueprint else drawing.Blueprint()
 
-        # Test component
-        self.testComponent = Foundry()
-        self.blueprint.add_component(self.testComponent, drawing.Coordinate2D(50, 50))
+        # Test components
+        self.blueprint = build_test_blueprint()
 
     def do_snapshot(self,
         snapshot: Gtk.Snapshot

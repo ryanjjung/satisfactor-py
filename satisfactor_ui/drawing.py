@@ -7,7 +7,7 @@ gi.require_version('Gtk', '4.0')
 import pickle
 from gi.repository import Gdk, Graphene, Gsk, Gtk
 from pathlib import Path
-from satisfactor_py.base import Component
+from satisfactor_py.base import Component, Conveyance
 from satisfactor_py.factories import Factory
 from satisfactor_ui.geometry import Coordinate2D, Size2D
 
@@ -163,7 +163,8 @@ class Blueprint(object):
         # Filter out components without coordinate mappings
         drawable_components = [ (component, self.coordinateMap[component.id]) \
             for component in self.factory.components
-            if component.id in self.coordinateMap.keys() ]
+            if component.id in self.coordinateMap.keys()
+            and not isinstance(component, Conveyance) ]
 
         # Find components which are visible based on canvas location and size
         canvas_location, canvas_size = self.viewport.get_visible_canvas_region()
