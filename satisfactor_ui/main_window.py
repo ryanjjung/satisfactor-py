@@ -511,7 +511,7 @@ class MainWindow(Gtk.ApplicationWindow):
         building_pixbufs = {}
         all_buildings = MainWindow.get_building_options()
         for building in all_buildings:
-            imageFile = Path(f'./static/images/{building.__class__.__name__}.png')
+            imageFile = Path(f'./static/images/components/{building.__class__.__name__}.png')
             if imageFile.exists():
                 pb = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
             else:

@@ -289,16 +289,12 @@ class Component(Base):
     def __init__(self,
         constructed: bool = False,
         traversed: bool = False,
-        blueprint_left: int = None,
-        blueprint_top: int = None,
         **kwargs
     ):
         super().__init__(**kwargs)
         self._errors = []
         self.constructed = constructed
         self.traversed = traversed
-        self.blueprint_left = blueprint_left
-        self.blueprint_top = blueprint_top
 
     def to_dict(self) -> dict:
         '''
@@ -309,8 +305,6 @@ class Component(Base):
         base.update({
             'constructed': self.constructed,
             'traversed': self.traversed,
-            'blueprint_left': self.blueprint_left,
-            'blueprint_top': self.blueprint_top,
             'errors': [error.to_dict() for error in self.errors]
         })
         return base

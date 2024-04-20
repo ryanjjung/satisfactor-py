@@ -163,4 +163,4 @@ cython_debug/
 *.pickle
 
 # Static images
-static/images/*.png
+static/images/components/*.png

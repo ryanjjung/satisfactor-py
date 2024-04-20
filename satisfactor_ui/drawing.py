@@ -19,6 +19,10 @@ SIZE_COMPONENT = Size2D(128, 128)
 SIZE_COMPONENT_BADGE = Size2D(24, 24)
 SIZE_COMPONENT_IMAGE = Size2D(96, 96)
 
+# Badges to make:
+# - Constructed
+# - Standby
+# - Errors
 
 class Blueprint(object):
     '''
@@ -203,7 +207,7 @@ class Blueprint(object):
         if texture:
             return texture
 
-        file = Path(f'{BASE_IMAGE_FILE_PATH}/{component.__class__.__name__}.png')
+        file = Path(f'{BASE_IMAGE_FILE_PATH}/components/{component.__class__.__name__}.png')
         if file.exists():
             texture = Gdk.Texture.new_from_filename(str(file))
             self.textures[component.__class__.__name__] = texture
