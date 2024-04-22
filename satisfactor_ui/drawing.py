@@ -180,7 +180,6 @@ class Blueprint(object):
         badges_width = self.comp_badge_size.width * len(badges) + \
             self.comp_badge_padding_x * (len(badges) - 1)
         for i in range(len(badges)):
-            # import pdb; pdb.set_trace()
             badge_left = round(self.comp_size.width * scale / 2) - round(badges_width * scale / 2)
             badge_left += round(i * (self.comp_badge_size.width + self.comp_badge_padding_x) * scale)
             badge_left += round(location.x * scale)
@@ -207,13 +206,35 @@ class Blueprint(object):
 
         self.draw_background(snapshot=snapshot)
         visible_components = self.get_visible_components()
-        for component, component_location in visible_components:
-            self.draw_component(snapshot, component, component_location)
+        comps_without_locations = [component[0] for component in visible_components]
 
+        # Determine if any components which are offscreen are attached to any onscreen components.
+        # If so, we'll need to include them in the drawing so we can later draw the conveyance.
+        offscreen_components = []
+        if len(visible_components) > 0:
+            for component in comps_without_locations:
+                for input in component.inputs:
+                    if input.source:
+                        input_attachment = input.source.attached_to
+                        if isinstance(input_attachment, Conveyance):
+                            input_attachment = input_attachment.inputs[0].source.attached_to
+                            if input_attachment not in comps_without_locations:
+                                if input_attachment.id in self.coordinateMap.keys():
+                                    offscreen_components.append((input_attachment,
+                                        self.coordinateMap.get(input_attachment.id)))
+                for output in component.outputs:
+                    if output.target:
+                        output_attachment = output.target.attached_to
+                        if isinstance(output_attachment, Conveyance):
+                            output_attachment = output_attachment.outputs[0].target.attached_to
+                            if output_attachment not in comps_without_locations:
+                                if output_attachment.id in self.coordinateMap.keys():
+                                    offscreen_components.append((output_attachment,
+                                        self.coordinateMap.get(output_attachment.id)))
 
-        # Is anything not in the viewport that is connected to something in the viewport? If so,
-        # we'll have to figure out the target of conveyance lines that come off such a component
-        # and draw it appropriately.
+            # Draw those components
+            for component, component_location in visible_components:
+                self.draw_component(snapshot, component, component_location)
 
     def get_visible_components(self) -> list[Component]:
         '''
@@ -239,7 +260,7 @@ class Blueprint(object):
         for component, component_location in drawable_components:
             if (component_location.x + self.comp_size.width >= canvas_location.x
                 and component_location.y + self.comp_size.height >= canvas_location.y) \
-            or (component_location.x <= canvas_location.x + canvas_size.width
+            and (component_location.x <= canvas_location.x + canvas_size.width
                 and component_location.y <= canvas_location.y + canvas_size.height):
                     visible_components.append((component, component_location))
         return visible_components
