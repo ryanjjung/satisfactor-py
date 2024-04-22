@@ -134,7 +134,7 @@ class Blueprint(object):
         '''
 
         scale = self.viewport.scale  # Makes later code tidier
-        
+
         # Load up the component icon texture
         icon_key = component.__class__.__name__
         icon_texture = self.get_texture('components', icon_key)
@@ -153,7 +153,6 @@ class Blueprint(object):
         icon_height = round(self.comp_icon_size.height * scale)
         icon_rect = Graphene.Rect()
         icon_rect.init(icon_left, icon_top, icon_width, icon_height)
-        logging.debug(f'Drawing icon at ({icon_left},{icon_top})')
         snapshot.append_scaled_texture(icon_texture, Gsk.ScalingFilter.TRILINEAR, icon_rect)
 
         # Determine which badges to draw
@@ -169,7 +168,7 @@ class Blueprint(object):
                 badges.append('standby-false')
         if len(component.errors) > 0:
             badges.append('errors-true')
-        
+
         # Load up the badge textures
         for badge in badges:
             badge_texture = self.get_texture('badges', badge)
@@ -180,17 +179,21 @@ class Blueprint(object):
         # And then draw the badges
         badges_width = self.comp_badge_size.width * len(badges) + \
             self.comp_badge_padding_x * (len(badges) - 1)
-        logging.debug(f'badges: {badges}; badges_width: {badges_width}')
         for i in range(len(badges)):
+            # import pdb; pdb.set_trace()
             badge_left = round(self.comp_size.width * scale / 2) - round(badges_width * scale / 2)
             badge_left += round(i * (self.comp_badge_size.width + self.comp_badge_padding_x) * scale)
+            badge_left += round(location.x * scale)
+            badge_left -= round(self.viewport.location.x * scale)
             badge_top = round(self.comp_badge_offset_y * scale)
             badge_top -= round(self.viewport.location.y * scale)
+            badge_top += round(location.y * scale)
             badge_rect = Graphene.Rect()
+            badge_width = self.comp_badge_size.width * scale
+            badge_height = self.comp_badge_size.height * scale
             badge_rect.init(
                 badge_left, badge_top,
-                self.comp_badge_size.width, self.comp_badge_size.height)
-            logging.debug(f'Drawing badge at ({badge_left},{badge_top})')
+                badge_width, badge_height)
             snapshot.append_scaled_texture(
                 self.get_texture('badges', badges[i]),
                 Gsk.ScalingFilter.TRILINEAR,
@@ -201,12 +204,12 @@ class Blueprint(object):
         '''
         Draws a single frame of the contents of the viewport.
         '''
-        
+
         self.draw_background(snapshot=snapshot)
         visible_components = self.get_visible_components()
         for component, component_location in visible_components:
             self.draw_component(snapshot, component, component_location)
-        
+
 
         # Is anything not in the viewport that is connected to something in the viewport? If so,
         # we'll have to figure out the target of conveyance lines that come off such a component
@@ -219,7 +222,7 @@ class Blueprint(object):
 
         The types are like so:
             (satisfactor_py.base.Component, satisfactor_ui.geometry.Coordinate2D)
-        
+
         These components are the ones which are partially or fully visible within the frame of the
         viewport and must be drawn when updating the widget.
         '''
@@ -260,7 +263,7 @@ class Blueprint(object):
         '''
         Loads an image into memory and stores it under the given key in the given category.
         '''
-        
+
         logging.debug(f'Loading texture from filename: {filename} into {category}/{key}')
         texture = get_texture_from_file(filename)
         if category not in self.__textures.keys():
@@ -300,9 +303,9 @@ class Viewport(object):
         self.location = location
         self.size = size
         self.scale = scale
-    
+
     def get_visible_canvas_region(self):
         return (self.location, Size2D(
-            round(self.size.width / self.scale), 
+            round(self.size.width / self.scale),
             round(self.size.height / self.scale)
         ))

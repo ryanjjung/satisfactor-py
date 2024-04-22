@@ -903,7 +903,8 @@ class InfiniteSupplyNode(ResourceNode):
 
         rate = self.rate
         if not rate:
-            rate = self.outputs[0].target.attached_to.rate
+            if self.outputs[0].target:
+                rate = self.outputs[0].target.attached_to.rate
         else:
             rate = min(rate, self.outputs[0].target.attached_to.rate)
 
