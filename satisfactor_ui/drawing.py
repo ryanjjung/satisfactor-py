@@ -5,7 +5,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 
 import pickle
-from gi.repository import Gdk, Graphene, Gsk, Gtk
+from gi.repository import Gdk, Graphene, Gsk, Gtk, Pango
 from pathlib import Path
 from satisfactor_py.base import Building, Component, Conveyance
 from satisfactor_py.factories import Factory
@@ -24,6 +24,7 @@ def get_texture_from_file(filename: str) -> Gdk.Texture:
         return texture
 
     return None
+
 
 class Blueprint(object):
     '''
@@ -133,27 +134,18 @@ class Blueprint(object):
         Draws a graphical representation of a factory component on the screen.
         '''
 
-        scale = self.viewport.scale  # Makes later code tidier
+        self.draw_component_icon(snapshot, component, location, self.viewport.scale)
+        self.draw_component_badges(snapshot, component, location, self.viewport.scale)
 
-        # Load up the component icon texture
-        icon_key = component.__class__.__name__
-        icon_texture = self.get_texture('components', icon_key)
-        if not icon_texture:
-            filename = f'{BASE_IMAGE_FILE_PATH}/components/{icon_key}.png'
-            icon_texture = self.load_texture(filename, 'components', icon_key)
-
-        # Draw the icon
-        icon_left = round(location.x * scale)
-        icon_left -= round(self.viewport.location.x * scale)
-        icon_left += round(self.comp_icon_offset.width * scale)
-        icon_top = round(location.y * scale)
-        icon_top -= round(self.viewport.location.y * scale)
-        icon_top += round(self.comp_icon_offset.height * scale)
-        icon_width = round(self.comp_icon_size.width * scale)
-        icon_height = round(self.comp_icon_size.height * scale)
-        icon_rect = Graphene.Rect()
-        icon_rect.init(icon_left, icon_top, icon_width, icon_height)
-        snapshot.append_scaled_texture(icon_texture, Gsk.ScalingFilter.TRILINEAR, icon_rect)
+    def draw_component_badges(self,
+        snapshot: Gdk.Snapshot,
+        component: Component,
+        location: Coordinate2D,
+        scale: float
+    ):
+        '''
+        Draws only the component's badges
+        '''
 
         # Determine which badges to draw
         badges = []
@@ -197,6 +189,36 @@ class Blueprint(object):
                 self.get_texture('badges', badges[i]),
                 Gsk.ScalingFilter.TRILINEAR,
                 badge_rect)
+
+    def draw_component_icon(self,
+        snapshot: Gdk.Snapshot,
+        component: Component,
+        location: Coordinate2D,
+        scale: float
+    ):
+        '''
+        Draws only the icon portion of a component
+        '''
+
+        # Load up the component icon texture
+        icon_key = component.__class__.__name__
+        icon_texture = self.get_texture('components', icon_key)
+        if not icon_texture:
+            filename = f'{BASE_IMAGE_FILE_PATH}/components/{icon_key}.png'
+            icon_texture = self.load_texture(filename, 'components', icon_key)
+
+        # Draw the icon
+        icon_left = round(location.x * scale)
+        icon_left -= round(self.viewport.location.x * scale)
+        icon_left += round(self.comp_icon_offset.width * scale)
+        icon_top = round(location.y * scale)
+        icon_top -= round(self.viewport.location.y * scale)
+        icon_top += round(self.comp_icon_offset.height * scale)
+        icon_width = round(self.comp_icon_size.width * scale)
+        icon_height = round(self.comp_icon_size.height * scale)
+        icon_rect = Graphene.Rect()
+        icon_rect.init(icon_left, icon_top, icon_width, icon_height)
+        snapshot.append_scaled_texture(icon_texture, Gsk.ScalingFilter.TRILINEAR, icon_rect)
 
 
     def draw_frame(self, snapshot):
