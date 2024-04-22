@@ -39,11 +39,13 @@ def build_test_blueprint():
 
     # Add them to a blueprint with coordinates, except for Conveyances, which don't need them
     blueprint = drawing.Blueprint()
-    blueprint.add_component(oreSupply, geometry.Coordinate2D(20, 20))
+    blueprint.add_component(oreSupply, geometry.Coordinate2D(10, 10))
     blueprint.add_component(convOreToSmelter, geometry.Coordinate2D())
     blueprint.add_component(smelter, geometry.Coordinate2D(170, 20))
     blueprint.add_component(convIngotsToStorage, geometry.Coordinate2D())
     blueprint.add_component(storage, geometry.Coordinate2D(320, 20))
+    blueprint.factory.simulate()
+    blueprint.viewport.scale = 2.0
     return blueprint
 
 

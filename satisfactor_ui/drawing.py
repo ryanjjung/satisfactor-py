@@ -7,22 +7,23 @@ gi.require_version('Gtk', '4.0')
 import pickle
 from gi.repository import Gdk, Graphene, Gsk, Gtk
 from pathlib import Path
-from satisfactor_py.base import Component, Conveyance
+from satisfactor_py.base import Building, Component, Conveyance
 from satisfactor_py.factories import Factory
 from satisfactor_ui.geometry import Coordinate2D, Size2D
 
 
 BASE_IMAGE_FILE_PATH = './static/images'
-COLOR_BACKGROUND = '#383875'
-COLOR_LINES = '#a3a8fa'
-SIZE_COMPONENT = Size2D(128, 128)
-SIZE_COMPONENT_BADGE = Size2D(24, 24)
-SIZE_COMPONENT_IMAGE = Size2D(96, 96)
 
-# Badges to make:
-# - Constructed
-# - Standby
-# - Errors
+
+def get_texture_from_file(filename: str) -> Gdk.Texture:
+    '''
+    Given the filename of an image, returns a Gdk.Texture object for it
+    '''
+    if Path(filename).exists():
+        texture = Gdk.Texture.new_from_filename(filename)
+        return texture
+
+    return None
 
 class Blueprint(object):
     '''
@@ -37,17 +38,27 @@ class Blueprint(object):
 
     def __init__(self,
         factory: Factory = None,
-        background_color: str = None,
-        line_color: str = None,
+        background_color: str = '#383875',
+        line_color: str = '#a3a8fa',
         viewport_size: Size2D = Size2D()
     ):
         # Build a new factory if we weren't given one
         self.factory = factory if factory else Factory()
 
+        # Set up some data we need to lay out components visually
+        self.comp_icon_offset = Size2D(32, 8)
+        self.comp_icon_size = Size2D(64, 64)
+        self.comp_size = Size2D(128, 128)
+        self.comp_badge_offset_y = 78
+        self.comp_badge_padding_x = 8
+        self.comp_badge_size = Size2D(16, 16)
+        self.comp_label_offset_y = 100
+        self.comp_label_size = Size2D(112, 20)
+
         # Set up a few internals
         self.coordinateMap = {}    # Mapping of component UUIDs to Coordinate2Ds
         self.selected = None       # Pointer to currently selected component, if any
-        self.textures = {}         # Collection of pre-loaded images to draw with
+        self.__textures = {}       # Collection of pre-loaded images to draw with
         self.viewport = Viewport(size=viewport_size) # The currently visible area of the blueprint
 
         # Set up colors
@@ -116,24 +127,75 @@ class Blueprint(object):
     def draw_component(self,
         snapshot: Gdk.Snapshot,
         component: Component,
-        component_location: Coordinate2D
+        location: Coordinate2D
     ):
         '''
         Draws a graphical representation of a factory component on the screen.
         '''
 
-        scale = self.viewport.scale
-        texture = self.get_component_texture(component)
+        scale = self.viewport.scale  # Makes later code tidier
+        
+        # Load up the component icon texture
+        icon_key = component.__class__.__name__
+        icon_texture = self.get_texture('components', icon_key)
+        if not icon_texture:
+            filename = f'{BASE_IMAGE_FILE_PATH}/components/{icon_key}.png'
+            icon_texture = self.load_texture(filename, 'components', icon_key)
 
-        if texture:
-            rect = Graphene.Rect()
-            rect.init(
-                round(component_location.x * scale) - round(self.viewport.location.x * scale),
-                round(component_location.y * scale) - round(self.viewport.location.y * scale),
-                round(SIZE_COMPONENT.width * scale),
-                round(SIZE_COMPONENT.height * scale)
-            )
-            snapshot.append_texture(texture, rect)
+        # Draw the icon
+        icon_left = round(location.x * scale)
+        icon_left -= round(self.viewport.location.x * scale)
+        icon_left += round(self.comp_icon_offset.width * scale)
+        icon_top = round(location.y * scale)
+        icon_top -= round(self.viewport.location.y * scale)
+        icon_top += round(self.comp_icon_offset.height * scale)
+        icon_width = round(self.comp_icon_size.width * scale)
+        icon_height = round(self.comp_icon_size.height * scale)
+        icon_rect = Graphene.Rect()
+        icon_rect.init(icon_left, icon_top, icon_width, icon_height)
+        logging.debug(f'Drawing icon at ({icon_left},{icon_top})')
+        snapshot.append_scaled_texture(icon_texture, Gsk.ScalingFilter.TRILINEAR, icon_rect)
+
+        # Determine which badges to draw
+        badges = []
+        if component.constructed:
+            badges.append('constructed-true')
+        else:
+            badges.append('constructed-false')
+        if component.__class__ == Building:
+            if component.standby:
+                badges.append('standby-true')
+            else:
+                badges.append('standby-false')
+        if len(component.errors) > 0:
+            badges.append('errors-true')
+        
+        # Load up the badge textures
+        for badge in badges:
+            badge_texture = self.get_texture('badges', badge)
+            if not badge_texture:
+                badge_filename = f'{BASE_IMAGE_FILE_PATH}/badges/{badge}.svg'
+                self.load_texture(badge_filename, 'badges', badge)
+
+        # And then draw the badges
+        badges_width = self.comp_badge_size.width * len(badges) + \
+            self.comp_badge_padding_x * (len(badges) - 1)
+        logging.debug(f'badges: {badges}; badges_width: {badges_width}')
+        for i in range(len(badges)):
+            badge_left = round(self.comp_size.width * scale / 2) - round(badges_width * scale / 2)
+            badge_left += round(i * (self.comp_badge_size.width + self.comp_badge_padding_x) * scale)
+            badge_top = round(self.comp_badge_offset_y * scale)
+            badge_top -= round(self.viewport.location.y * scale)
+            badge_rect = Graphene.Rect()
+            badge_rect.init(
+                badge_left, badge_top,
+                self.comp_badge_size.width, self.comp_badge_size.height)
+            logging.debug(f'Drawing badge at ({badge_left},{badge_top})')
+            snapshot.append_scaled_texture(
+                self.get_texture('badges', badges[i]),
+                Gsk.ScalingFilter.TRILINEAR,
+                badge_rect)
+
 
     def draw_frame(self, snapshot):
         '''
@@ -149,8 +211,6 @@ class Blueprint(object):
         # Is anything not in the viewport that is connected to something in the viewport? If so,
         # we'll have to figure out the target of conveyance lines that come off such a component
         # and draw it appropriately.
-
-        pass
 
     def get_visible_components(self) -> list[Component]:
         '''
@@ -174,8 +234,8 @@ class Blueprint(object):
         canvas_location, canvas_size = self.viewport.get_visible_canvas_region()
         visible_components = []
         for component, component_location in drawable_components:
-            if (component_location.x + SIZE_COMPONENT.width >= canvas_location.x
-                and component_location.y + SIZE_COMPONENT.height >= canvas_location.y) \
+            if (component_location.x + self.comp_size.width >= canvas_location.x
+                and component_location.y + self.comp_size.height >= canvas_location.y) \
             or (component_location.x <= canvas_location.x + canvas_size.width
                 and component_location.y <= canvas_location.y + canvas_size.height):
                     visible_components.append((component, component_location))
@@ -192,27 +252,33 @@ class Blueprint(object):
 
         return self.coordinateMap.get(component.id, Coordinate2D())
 
-    def get_component_texture(self,
-        component: Component
-    ):
+    def load_texture(self,
+        filename: str,
+        category: str,
+        key: str,
+    ) -> Gdk.Texture:
         '''
-        Retrieves the texture for the given component if it has been loaded. Otherwise, loads that
-        texture into memory and returns it. Will return None or throw an exception if the texture
-        cannot be loaded.
+        Loads an image into memory and stores it under the given key in the given category.
+        '''
+        
+        logging.debug(f'Loading texture from filename: {filename} into {category}/{key}')
+        texture = get_texture_from_file(filename)
+        if category not in self.__textures.keys():
+            self.__textures[category] = {}
+        self.__textures[category][key] = texture
+        logging.debug(f'Loaded texture: {texture}')
+        return texture
 
-            - component: The component to load the texture for
+    def get_texture(self,
+        category: str,
+        key: str
+    ) -> Gdk.Texture:
+        '''
+        Retrieves a texture from the cache, or returns None
         '''
 
-        texture = self.textures.get(component.__class__.__name__, None)
-        if texture:
-            return texture
-
-        file = Path(f'{BASE_IMAGE_FILE_PATH}/components/{component.__class__.__name__}.png')
-        if file.exists():
-            texture = Gdk.Texture.new_from_filename(str(file))
-            self.textures[component.__class__.__name__] = texture
-            return texture
-
+        if category in self.__textures.keys() and key in self.__textures[category]:
+            return self.__textures[category][key]
         return None
 
 
