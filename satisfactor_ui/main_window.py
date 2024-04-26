@@ -19,6 +19,8 @@ from satisfactor_py.factories import Factory
 from satisfactor_py.items import get_all as get_all_items
 from satisfactor_py.storages import get_all as get_all_storages
 from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
+from satisfactor_ui.drawing import Blueprint
+from satisfactor_ui.widgets import FactoryDesignerWidget
 
 
 ALL_BUILDINGS = None
@@ -45,10 +47,9 @@ class MainWindow(Gtk.ApplicationWindow):
         super().__init__(*args, **kwargs)
 
         logging.debug('Initiating main window')
-        self.factory = None
-        self.factoryFile = None
+        self.blueprint = None
+        self.blueprintFile = None
         self.unsaved_changes = False
-        self.updating = False
 
         self.filters = {
             'availability': True,
@@ -57,11 +58,11 @@ class MainWindow(Gtk.ApplicationWindow):
         }
 
         self.set_default_size(width, height)
-        self.__ui_helpers()
+        self.__build_ui_helpers()
         self.__build_window()
 
         if filename:
-            self.load_factory(filename)
+            self.load_blueprint(filename)
         else:
             self.update_window()
 
@@ -101,22 +102,24 @@ class MainWindow(Gtk.ApplicationWindow):
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_storages()])
         return ALL_BUILDINGS
 
-    def load_factory(self, filename: str):
+    def load_blueprint(self,
+        filename: str
+    ):
         '''
-        Opens a factory file for use with the application and triggers a UI update.
+        Opens a factory blueprint file for use with the application and triggers a UI update.
         '''
 
         try:
-            # Load the factory and store it in the class as separate actions,
+            # Load the blueprint and store it in the class as separate actions,
             # resulting in no change if an exception is thrown at load time.
-            logging.debug(f'Loading factory from file {filename}')
-            loadedFactory = Factory.load(filename)
-            self.factoryFile = filename
-            self.factory = loadedFactory
+            logging.debug(f'Loading blueprint from file {filename}')
+            loadedBlueprint = Blueprint.load(filename)
+            self.blueprintFile = filename
+            self.blueprint = loadedBlueprint
             self.unsaved_changes = False
             self.update_window()
         except IOError as ex:
-            logging.error(f'An error occurred when loading a factory from file {filename}\n  {ex}')
+            logging.error(f'An error occurred when loading a blueprint from file {filename}\n  {ex}')
             # TODO: Replace with an actual ErrorDialog
 
     def set_tier_and_upgrade(self,
@@ -130,23 +133,24 @@ class MainWindow(Gtk.ApplicationWindow):
             - upgrade: The upgrade level to set in the factory
         '''
 
-        if self.factory:
+        if self.blueprint:
             self.block_all_signals()
             # Update the factory model first
             if tier is not None:
-                self.factory.tier = tier
+                self.blueprint.factory.tier = tier
             if upgrade:
-                self.factory.upgrade = upgrade
-            logging.debug(f'Selecting tier/upgrade values: {self.factory.tier}/{self.factory.upgrade}')
+                self.blueprint.factory.upgrade = upgrade
+            logging.debug(f'Selecting tier/upgrade values: '
+                f'{self.blueprint.factory.tier}/{self.blueprint.factory.upgrade}')
 
             # Set the tier value in the combo box
-            self.cboTier.set_active(self.factory.tier)
+            self.cboTier.set_active(self.blueprint.factory.tier)
 
             # Populate the appropriate upgrade values
             self.cboUpgrade.remove_all()
-            for upgrade in Availability.get_upgrade_strings(self.factory.tier):
+            for upgrade in Availability.get_upgrade_strings(self.blueprint.factory.tier):
                 self.cboUpgrade.append(upgrade, upgrade)
-            self.cboUpgrade.set_active(self.factory.upgrade - 1)
+            self.cboUpgrade.set_active(self.blueprint.factory.upgrade - 1)
             self.unblock_all_signals()
 
     def set_window_title(self):
@@ -156,7 +160,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         logging.debug('Setting window title')
         title_prefix = f'{"*" if self.unsaved_changes else ""}'
-        title_suffix = f' ({self.factoryFile.split('/')[-1]})' if self.factoryFile else ''
+        title_suffix = f' ({self.blueprintFile.split('/')[-1]})' if self.blueprintFile else ''
         self.set_title(f'{title_prefix}{MAIN_WINDOW_TITLE_BASE}{title_suffix}')
 
     def unblock_all_signals(self):
@@ -174,17 +178,17 @@ class MainWindow(Gtk.ApplicationWindow):
         Updates the list of buildings in the left panel, taking into account all filters.
         '''
 
-        if self.factory:
+        if self.blueprint:
             logging.debug('Updating building options list')
             # Determine the available buildings
             all_buildings = MainWindow.get_building_options()
             if self.filters['availability']:
                 avail_buildings = []
                 for building in all_buildings:
-                    if self.factory.tier > building.availability.tier:
+                    if self.blueprint.factory.tier > building.availability.tier:
                         avail_buildings.append(building)
-                    elif self.factory.tier == building.availability.tier:
-                        if self.factory.upgrade >= building.availability.upgrade:
+                    elif self.blueprint.factory.tier == building.availability.tier:
+                        if self.blueprint.factory.upgrade >= building.availability.upgrade:
                             avail_buildings.append(building)
             else:
                 avail_buildings = all_buildings
@@ -220,23 +224,20 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         logging.debug('Updating window')
-        if not self.updating:
-            self.updating = True
-            self.block_all_signals()
-            self.set_window_title()
-            if self.factory:
-                self.btnSaveFactory.set_sensitive(self.unsaved_changes)
-                self.boxFactoryFunctions.set_sensitive(True)
-                self.boxFilters.set_sensitive(True)
-                self.entryFactoryName.get_buffer().set_text(self.factory.name, -1)
-                self.set_tier_and_upgrade()
-                self.update_buildings_list()
-            else:
-                self.btnSaveFactory.set_sensitive(False)
-                self.boxFactoryFunctions.set_sensitive(False)
-                self.boxFilters.set_sensitive(False)
-            self.unblock_all_signals()
-            self.updating = False
+        self.block_all_signals()
+        self.set_window_title()
+        if self.blueprint:
+            self.boxFactoryFunctions.set_sensitive(True)
+            self.btnSaveFactory.set_sensitive(self.unsaved_changes)
+            self.boxFilters.set_sensitive(True)
+            self.entryFactoryName.get_buffer().set_text(self.blueprint.factory.name, -1)
+            self.set_tier_and_upgrade()
+            self.update_buildings_list()
+        else:
+            self.btnSaveFactory.set_sensitive(False)
+            self.boxFactoryFunctions.set_sensitive(False)
+            self.boxFilters.set_sensitive(False)
+        self.unblock_all_signals()
 
 
     # Layout Construction
@@ -261,7 +262,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxMain.append(self.paneLeft)
 
         # Build the left-hand panel containing the list of buildings
-        self.__buildings_options()
+        self.__build_buildings_options()
         self.paneLeft.set_start_child(self.paneBuildingsOptions)
         self.paneLeft.set_position(600)
         self.paneLeft.set_vexpand(True)
@@ -272,15 +273,15 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneLeft.set_end_child(self.paneRight)
 
         # Build the center panel containing the factory designer
-        lblDesigner = Gtk.Label(label='Factory Designer')  # Placeholder
-        self.paneRight.set_start_child(lblDesigner)
+        self.__build_factory_designer()
+        self.paneRight.set_start_child(self.scrollFactoryDesigner)
 
         # Build the content of the right-hand context panel
         lblContext = Gtk.Label(label='Context Info')  # Placeholder
         self.paneRight.set_end_child(lblContext)
 
         # Add the top bar last since it causes the rest of the UI to update
-        self.boxMain.prepend(self.__top_bar())
+        self.boxMain.prepend(self.__build_top_bar())
 
         # Connect signal handlers only after constructing everything
         self.__connect_handlers()
@@ -288,7 +289,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # The main vbox becomes the top level element on the window
         self.set_child(self.boxMain)
 
-    def __buildings_options(self):
+    def __build_buildings_options(self):
         '''
         Builds the contents of the left-hand pane, primarily containing a list of buildings
         available to the user.
@@ -339,6 +340,100 @@ class MainWindow(Gtk.ApplicationWindow):
         # Compile panel contents
         self.paneBuildingsOptions.set_start_child(self.scrollBuildingFilters)
         self.paneBuildingsOptions.set_end_child(self.scrollBuildings)
+
+    def __build_factory_designer(self):
+        '''
+        Builds the middle panel with the factory designer display
+        '''
+
+        self.scrollFactoryDesigner = Gtk.ScrolledWindow()
+        self.factoryDesigner = FactoryDesignerWidget(self.blueprint)
+        self.scrollFactoryDesigner.set_child(self.factoryDesigner)
+
+    def __build_top_bar(self):
+        '''
+        Builds the UI controls which run across the top bar of the window.
+        '''
+
+        logging.debug('Building the top bar')
+
+        # The bar's top level object is a horizontal box with some padding
+        self.boxTopBar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxTopBar.set_spacing(10)
+        self.boxTopBar.set_margin_top(10)
+        self.boxTopBar.set_margin_bottom(10)
+        self.boxTopBar.set_margin_start(10)
+        self.boxTopBar.set_margin_end(10)
+
+        # Build the "New" button
+        self.btnNewFactory = Gtk.Button()
+        self.btnNewFactory.set_icon_name('document-new')
+
+        # Build the "Open" button
+        self.btnOpenFactory = Gtk.Button()
+        self.btnOpenFactory.set_icon_name('document-open')
+
+        # Build the "Save" button
+        self.btnSaveFactory = Gtk.Button()
+        self.btnSaveFactory.set_icon_name('document-save')
+
+        # Build the "Save As" button
+        self.btnSaveFactoryAs = Gtk.Button()
+        self.btnSaveFactoryAs.set_icon_name('document-save-as')
+
+        # Add all the buttons to the main hbox
+        self.boxTopBar.append(self.btnNewFactory)
+        self.boxTopBar.append(self.btnOpenFactory)
+        self.boxTopBar.append(self.btnSaveFactory)
+        self.boxTopBar.append(self.btnSaveFactoryAs)
+
+        # Contain all the factory-level functions within a box so they can all be enabled and
+        # disabled by doing so to this one widget
+        self.boxFactoryFunctions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxFactoryFunctions.set_sensitive(True if self.blueprint else False)
+        self.boxTopBar.append(self.boxFactoryFunctions)
+
+        # Build the text box showing the name of the factory
+        self.entryFactoryName = Gtk.Entry()
+        self.entryFactoryName.set_size_request(300, -1)
+        self.boxFactoryFunctions.append(self.entryFactoryName)
+
+        # Build the controls allowing tier/upgrade selection
+        self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
+        self.lblTierUpgrade.set_margin_start(10)
+        self.lblTierUpgrade.set_margin_end(10)
+        self.boxFactoryFunctions.append(self.lblTierUpgrade)
+
+        # The "Tier" combo box is populated from the satisfactor_py.base.Availability class
+        self.cboTier = Gtk.ComboBoxText()
+        for tier in Availability.get_tier_strings():
+            self.cboTier.append(tier, tier)
+        self.cboTier.set_active(0)
+        self.boxFactoryFunctions.append(self.cboTier)
+
+        # The "/" character between the combo boxes
+        self.lblTierUpgradeSlash = Gtk.Label(label='/')
+        self.boxFactoryFunctions.append(self.lblTierUpgradeSlash)
+
+        # The "Upgrade" combo box gets populated based on the "Tier" selection
+        self.cboUpgrade = Gtk.ComboBoxText()
+        self.__cboTier_changed(self.cboUpgrade)
+        self.boxFactoryFunctions.append(self.cboUpgrade)
+
+        return self.boxTopBar
+
+    def __build_ui_helpers(self):
+        '''
+        Builds reusable items which are unique to this application
+        '''
+
+        logging.debug('Building resuable UI helpers')
+        self.satFileFilter = Gtk.FileFilter()
+        self.satFileFilter.set_name('Satisfactory Blueprints (*.sat)')
+        self.satFileFilter.add_pattern('*.sat')
+        self.fileFilters = Gio.ListStore.new(Gtk.FileFilter)
+        self.fileFilters.append(self.satFileFilter)
+        self.__load_images()
 
     def __connect_handlers(self):
         '''
@@ -405,78 +500,6 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.__entryNameFilter_inserted)
         ))
 
-    def __top_bar(self):
-        '''
-        Builds the UI controls which run across the top bar of the window.
-        '''
-
-        logging.debug('Building the top bar')
-
-        # The bar's top level object is a horizontal box with some padding
-        self.boxTopBar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.boxTopBar.set_spacing(10)
-        self.boxTopBar.set_margin_top(10)
-        self.boxTopBar.set_margin_bottom(10)
-        self.boxTopBar.set_margin_start(10)
-        self.boxTopBar.set_margin_end(10)
-
-        # Build the "New" button
-        self.btnNewFactory = Gtk.Button()
-        self.btnNewFactory.set_icon_name('document-new')
-
-        # Build the "Open" button
-        self.btnOpenFactory = Gtk.Button()
-        self.btnOpenFactory.set_icon_name('document-open')
-
-        # Build the "Save" button
-        self.btnSaveFactory = Gtk.Button()
-        self.btnSaveFactory.set_icon_name('document-save')
-
-        # Build the "Save As" button
-        self.btnSaveFactoryAs = Gtk.Button()
-        self.btnSaveFactoryAs.set_icon_name('document-save-as')
-
-        # Add all the buttons to the main hbox
-        self.boxTopBar.append(self.btnNewFactory)
-        self.boxTopBar.append(self.btnOpenFactory)
-        self.boxTopBar.append(self.btnSaveFactory)
-        self.boxTopBar.append(self.btnSaveFactoryAs)
-
-        # Contain all the factory-level functions within a box so they can all be enabled and
-        # disabled by doing so to this one widget
-        self.boxFactoryFunctions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.boxFactoryFunctions.set_sensitive(True if self.factory else False)
-        self.boxTopBar.append(self.boxFactoryFunctions)
-
-        # Build the text box showing the name of the factory
-        self.entryFactoryName = Gtk.Entry()
-        self.entryFactoryName.set_size_request(300, -1)
-        self.boxFactoryFunctions.append(self.entryFactoryName)
-
-        # Build the controls allowing tier/upgrade selection
-        self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
-        self.lblTierUpgrade.set_margin_start(10)
-        self.lblTierUpgrade.set_margin_end(10)
-        self.boxFactoryFunctions.append(self.lblTierUpgrade)
-
-        # The "Tier" combo box is populated from the satisfactor_py.base.Availability class
-        self.cboTier = Gtk.ComboBoxText()
-        for tier in Availability.get_tier_strings():
-            self.cboTier.append(tier, tier)
-        self.cboTier.set_active(0)
-        self.boxFactoryFunctions.append(self.cboTier)
-
-        # The "/" character between the combo boxes
-        self.lblTierUpgradeSlash = Gtk.Label(label='/')
-        self.boxFactoryFunctions.append(self.lblTierUpgradeSlash)
-
-        # The "Upgrade" combo box gets populated based on the "Tier" selection
-        self.cboUpgrade = Gtk.ComboBoxText()
-        self.__cboTier_changed(self.cboUpgrade)
-        self.boxFactoryFunctions.append(self.cboUpgrade)
-
-        return self.boxTopBar
-
     def __load_images(self):
         '''
         Load all images that get used in this window from disk and store them in memory.
@@ -488,26 +511,13 @@ class MainWindow(Gtk.ApplicationWindow):
         building_pixbufs = {}
         all_buildings = MainWindow.get_building_options()
         for building in all_buildings:
-            imageFile = Path(f'./static/images/{building.__class__.__name__}.png')
+            imageFile = Path(f'./static/images/components/{building.__class__.__name__}.png')
             if imageFile.exists():
                 pb = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
             else:
                 pb = None
             building_pixbufs[building.__class__.__name__] = pb
         self.pixelBuffers['building_options'] = building_pixbufs
-
-    def __ui_helpers(self):
-        '''
-        Builds reusable items which are unique to this application
-        '''
-
-        logging.debug('Building resuable UI helpers')
-        self.satFileFilter = Gtk.FileFilter()
-        self.satFileFilter.set_name('SatisFactories (*.sat)')
-        self.satFileFilter.add_pattern('*.sat')
-        self.fileFilters = Gio.ListStore.new(Gtk.FileFilter)
-        self.fileFilters.append(self.satFileFilter)
-        self.__load_images()
 
 
     # Signal Handlers
@@ -532,7 +542,7 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if response:
-            self.factory = Factory(name='New Factory')
+            self.blueprint = Blueprint(factory = Factory(name='New Factory'))
             self.unsaved_changes = True
             self.update_window()
 
@@ -569,10 +579,10 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         try:
-            factoryFile = dlg.open_finish(response)
-            self.load_factory(factoryFile.get_path())
+            blueprintFile = dlg.open_finish(response)
+            self.load_blueprint(blueprintFile.get_path())
         except Exception as ex:
-            print(f'[DEBUG] Couldn\'t finish open: {ex}')
+            print(f'[DEBUG] Couldn\'t open the blueprint: {ex}')
 
     # + "Save" button signal handlers
     def __btnSaveFactory_clicked(self, btn):
@@ -581,7 +591,7 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if self.unsaved_changes:
-            self.factory.save(self.factoryFile)
+            self.blueprint.save(self.blueprintFile)
             self.unsaved_changes = False
             self.set_window_title()
 
@@ -605,31 +615,31 @@ class MainWindow(Gtk.ApplicationWindow):
         if response:
             try:
                 # Try the save first so we don't change the app context if it fails
-                factoryFile = dlg.save_finish(response).get_path()
-                self.factory.save(factoryFile)
-                self.factoryFile = factoryFile
+                blueprintFile = dlg.save_finish(response).get_path()
+                self.blueprint.save(blueprintFile)
+                self.blueprintFile = blueprintFile
                 self.unsaved_changes = False
                 self.update_window()
             except IOError as ex:
-                print(f'[DEBUG] Error saving factory at file {factoryFile}:\n  {ex}')
+                print(f'[DEBUG] Error saving blueprint at file {blueprintFile}:\n  {ex}')
                 # TODO: Replace with real error dialog
             except Exception as ex:
-                print(f'[DEBUG] Could not finish the save action: {ex}')
+                print(f'[DEBUG] Could not save the blueprint: {ex}')
 
 
     # + Factory Name Entry signal handlers
 
     def __entryFactoryName_deleted(self, buffer, position, chars):
         newName = self.entryFactoryName.get_buffer().get_text()
-        if newName != self.factory.name and newName != '':
-            self.factory.name = buffer.get_text()
+        if newName != self.blueprint.factory.name and newName != '':
+            self.blueprint.factory.name = buffer.get_text()
             self.unsaved_changes = True
             self.update_window()
 
     def __entryFactoryName_inserted(self, buffer, position, chars, nchars):
         newName = self.entryFactoryName.get_buffer().get_text()
-        if newName != self.factory.name and newName != '':
-            self.factory.name = buffer.get_text()
+        if newName != self.blueprint.factory.name and newName != '':
+            self.blueprint.factory.name = buffer.get_text()
             self.unsaved_changes = True
             self.update_window()
 
@@ -645,7 +655,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     # + "Upgrade" combo box signal handlers
     def __cboUpgrade_changed(self, cbo):
-        self.factory.upgrade = self.cboUpgrade.get_active() + 1
+        self.blueprint.upgrade = self.cboUpgrade.get_active() + 1
         self.unsaved_changes = True
         self.update_window()
 

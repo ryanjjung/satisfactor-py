@@ -282,6 +282,8 @@ class Component(Base):
             actual game of Satisfactory.
         - traversed: Used internally to determine if a component is actually connected to a larger
             factory.
+        - blueprint_left: The location of this component's left edge in a factory blueprint
+        - blueprint_top: The location of this component's top edge in a factory blueprint
     '''
 
     def __init__(self,
@@ -290,7 +292,7 @@ class Component(Base):
         **kwargs
     ):
         super().__init__(**kwargs)
-        self._errors = list()
+        self._errors = []
         self.constructed = constructed
         self.traversed = traversed
 
@@ -301,6 +303,8 @@ class Component(Base):
 
         base = super().to_dict()
         base.update({
+            'constructed': self.constructed,
+            'traversed': self.traversed,
             'errors': [error.to_dict() for error in self.errors]
         })
         return base
@@ -899,7 +903,8 @@ class InfiniteSupplyNode(ResourceNode):
 
         rate = self.rate
         if not rate:
-            rate = self.outputs[0].target.attached_to.rate
+            if self.outputs[0].target:
+                rate = self.outputs[0].target.attached_to.rate
         else:
             rate = min(rate, self.outputs[0].target.attached_to.rate)
 

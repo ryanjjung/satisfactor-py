@@ -13,7 +13,7 @@ import satisfactor_py.items
 import satisfactor_py.storages
 
 
-BASE_IMAGE_PATH = './static/images/'
+BASE_IMAGE_PATH = './static/images/components/'
 
 def get_all_classes():
     # Base
