@@ -3,6 +3,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 import gi
 gi.require_version('Gtk', '4.0')
+gi.require_version('Pango', '1.0')
 
 import pickle
 from gi.repository import Gdk, Graphene, Gsk, Gtk, Pango
@@ -38,11 +39,18 @@ class Blueprint(object):
     '''
 
     def __init__(self,
+        widget: Gtk.Widget,
         factory: Factory = None,
         background_color: str = '#383875',
+        label_color: str = '#a3a8fa',
+        label_font_face: str = "Sans",
+        label_font_size: float = 10.0,
         line_color: str = '#a3a8fa',
         viewport_size: Size2D = Size2D()
     ):
+        # Internalize a ref to the widget we're drawing on
+        self.widget = widget
+
         # Build a new factory if we weren't given one
         self.factory = factory if factory else Factory()
 
@@ -65,8 +73,15 @@ class Blueprint(object):
         # Set up colors
         self.background_color = Gdk.RGBA()
         self.background_color.parse(background_color if background_color else COLOR_BACKGROUND)
+        self.label_color = Gdk.RGBA()
+        self.label_color.parse(label_color)
         self.line_color = Gdk.RGBA()
-        self.line_color.parse(line_color if line_color else COLOR_LINES)
+        self.line_color.parse(line_color)
+
+        # Set up fonts
+        self.label_font = Pango.FontDescription.new()
+        self.label_font.set_family(label_font_face)
+        self.label_font_size = label_font_size
 
     @staticmethod
     def load(self,
@@ -136,6 +151,7 @@ class Blueprint(object):
 
         self.draw_component_icon(snapshot, component, location, self.viewport.scale)
         self.draw_component_badges(snapshot, component, location, self.viewport.scale)
+        self.draw_component_label(snapshot, component, location, self.viewport.scale)
 
     def draw_component_badges(self,
         snapshot: Gdk.Snapshot,
@@ -220,6 +236,40 @@ class Blueprint(object):
         icon_rect.init(icon_left, icon_top, icon_width, icon_height)
         snapshot.append_scaled_texture(icon_texture, Gsk.ScalingFilter.TRILINEAR, icon_rect)
 
+    def draw_component_label(self,
+        snapshot: Gdk.Snapshot,
+        component: Component,
+        location: Coordinate2D,
+        scale: float
+    ):
+        # Adjust font size based on viewport scale
+        self.label_font.set_size(self.label_font_size * scale * Pango.SCALE)
+
+        # Set up the Pango layout
+        context = self.widget.get_pango_context()
+        layout = Pango.Layout(context)
+        layout.set_font_description(self.label_font)
+        layout.set_text(component.name)
+        label_size = layout.get_pixel_size()
+
+        # Set up positioning
+        label_left = round(location.x * scale)
+        label_left += round(self.comp_size.width * scale / 2) # Find the center point of the comp
+        label_left -= round(label_size.width / 2) # Subtract half the width of the label to center it
+        label_left -= round(self.viewport.location.x * scale)
+        label_top = round(location.y * scale)
+        label_top -= round(self.viewport.location.y * scale)
+        label_top += round(self.comp_label_offset_y * scale)
+        label_width = round(self.comp_label_size.width * scale)
+        label_height = round(self.comp_label_size.height * scale)
+        label_point = Graphene.Point()
+        label_point.x = label_left
+        label_point.y = label_top
+
+        snapshot.save()
+        snapshot.translate(label_point)
+        snapshot.append_layout(layout, self.label_color)
+        snapshot.restore()
 
     def draw_frame(self, snapshot):
         '''

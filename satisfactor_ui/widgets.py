@@ -16,7 +16,7 @@ from satisfactor_ui import (
 )
 
 
-def build_test_blueprint():
+def build_test_blueprint(widget: Gtk.Widget):
     '''
     Builds a simple blueprint that we can test with
     '''
@@ -38,7 +38,7 @@ def build_test_blueprint():
     convIngotsToStorage = smelter.connect(storage, conveyances.ConveyorBeltMk1)
 
     # Add them to a blueprint with coordinates, except for Conveyances, which don't need them
-    blueprint = drawing.Blueprint()
+    blueprint = drawing.Blueprint(widget)
     blueprint.add_component(oreSupply, geometry.Coordinate2D(0, 0))
     blueprint.add_component(convOreToSmelter, geometry.Coordinate2D())
     blueprint.add_component(smelter, geometry.Coordinate2D(170, 20))
@@ -59,10 +59,10 @@ class FactoryDesignerWidget(Gtk.Widget):
         blueprint: drawing.Blueprint = None
     ):
         super().__init__()
-        self.blueprint = blueprint if blueprint else drawing.Blueprint()
+        self.blueprint = blueprint if blueprint else drawing.Blueprint(self)
 
         # Test components
-        self.blueprint = build_test_blueprint()
+        self.blueprint = build_test_blueprint(self)
 
     def do_snapshot(self,
         snapshot: Gtk.Snapshot
