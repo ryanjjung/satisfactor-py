@@ -33,17 +33,18 @@ def build_test_blueprint(widget: Gtk.Widget):
     )
     convOreToSmelter = conveyances.ConveyorBeltMk1()
     oreSupply.outputs[0].connect(convOreToSmelter.inputs[0])
+    oreSupply.constructed = True
     convOreToSmelter.outputs[0].connect(smelter.inputs[0])
     storage = storages.StorageContainer(name='Iron Ore Storage')
     convIngotsToStorage = smelter.connect(storage, conveyances.ConveyorBeltMk1)
 
     # Add them to a blueprint with coordinates, except for Conveyances, which don't need them
     blueprint = drawing.Blueprint(widget)
-    blueprint.add_component(oreSupply, geometry.Coordinate2D(0, 0))
+    blueprint.add_component(oreSupply, geometry.Coordinate2D(50, 20))
     blueprint.add_component(convOreToSmelter, geometry.Coordinate2D())
-    blueprint.add_component(smelter, geometry.Coordinate2D(170, 20))
+    blueprint.add_component(smelter, geometry.Coordinate2D(220, 20))
     blueprint.add_component(convIngotsToStorage, geometry.Coordinate2D())
-    blueprint.add_component(storage, geometry.Coordinate2D(320, 20))
+    blueprint.add_component(storage, geometry.Coordinate2D(370, 20))
     blueprint.factory.simulate()
     blueprint.viewport.scale = 1.0
     return blueprint
