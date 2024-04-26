@@ -42,4 +42,4 @@ class FactoryDesigner(Gtk.Application):
         self.on_activate(app)
         if n_files > 1:
             raise ValueError('Factory Designer can open only one factory at a time')
-        self.mainWindow.load_factory(files[0].get_path())
+        self.mainWindow.load_blueprint(files[0].get_path())

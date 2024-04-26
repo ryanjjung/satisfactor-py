@@ -116,6 +116,7 @@ class MainWindow(Gtk.ApplicationWindow):
             loadedBlueprint = Blueprint.load(filename)
             self.blueprintFile = filename
             self.blueprint = loadedBlueprint
+            self.factoryDesigner.blueprint = self.blueprint
             self.unsaved_changes = False
             self.update_window()
         except IOError as ex:
@@ -217,7 +218,9 @@ class MainWindow(Gtk.ApplicationWindow):
             self.icovwBuildings.set_pixbuf_column(0)
             self.icovwBuildings.set_text_column(1)
 
-    def update_window(self):
+    def update_window(self,
+        skip_entryFactoryName: bool = False
+    ):
         '''
         When the factory context of the MainWindow changes, call this function to update all of the
         UI elements depending on that context.
@@ -230,13 +233,15 @@ class MainWindow(Gtk.ApplicationWindow):
             self.boxFactoryFunctions.set_sensitive(True)
             self.btnSaveFactory.set_sensitive(self.unsaved_changes)
             self.boxFilters.set_sensitive(True)
-            self.entryFactoryName.get_buffer().set_text(self.blueprint.factory.name, -1)
+            if not skip_entryFactoryName:
+                self.entryFactoryName.get_buffer().set_text(self.blueprint.factory.name, -1)
             self.set_tier_and_upgrade()
             self.update_buildings_list()
         else:
             self.btnSaveFactory.set_sensitive(False)
             self.boxFactoryFunctions.set_sensitive(False)
             self.boxFilters.set_sensitive(False)
+        self.factoryDesigner.queue_draw()
         self.unblock_all_signals()
 
 
@@ -543,6 +548,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         if response:
             self.blueprint = Blueprint(factory = Factory(name='New Factory'))
+            self.factoryDesigner.blueprint = self.blueprint
             self.unsaved_changes = True
             self.update_window()
 
@@ -591,9 +597,16 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if self.unsaved_changes:
-            self.blueprint.save(self.blueprintFile)
-            self.unsaved_changes = False
-            self.set_window_title()
+            if self.blueprintFile:
+                self.blueprint.save(self.blueprintFile)
+                self.unsaved_changes = False
+                self.set_window_title()
+            else:
+                dlgSaveFactory = Gtk.FileDialog()
+                dlgSaveFactory.set_title('Save Factory...')
+                dlgSaveFactory.set_filters(self.fileFilters)
+                dlgSaveFactory.set_default_filter(self.satFileFilter)
+                dlgSaveFactory.save(self, None, self.__dlgSaveFactoryAs_response)
 
     def __btnSaveFactoryAs_clicked(self, btn):
         '''
@@ -608,7 +621,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __dlgSaveFactoryAs_response(self, dlg, response):
         '''
-        The user clicked "Save As" and then either selected a file (response is True) or canceled
+        The user either clicked "Save" without having an already active blueprint file, or they
+        clicked "Save As". They then either selected a file (response is True) or canceled
         the window (response is False).
         '''
 
@@ -631,17 +645,17 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __entryFactoryName_deleted(self, buffer, position, chars):
         newName = self.entryFactoryName.get_buffer().get_text()
-        if newName != self.blueprint.factory.name and newName != '':
+        if newName != self.blueprint.factory.name:
             self.blueprint.factory.name = buffer.get_text()
             self.unsaved_changes = True
-            self.update_window()
+            self.update_window(skip_entryFactoryName=True)
 
     def __entryFactoryName_inserted(self, buffer, position, chars, nchars):
         newName = self.entryFactoryName.get_buffer().get_text()
         if newName != self.blueprint.factory.name and newName != '':
             self.blueprint.factory.name = buffer.get_text()
             self.unsaved_changes = True
-            self.update_window()
+            self.update_window(skip_entryFactoryName=True)
 
     # + "Tier" combo box signal handlers
     def __cboTier_changed(self, cbo):
