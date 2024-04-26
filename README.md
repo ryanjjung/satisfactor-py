@@ -57,7 +57,7 @@ This library is intended to be used in a similar fashion to the way you play the
 The `satisfactor_py` module has a number of organizational submodules which contain the various factory components' code representations. The `scripts` directory here contains a number of test scripts that you can review and tinker with.
 
 
-### Submodules
+### satisfactor_py Submodules
 
 Here's a listing of each submodule and a summary of what you can find in each.
 
@@ -275,7 +275,7 @@ This submodule contains specific `Storage` implementations. Generally, these cla
 - `IndustrialStorageContainer`
 
 
-### factories
+#### factories
 
 A `factory.Factory` is a collection of `Component`s which ideally work efficiently. This is the higher-level class from which you can act on your components in an organized fashion.
 
@@ -289,7 +289,7 @@ For example, this returns a list of components which are `Building`s in standby 
 ```
 
 
-#### Adding components
+##### Adding components
 
 Call `factory.add(components)` where `components` is either a list of `Component`s or a list of lists of `Component`s. Both forms are supported for convenience. For example, if you want to combine two different factories into one, you might try:
 
@@ -309,7 +309,7 @@ big_factory.add(factory2.components)
 ```
 
 
-#### Accessing components
+##### Accessing components
 
 As shown above, `factory.components` is a list and so you can run Python list comprehensions against it to "query" it, so to speak. Some common queries are exposed as convenience functions or properties:
 
@@ -320,7 +320,7 @@ As shown above, `factory.components` is a list and so you can run Python list co
 - `get_components_by_tag(key, value, fuzzy)`: Returns a list of components with tags where the value of the provided key matches the provided value. If no `value` is provided, this looks for components with the matching key set to anything at all. If a `value` is provided, this looks for an exact key/value match. If `fuzzy=True`, enables substring matching on the value only; the key name must still match completely. This enables you to arbitrarily tag components and then retrieve them by those tags later.
 
 
-#### Traversing factories
+##### Traversing factories
 
 The logic for factory traversal involves finding a starting point and iteratively determining the next component to move to. Cases where factories have divergent paths (such as when they have multiple resource nodes, or when a conveyor splitter is used) are handled with threading, allowing the logic to traverse these divergent paths simultaneously.
 
@@ -338,7 +338,7 @@ A few common traversal needs can be solved through a few other functions found h
 - `debug()`: This function traverses the factory. At each component, it outputs some identifying information about the component and what stage of processing it's at (before or after processing it), then stops at a Python debugger prompt. From here, you can use [`pdb`](https://docs.python.org/3/library/pdb.html) as usual to debug the state of each component.
 
 
-#### Reviewing errors
+##### Reviewing errors
 
 After simulating a factory, you can coalesce its errors easily through two convenience functions:
 
@@ -347,7 +347,7 @@ After simulating a factory, you can coalesce its errors easily through two conve
 If you need a version of this which is better suited for textual output, use `Factory.get_errors_as_dict()` instead. Instead of the error objects themselves, it gives dicts containing the name of component, the type of building, and dictionary representations of the errors.
 
 
-### patterns
+#### patterns
 
 This submodule contains functions which produce factories following certain established patterns. Right now this is mostly used for testing things, but could be used in the future for stamping out efficient factories from templates.
 
@@ -441,3 +441,60 @@ Errors: {
 ```
 
 Because this is a factory that you can build at Tier 0, these inefficiencies are to be expected.
+
+
+
+
+### satisfactor_ui Submodules
+
+Most of this code surrounds how to take a `satisfactor_py.factory.Factory` and edit it in a GTK application. The code is heavily laden with GTK calls. I have relied heavily on a couple documents to guide this development:
+
+- [Official GTK documentation](https://docs.gtk.org/gtk4/), which is written for the original C library, but which explains what the Python library is doing under the hood.
+- [Gnome Python API documentation](https://amolenaar.pages.gitlab.gnome.org/pygobject-docs/#), which shows how the C library is mapped into a Python library.
+- [Taiko2k's GTK4 Python Tutorial](https://github.com/Taiko2k/GTK4PythonTutorial), which does a great job of distilling common features of GTK4 down into something digestible.
+
+
+#### app
+
+This handles the GTK Application, which integrates this application into your desktop of choice. It handles things like opening files from the command line, handling arguments, etc. This happens through the `FactoryDesigner` class.
+
+
+#### main_window
+
+The `app` module mostly just invokes the `MainWindow` class from this module. This class handles the layout of the main window - the top bar, the three main panels, and their widgets - and their signal handlers.
+
+
+#### dialogs
+
+This module contains additional windows and such that pop up at times, such as the dialog that asks the user if they want to discard unsaved changes when they open a factory or start a new one without saving the existing one first.
+
+
+#### widgets
+
+This contains the code defining any custom widgets we use. Right now, that's a custom widget for drawing the factory itself, a `FactoryDesignerWidget`.
+
+
+#### geometry
+
+Here are defined a couple of simple geometrical data types that get used when drawing components in the factory designer.
+
+- `Coordinate2D`: An `x` position describing the left-right location of something and a `y` position decribing its top-bottom location.
+- `Size2D`: A `width` describing the left-right size of something and a `height` describing the top-bottom size.
+
+
+#### drawing
+
+This module contains all of the code necessary to draw images in the factory designer. The bulk of this module is the `Blueprint` class.
+
+
+##### Blueprints and Viewports
+
+A `Blueprint` is a factory whose components are mapped to pixel coordinates on a canvas. At any given time, only a portion of that canvas is visible to the user through a `Viewport`. The `Viewport` is the same size as the `FactoryDesignerWidget`, which can be resized by the user by changing the size of the `MainWindow` or by resizing its various panels. The `Viewport` can also be dragged around and zoomed in and out to change the visible region of the canvas.
+
+When a `Blueprint` is drawn, it takes these factors into consideration, drawing the portion of a factory that is visible within the `Viewport`. Very broadly speaking, the logic goes like this:
+
+- What components are visible inside the Viewport?
+- What components are not visible inside the Viewport, but are connected to components that are?
+- Draw each component's icon.
+- Draw any relevant badges for it (showing if it's been constructed, if there are errors on the component, etc.).
+- Draw the component's name as a label beneath the badges.
