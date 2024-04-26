@@ -256,7 +256,7 @@ class ComponentError(Exception):
 
     def __init__(self,
         level: ComponentErrorLevel,
-        message: str,
+        message: str = '',
         **kwargs
     ):
         super().__init__(message, **kwargs)

@@ -2,29 +2,18 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 import gi
+gi.require_version('Gdk', '4.0')
 gi.require_version('Gtk', '4.0')
 gi.require_version('Pango', '1.0')
 
 import pickle
 from gi.repository import Gdk, Graphene, Gsk, Gtk, Pango
-from pathlib import Path
 from satisfactor_py.base import Building, Component, Conveyance
 from satisfactor_py.factories import Factory
 from satisfactor_ui.geometry import Coordinate2D, Size2D
 
 
 BASE_IMAGE_FILE_PATH = './static/images'
-
-
-def get_texture_from_file(filename: str) -> Gdk.Texture:
-    '''
-    Given the filename of an image, returns a Gdk.Texture object for it
-    '''
-    if Path(filename).exists():
-        texture = Gdk.Texture.new_from_filename(filename)
-        return texture
-
-    return None
 
 
 class Blueprint(object):
@@ -39,18 +28,14 @@ class Blueprint(object):
     '''
 
     def __init__(self,
-        widget: Gtk.Widget,
         factory: Factory = None,
         background_color: str = '#383875',
         label_color: str = '#a3a8fa',
-        label_font_face: str = "Sans",
+        label_font_family: str = "Sans",
         label_font_size: float = 10.0,
         line_color: str = '#a3a8fa',
         viewport_size: Size2D = Size2D()
     ):
-        # Internalize a ref to the widget we're drawing on
-        self.widget = widget
-
         # Build a new factory if we weren't given one
         self.factory = factory if factory else Factory()
 
@@ -71,22 +56,16 @@ class Blueprint(object):
         self.viewport = Viewport(size=viewport_size) # The currently visible area of the blueprint
 
         # Set up colors
-        self.background_color = Gdk.RGBA()
-        self.background_color.parse(background_color if background_color else COLOR_BACKGROUND)
-        self.label_color = Gdk.RGBA()
-        self.label_color.parse(label_color)
-        self.line_color = Gdk.RGBA()
-        self.line_color.parse(line_color)
+        self.background_color = background_color
+        self.label_color = label_color
+        self.line_color = line_color
 
         # Set up fonts
-        self.label_font = Pango.FontDescription.new()
-        self.label_font.set_family(label_font_face)
-        self.label_font_size = label_font_size
+        self.label_font_family = label_font_family
+        self.label_font_size = 10.0
 
     @staticmethod
-    def load(self,
-        filename: str
-    ):
+    def load(filename: str):
         '''
         Static method which loads a blueprint from a file previously saved by the `save` function.
 
@@ -134,13 +113,15 @@ class Blueprint(object):
                 blueprint, if you need that for some reason.
         '''
 
-        color = background_color if background_color else self.background_color
+        background_color = Gdk.RGBA()
+        background_color.parse(self.background_color)
         rect = Graphene.Rect().init(0, 0, self.viewport.size.width, self.viewport.size.height)
         snapshot.push_clip(rect)
-        snapshot.append_color(color, rect)
+        snapshot.append_color(background_color, rect)
         snapshot.pop()
 
     def draw_component(self,
+        widget: Gtk.Widget,
         snapshot: Gdk.Snapshot,
         component: Component,
         location: Coordinate2D
@@ -149,11 +130,12 @@ class Blueprint(object):
         Draws a graphical representation of a factory component on the screen.
         '''
 
-        self.draw_component_icon(snapshot, component, location, self.viewport.scale)
-        self.draw_component_badges(snapshot, component, location, self.viewport.scale)
-        self.draw_component_label(snapshot, component, location, self.viewport.scale)
+        self.draw_component_icon(widget, snapshot, component, location, self.viewport.scale)
+        self.draw_component_badges(widget, snapshot, component, location, self.viewport.scale)
+        self.draw_component_label(widget, snapshot, component, location, self.viewport.scale)
 
     def draw_component_badges(self,
+        widget: Gtk.Widget,
         snapshot: Gdk.Snapshot,
         component: Component,
         location: Coordinate2D,
@@ -179,10 +161,10 @@ class Blueprint(object):
 
         # Load up the badge textures
         for badge in badges:
-            badge_texture = self.get_texture('badges', badge)
+            badge_texture = widget.get_texture('badges', badge)
             if not badge_texture:
                 badge_filename = f'{BASE_IMAGE_FILE_PATH}/badges/{badge}.svg'
-                self.load_texture(badge_filename, 'badges', badge)
+                widget.load_texture(badge_filename, 'badges', badge)
 
         # And then draw the badges
         badges_width = self.comp_badge_size.width * len(badges) + \
@@ -202,11 +184,12 @@ class Blueprint(object):
                 badge_left, badge_top,
                 badge_width, badge_height)
             snapshot.append_scaled_texture(
-                self.get_texture('badges', badges[i]),
+                widget.get_texture('badges', badges[i]),
                 Gsk.ScalingFilter.TRILINEAR,
                 badge_rect)
 
     def draw_component_icon(self,
+        widget: Gtk.Widget,
         snapshot: Gdk.Snapshot,
         component: Component,
         location: Coordinate2D,
@@ -218,10 +201,10 @@ class Blueprint(object):
 
         # Load up the component icon texture
         icon_key = component.__class__.__name__
-        icon_texture = self.get_texture('components', icon_key)
+        icon_texture = widget.get_texture('components', icon_key)
         if not icon_texture:
             filename = f'{BASE_IMAGE_FILE_PATH}/components/{icon_key}.png'
-            icon_texture = self.load_texture(filename, 'components', icon_key)
+            icon_texture = widget.load_texture(filename, 'components', icon_key)
 
         # Draw the icon
         icon_left = round(location.x * scale)
@@ -237,18 +220,25 @@ class Blueprint(object):
         snapshot.append_scaled_texture(icon_texture, Gsk.ScalingFilter.TRILINEAR, icon_rect)
 
     def draw_component_label(self,
+        widget: Gtk.Widget,
         snapshot: Gdk.Snapshot,
         component: Component,
         location: Coordinate2D,
         scale: float
     ):
         # Adjust font size based on viewport scale
-        self.label_font.set_size(self.label_font_size * scale * Pango.SCALE)
+        label_font = Pango.FontDescription.new()
+        label_font.set_family(self.label_font_family)
+        label_font.set_size(self.label_font_size * scale * Pango.SCALE)
+
+        # Parse the color
+        label_color = Gdk.RGBA()
+        label_color.parse(self.label_color)
 
         # Set up the Pango layout
-        context = self.widget.get_pango_context()
+        context = widget.get_pango_context()
         layout = Pango.Layout(context)
-        layout.set_font_description(self.label_font)
+        layout.set_font_description(label_font)
         layout.set_text(component.name)
         label_size = layout.get_pixel_size()
 
@@ -268,10 +258,10 @@ class Blueprint(object):
 
         snapshot.save()
         snapshot.translate(label_point)
-        snapshot.append_layout(layout, self.label_color)
+        snapshot.append_layout(layout, label_color)
         snapshot.restore()
 
-    def draw_frame(self, snapshot):
+    def draw_frame(self, widget, snapshot):
         '''
         Draws a single frame of the contents of the viewport.
         '''
@@ -306,7 +296,7 @@ class Blueprint(object):
 
             # Draw those components
             for component, component_location in visible_components:
-                self.draw_component(snapshot, component, component_location)
+                self.draw_component(widget, snapshot, component, component_location)
 
     def get_visible_components(self) -> list[Component]:
         '''
@@ -347,35 +337,6 @@ class Blueprint(object):
         '''
 
         return self.coordinateMap.get(component.id, Coordinate2D())
-
-    def load_texture(self,
-        filename: str,
-        category: str,
-        key: str,
-    ) -> Gdk.Texture:
-        '''
-        Loads an image into memory and stores it under the given key in the given category.
-        '''
-
-        logging.debug(f'Loading texture from filename: {filename} into {category}/{key}')
-        texture = get_texture_from_file(filename)
-        if category not in self.__textures.keys():
-            self.__textures[category] = {}
-        self.__textures[category][key] = texture
-        logging.debug(f'Loaded texture: {texture}')
-        return texture
-
-    def get_texture(self,
-        category: str,
-        key: str
-    ) -> Gdk.Texture:
-        '''
-        Retrieves a texture from the cache, or returns None
-        '''
-
-        if category in self.__textures.keys() and key in self.__textures[category]:
-            return self.__textures[category][key]
-        return None
 
 
 class Viewport(object):
