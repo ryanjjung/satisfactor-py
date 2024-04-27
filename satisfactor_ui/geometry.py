@@ -9,21 +9,33 @@ from satisfactor_py.base import Building, Component
 
 # Hardcoded layout data
 offsets = {
+    'background_x': 12,
+    'background_y': 4,
     'badges_y': 78,
     'icon_x': 32,
     'icon_y': 8,
-    'label_y': 100
+    'input_x': 4,
+    'label_y': 100,
+    'output_x': 106,
 }
 paddings = {
-    'badges_x': 8
+    'badges_x': 8,
+    'inputs_y': 4,
+    'outputs_y': 4,
 }
 sizes = {
+    'background_x': 104,
+    'background_y': 94,
     'badges_x': 16,
     'badges_y': 16,
     'component_x': 128,
     'component_y': 128,
     'icon_x': 64,
-    'icon_y': 64
+    'icon_y': 64,
+    'input_x': 16,
+    'input_y': 16,
+    'output_x': 16,
+    'output_y': 16,
 }
 
 
@@ -127,15 +139,27 @@ class ComponentGeometry(object):
         self.location = location
 
         # The things we'll calculate
+        self.background = None
         self.badges = None
         self.icon = None
+        self.inputs = None
         self.label = None
+        self.outputs = None
 
     def __calculate_background(self,
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
-        pass
+        left = self.location.x + offsets['background_x']
+        left -= translate.x
+        left = round(left * scale)
+
+        top = self.location.y + offsets['background_y']
+        top -= translate.y
+        top = round(top * scale)
+
+        self.background = Region2D(Coordinate2D(left, top),
+            Size2D(sizes['background_x'], sizes['background_y']))
 
     def __calculate_badges(self,
         scale: float = 1.0,
@@ -163,7 +187,6 @@ class ComponentGeometry(object):
         # Calculate each badge's geometry
         i = 0
         for badge in self.badges.keys():
-            logging.debug(f'Calculating geometry for badge "{badge}" on component {self.component}')
             left = self.location.x               # Start at the left edge of the component
             left += sizes['component_x'] / 2     # Right to the centerpoint of the component
             left -= total_width / 2              # Left by half the width of the whole row
@@ -178,7 +201,6 @@ class ComponentGeometry(object):
 
             self.badges[badge] = Region2D(Coordinate2D(left, top),
                 Size2D(sizes['badges_x'], sizes['badges_y']))
-            logging.debug(f'Badge {badge} for component {self.component} has region: {self.badges[badge].to_string()}')
             i += 1
 
     def __calculate_icon(self,
@@ -200,7 +222,26 @@ class ComponentGeometry(object):
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
-        pass
+        total_height = max(round(sizes['input_y'] * len(self.component.inputs)
+            + paddings['inputs_y'] * (len(self.component.inputs) - 1)
+            * scale), 0)
+
+        left = self.location.x + offsets['input_x']
+        left -= translate.x
+        left = round(left * scale)
+
+        self.inputs = []
+        i = 0
+        for input in self.component.inputs:
+            top = self.location.y + offsets['icon_y']  # Start at the top of the icon
+            top += sizes['icon_y'] / 2  # Move down by half the height of the icon
+            top -= total_height / 2  # Move back up by half the height of the full input bar
+            top += i * (sizes['input_y'] + paddings['inputs_y'])  # Offset down
+            top -= translate.y
+            top = round(top * scale)
+            self.inputs.append(Region2D(Coordinate2D(left, top),
+                Size2D(sizes['input_x'], sizes['input_y'])))
+            i += 1
 
     def __calculate_label(self,
         pango_context: Pango.Context,
@@ -239,7 +280,26 @@ class ComponentGeometry(object):
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D
     ):
-        pass
+        total_height = max(round(sizes['output_y'] * len(self.component.outputs)
+            + paddings['outputs_y'] * (len(self.component.outputs) - 1)
+            * scale), 0)
+
+        left = self.location.x + offsets['output_x']
+        left -= translate.x
+        left = round(left * scale)
+
+        self.outputs = []
+        i = 0
+        for output in self.component.outputs:
+            top = self.location.y + offsets['icon_y']  # Start at the top of the icon
+            top += sizes['icon_y'] / 2  # Move down by half the height of the icon
+            top -= total_height / 2  # Move back up by half the height of the full output bar
+            top += i * (sizes['output_y'] + paddings['outputs_y'])  # Offset down
+            top -= translate.y
+            top = round(top * scale)
+            self.outputs.append(Region2D(Coordinate2D(left, top),
+                Size2D(sizes['output_x'], sizes['output_y'])))
+            i += 1
 
     def calculate(self,
         pango_context: Pango.Context,

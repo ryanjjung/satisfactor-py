@@ -26,11 +26,11 @@
      showgrid="true"
      inkscape:zoom="5.2264205"
      inkscape:cx="52.80861"
-     inkscape:cy="55.869978"
-     inkscape:window-width="1563"
-     inkscape:window-height="1126"
-     inkscape:window-x="26"
-     inkscape:window-y="23"
+     inkscape:cy="55.678643"
+     inkscape:window-width="1682"
+     inkscape:window-height="2084"
+     inkscape:window-x="385"
+     inkscape:window-y="34"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer1">
     <inkscape:grid
@@ -57,7 +57,14 @@
      inkscape:groupmode="layer"
      id="layer1">
     <rect
-       style="fill:#cacaca;fill-opacity:1;stroke:#7e7e7e;stroke-width:0.493035;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+       style="fill:#383875;fill-opacity:1;stroke:none;stroke-width:0.493001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect5"
+       width="33.866665"
+       height="33.866665"
+       x="0"
+       y="0" />
+    <rect
+       style="fill:#14132d;fill-opacity:1;stroke:#a3a8fa;stroke-width:0.493;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        id="rect3"
        width="27.023632"
        height="24.377798"
@@ -92,49 +99,49 @@
        x="2.2582538"
        y="26.59992" />
     <rect
-       style="fill:#ffffff;stroke:#7e7e7e;stroke-width:0.52916667;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;fill-opacity:1"
+       style="fill:#363636;fill-opacity:1;stroke:none;stroke-width:0.540908;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
        id="rect1"
-       width="16.560541"
-       height="16.560539"
-       x="8.6530628"
-       y="2.3030632" />
+       width="16.933332"
+       height="16.933332"
+       x="8.4666662"
+       y="2.1166666" />
     <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:#7e7e7e;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+       style="fill:#14132d;fill-opacity:1;stroke:#a3a8fa;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        id="rect4"
        width="3.9033575"
        height="3.9033575"
        x="1.2233213"
        y="3.3399878" />
     <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:#7e7e7e;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+       style="fill:#14132d;fill-opacity:1;stroke:#a3a8fa;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        id="rect4-5"
        width="3.9033573"
        height="3.9033575"
        x="1.2233213"
        y="8.6316538" />
     <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:#7e7e7e;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+       style="fill:#14132d;fill-opacity:1;stroke:#a3a8fa;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        id="rect4-5-2"
        width="3.9033573"
        height="3.9033575"
        x="1.2233213"
        y="13.923322" />
     <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:#7e7e7e;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+       style="fill:#14132d;fill-opacity:1;stroke:#a3a8fa;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        id="rect4-7"
        width="3.9033573"
        height="3.9033575"
        x="28.210821"
        y="3.339988" />
     <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:#7e7e7e;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+       style="fill:#14132d;fill-opacity:1;stroke:#a3a8fa;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        id="rect4-5-0"
        width="3.903357"
        height="3.9033575"
        x="28.210821"
        y="8.6316547" />
     <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:#7e7e7e;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+       style="fill:#14132d;fill-opacity:1;stroke:#a3a8fa;stroke-width:0.329976;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        id="rect4-5-2-9"
        width="3.903357"
        height="3.9033575"

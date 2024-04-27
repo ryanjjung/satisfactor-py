@@ -36,10 +36,13 @@ class Blueprint(object):
     def __init__(self,
         factory: Factory = None,
         background_color: str = '#383875',
+        component_bg_color: str = '#14132d',
+        component_border_color: str = '#a3a8fa',
         label_color: str = '#a3a8fa',
         label_font_family: str = "Sans",
         label_font_size: float = 10.0,
         line_color: str = '#a3a8fa',
+        selected_component_bg_color: str = '#95d0ff',
         viewport_region: Region2D = Region2D()
     ):
         # Build a new factory if we weren't given one
@@ -52,8 +55,11 @@ class Blueprint(object):
 
         # Set up colors
         self.background_color = background_color
+        self.component_bg_color = component_bg_color
+        self.component_border_color = component_border_color
         self.label_color = label_color
         self.line_color = line_color
+        self.selected_component_bg_color = selected_component_bg_color
 
         # Set up fonts
         self.label_font_family = label_font_family
@@ -126,11 +132,38 @@ class Blueprint(object):
         Draws a graphical representation of a factory component on the screen.
         '''
 
-        # self.draw_component_background(widget, snapshot, component, geometry, self.viewport.scale)
+        self.draw_component_background(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_icon(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_badges(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_label(widget, snapshot, component, geometry, self.viewport.scale)
-        # self.draw_component_inputs(widget, snapshot, component, location, self.viewport.scale)
+        self.draw_component_inputs(widget, snapshot, component, geometry, self.viewport.scale)
+        self.draw_component_outputs(widget, snapshot, component, geometry, self.viewport.scale)
+
+    def draw_component_background(self,
+        widget: Gtk.Widget,
+        snapshot: Gdk.Snapshot,
+        component: Component,
+        geometry: ComponentGeometry,
+        scale: float
+    ):
+        bg_color = Gdk.RGBA()
+        bg_color.parse(self.selected_component_bg_color if self.selected == component
+            else self.component_bg_color)
+        border_color = Gdk.RGBA()
+        border_color.parse(self.component_border_color)
+
+        geo = geometry.background
+        rect = Graphene.Rect().init(geo.left, geo.top, geo.width, geo.height)
+        rounded_rect = Gsk.RoundedRect()
+        rounded_rect.init_from_rect(rect, radius=4)
+
+        border_colors = [border_color, border_color, border_color, border_color]
+        border_sizes = [2.0, 2.0, 2.0, 2.0]
+
+        snapshot.push_rounded_clip(rounded_rect)
+        snapshot.append_color(bg_color, rect)
+        snapshot.append_border(rounded_rect, border_sizes, border_colors)
+        snapshot.pop()
 
     def draw_component_badges(self,
         widget: Gtk.Widget,
@@ -202,8 +235,73 @@ class Blueprint(object):
         # Load up the input texture:
         input_texture = widget.get_texture('badges', 'input')
         if not input_texture:
-            filename = f'{BASE_IMAGE_FILE_PATH}/components/input.svg'
+            filename = f'{BASE_IMAGE_FILE_PATH}/badges/input.svg'
             input_texture = widget.load_texture(filename, 'badges', 'input')
+
+        # Set up colors
+        bg_color = Gdk.RGBA()
+        bg_color.parse(self.selected_component_bg_color if self.selected == component
+            else self.component_bg_color)
+        border_color = Gdk.RGBA()
+        border_color.parse(self.component_border_color)
+        border_colors = [border_color, border_color, border_color, border_color]
+        border_sizes = [1.0, 0.0, 1.0, 0.0]
+
+        for input in geometry.inputs:
+            input_rect = Graphene.Rect()
+            input_rect.init(input.left, input.top, input.width, input.height)
+            bg_rect = Gsk.RoundedRect()
+            bg_rect.init_from_rect(input_rect, radius=0)
+
+            snapshot.push_rounded_clip(bg_rect)
+            snapshot.append_color(bg_color, input_rect)
+            snapshot.append_border(bg_rect, border_sizes, border_colors)
+            snapshot.pop()
+
+            snapshot.append_scaled_texture(
+                input_texture, Gsk.ScalingFilter.TRILINEAR,
+                input_rect)
+
+    def draw_component_outputs(self,
+        widget: Gtk.Widget,
+        snapshot: Gdk.Snapshot,
+        component: Component,
+        geometry: ComponentGeometry,
+        scale: float
+    ):
+        '''
+        Draws only the output icons for a component
+        '''
+
+        # Load up the output texture:
+        output_texture = widget.get_texture('badges', 'output')
+        if not output_texture:
+            filename = f'{BASE_IMAGE_FILE_PATH}/badges/output.svg'
+            output_texture = widget.load_texture(filename, 'badges', 'output')
+
+        # Set up colors
+        bg_color = Gdk.RGBA()
+        bg_color.parse(self.selected_component_bg_color if self.selected == component
+            else self.component_bg_color)
+        border_color = Gdk.RGBA()
+        border_color.parse(self.component_border_color)
+        border_colors = [border_color, border_color, border_color, border_color]
+        border_sizes = [1.0, 0.0, 1.0, 0.0]
+
+        for output in geometry.outputs:
+            output_rect = Graphene.Rect()
+            output_rect.init(output.left, output.top, output.width, output.height)
+            bg_rect = Gsk.RoundedRect()
+            bg_rect.init_from_rect(output_rect, radius=0)
+
+            snapshot.push_rounded_clip(bg_rect)
+            snapshot.append_color(bg_color, output_rect)
+            snapshot.append_border(bg_rect, border_sizes, border_colors)
+            snapshot.pop()
+
+            snapshot.append_scaled_texture(
+                output_texture, Gsk.ScalingFilter.TRILINEAR,
+                output_rect)
 
     def draw_component_label(self,
         widget: Gtk.Widget,
@@ -246,9 +344,12 @@ class Blueprint(object):
         # Make sure everything has geometry
         for id, geometry in self.geometry.items():
             if not isinstance(self.factory.get_component_by_id(id), Conveyance):
-                if not geometry.badges \
+                if not geometry.background \
+                    or not geometry.badges \
                     or not geometry.icon \
-                    or not geometry.label:
+                    or not geometry.inputs \
+                    or not geometry.label \
+                    or not geometry.outputs:
                         geometry.calculate(
                             widget.get_pango_context(),
                             scale=self.viewport.scale,
@@ -260,33 +361,13 @@ class Blueprint(object):
 
         # Determine if any components which are offscreen are attached to any onscreen components.
         # If so, we'll need to include them in the drawing so we can later draw the conveyance.
-        offscreen_components = []
-        if len(visible_components) > 0:
-            for component in visible_components:
-                for input in component.inputs:
-                    if input.source:
-                        input_attachment = input.source.attached_to
-                        if isinstance(input_attachment, Conveyance):
-                            input_attachment = input_attachment.inputs[0].source.attached_to
-                            if input_attachment not in visible_components:
-                                if input_attachment.id in self.geometry.keys():
-                                    offscreen_components.append((input_attachment,
-                                        self.geometry.get(input_attachment.id)))
-                for output in component.outputs:
-                    if output.target:
-                        output_attachment = output.target.attached_to
-                        if isinstance(output_attachment, Conveyance):
-                            output_attachment = output_attachment.outputs[0].target.attached_to
-                            if output_attachment not in visible_components:
-                                if output_attachment.id in self.geometry.keys():
-                                    offscreen_components.append((output_attachment,
-                                        self.geometry.get(output_attachment.id)))
+        offscreen_components = self.get_offscreen_component_geometry(visible_components)
 
         # Draw those components
         for component, geometry in visible_component_geometry:
             self.draw_component(widget, snapshot, component, geometry)
 
-    def get_visible_component_geometry(self) -> list[Component]:
+    def get_visible_component_geometry(self) -> list[tuple]:
         '''
         Returns a list of tuples like so:
             (satisfactor_py.base.Component, satisfactor_ui.geometry.ComponentGeometry)
@@ -311,6 +392,38 @@ class Blueprint(object):
                 and geometry.location.y <= canvas_region.top + canvas_region.height):
                     visible_components.append((component, geometry))
         return visible_components
+
+    def get_offscreen_component_geometry(self, visible_components) -> list[tuple]:
+        '''
+        Returns a list of tuples like so:
+            (satisfactor_py.base.Component, satisfactor_ui.geometry.ComponentGeometry)
+
+        These components are ones which are outside of the viewport, but which are connected to
+        components which are within the viewport.
+        '''
+
+        offscreen_components = []
+        if len(visible_components) > 0:
+            for component in visible_components:
+                for input in component.inputs:
+                    if input.source:
+                        input_attachment = input.source.attached_to
+                        if isinstance(input_attachment, Conveyance):
+                            input_attachment = input_attachment.inputs[0].source.attached_to
+                            if input_attachment not in visible_components:
+                                if input_attachment.id in self.geometry.keys():
+                                    offscreen_components.append((input_attachment,
+                                        self.geometry.get(input_attachment.id)))
+                for output in component.outputs:
+                    if output.target:
+                        output_attachment = output.target.attached_to
+                        if isinstance(output_attachment, Conveyance):
+                            output_attachment = output_attachment.outputs[0].target.attached_to
+                            if output_attachment not in visible_components:
+                                if output_attachment.id in self.geometry.keys():
+                                    offscreen_components.append((output_attachment,
+                                        self.geometry.get(output_attachment.id)))
+        return offscreen_components
 
     def get_component_location(self,
         component: Component
