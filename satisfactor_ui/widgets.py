@@ -114,5 +114,5 @@ class FactoryDesignerWidget(Gtk.Widget):
         Draws the entire factory designer widget
         '''
 
-        self.blueprint.viewport.size = drawing.Size2D(self.get_width(), self.get_height())
+        self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
         self.blueprint.draw_frame(self, snapshot)

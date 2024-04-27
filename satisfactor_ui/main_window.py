@@ -547,7 +547,7 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if response:
-            self.blueprint = Blueprint(factory = Factory(name='New Factory'))
+            self.blueprint = Blueprint(factory=Factory(name='New Factory'))
             self.factoryDesigner.blueprint = self.blueprint
             self.unsaved_changes = True
             self.update_window()
