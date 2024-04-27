@@ -93,7 +93,8 @@ class Blueprint(object):
         '''
 
         self.factory.add([component])
-        self.geometry[component.id] = ComponentGeometry(component, location)
+        if not isinstance(component, Conveyance):
+            self.geometry[component.id] = ComponentGeometry(component, location)
 
     def draw_widget_background(self,
         snapshot: Gdk.Snapshot,
@@ -197,7 +198,7 @@ class Blueprint(object):
         '''
         Draws only the input icons for a component
         '''
-        
+
         # Load up the input texture:
         input_texture = widget.get_texture('badges', 'input')
         if not input_texture:
@@ -244,18 +245,18 @@ class Blueprint(object):
 
         # Make sure everything has geometry
         for id, geometry in self.geometry.items():
-            if not geometry.badges \
-                or not geometry.icon \
-                or not geometry.label:
-                    geometry.calculate(
-                        widget.get_pango_context(),
-                        scale=self.viewport.scale,
-                        translate=self.viewport.region.location)
+            if not isinstance(self.factory.get_component_by_id(id), Conveyance):
+                if not geometry.badges \
+                    or not geometry.icon \
+                    or not geometry.label:
+                        geometry.calculate(
+                            widget.get_pango_context(),
+                            scale=self.viewport.scale,
+                            translate=self.viewport.region.location)
 
         self.draw_widget_background(snapshot=snapshot)
         visible_component_geometry = self.get_visible_component_geometry()
         visible_components = [component[0] for component in visible_component_geometry]
-        logging.debug(f'Visible components: {visible_components}')
 
         # Determine if any components which are offscreen are attached to any onscreen components.
         # If so, we'll need to include them in the drawing so we can later draw the conveyance.
@@ -280,7 +281,6 @@ class Blueprint(object):
                                 if output_attachment.id in self.geometry.keys():
                                     offscreen_components.append((output_attachment,
                                         self.geometry.get(output_attachment.id)))
-        logging.debug(f'Offscreen components: {offscreen_components}')
 
         # Draw those components
         for component, geometry in visible_component_geometry:

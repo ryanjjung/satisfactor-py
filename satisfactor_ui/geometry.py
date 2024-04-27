@@ -70,31 +70,31 @@ class Region2D(object):
     ):
         self.location = location
         self.size = size
-    
+
     @property
     def left(self):
         return self.location.x
-    
+
     @property
     def top(self):
         return self.location.y
-    
+
     @property
     def width(self):
         return self.size.width
-    
+
     @property
     def height(self):
         return self.size.height
-    
+
     @property
     def right(self):
         return self.left + self.width
-    
+
     @property
     def bottom(self):
         return self.top + self.height
-    
+
     def to_string(self):
         return f'({self.left}, {self.top}); ({self.width} x {self.height})'
 
@@ -113,10 +113,10 @@ class ComponentGeometry(object):
         - inputs: Icons overlapping the background on the left indicating the component's inputs.
         - outputs: Icons overlapping the background on the right indicating the component's outputs.
         - label: Text running beneath the background displaying the component's name.
-    
+
     Refer to static/images/component-layout.svg for a visual guide.
     '''
-    
+
     def __init__(self,
         component: Component,
         location: Coordinate2D,
@@ -125,7 +125,7 @@ class ComponentGeometry(object):
     ):
         self.component = component
         self.location = location
-        
+
         # The things we'll calculate
         self.badges = None
         self.icon = None
@@ -154,8 +154,7 @@ class ComponentGeometry(object):
                 self.badges['standby-false'] = Region2D()
         if len(self.component.errors) > 0:
             self.badges['errors-true'] = Region2D()
-        logging.debug(f'badges: {self.badges}')
-        
+
         # The badges must be centered below the icon; calculate the total width
         total_width = round(sizes['badges_x'] * len(self.badges)
             + paddings['badges_x'] * (len(self.badges) - 1)
@@ -164,10 +163,11 @@ class ComponentGeometry(object):
         # Calculate each badge's geometry
         i = 0
         for badge in self.badges.keys():
+            logging.debug(f'Calculating geometry for badge "{badge}" on component {self.component}')
             left = self.location.x               # Start at the left edge of the component
-            left += sizes['component_x'] / 2 # Right to the centerpoint of the component
+            left += sizes['component_x'] / 2     # Right to the centerpoint of the component
             left -= total_width / 2              # Left by half the width of the whole row
-            left += i * (sizes['component_x'] + paddings['badges_x']) # Offset to the right
+            left += i * (sizes['badges_x'] + paddings['badges_x']) # Offset to the right
             left -= translate.x                  # Translate and scale
             left = round(left * scale)
 
