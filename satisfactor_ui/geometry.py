@@ -150,16 +150,18 @@ class ComponentGeometry(object):
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
-        left = self.location.x + offsets['background_x']
-        left -= translate.x
-        left = round(left * scale)
+        left = round(self.location.x * scale)
+        left += round(offsets['background_x'] * scale)
+        left -= round(translate.x * scale)
 
-        top = self.location.y + offsets['background_y']
-        top -= translate.y
-        top = round(top * scale)
+        top = round(self.location.y * scale)
+        top += round(offsets['background_y'] * scale)
+        top -= round(translate.y * scale)
 
-        self.background = Region2D(Coordinate2D(left, top),
-            Size2D(sizes['background_x'], sizes['background_y']))
+        width = round(sizes['background_x'] * scale)
+        height = round(sizes['background_y'] * scale)
+
+        self.background = Region2D(Coordinate2D(left, top), Size2D(width, height))
 
     def __calculate_badges(self,
         scale: float = 1.0,
@@ -187,36 +189,38 @@ class ComponentGeometry(object):
         # Calculate each badge's geometry
         i = 0
         for badge in self.badges.keys():
-            left = self.location.x               # Start at the left edge of the component
-            left += sizes['component_x'] / 2     # Right to the centerpoint of the component
-            left -= total_width / 2              # Left by half the width of the whole row
-            left += i * (sizes['badges_x'] + paddings['badges_x']) # Offset to the right
-            left -= translate.x                  # Translate and scale
-            left = round(left * scale)
+            left = round(self.location.x * scale)               # Start at the left edge of the component
+            left += round(sizes['component_x'] * scale / 2)     # Right to the centerpoint of the component
+            left -= round(total_width * scale / 2)              # Left by half the width of the whole row
+            left += round(i * (sizes['badges_x'] + paddings['badges_x']) * scale ) # Offset to the right
+            left -= round(translate.x * scale)                  # Translate and scale
 
-            top = self.location.y                # Start at the top edge of the component
-            top += offsets['badges_y']           # Down by a hardcoded vertical offset
-            top -= translate.y                   # Translate and scale
-            top = round(top * scale)
+            top = round(self.location.y * scale)                # Start at the top edge of the component
+            top += round(offsets['badges_y'] * scale)           # Down by a hardcoded vertical offset
+            top -= round(translate.y * scale)                   # Translate and scale
 
-            self.badges[badge] = Region2D(Coordinate2D(left, top),
-                Size2D(sizes['badges_x'], sizes['badges_y']))
+            width = round(sizes['badges_x'] * scale)
+            height = round(sizes['badges_y'] * scale)
+
+            self.badges[badge] = Region2D(Coordinate2D(left, top), Size2D(width, height))
             i += 1
 
     def __calculate_icon(self,
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
-        left = self.location.x + offsets['icon_x']
-        left -= translate.x
-        left = round(left * scale)
+        left = round(self.location.x * scale)
+        left += round(offsets['icon_x'] * scale)
+        left -= round(translate.x * scale)
 
-        top = self.location.y + offsets['icon_y']
-        top -= translate.y
-        top = round(top * scale)
+        top = round(self.location.y * scale)
+        top += round(offsets['icon_y'] * scale)
+        top -= round(translate.y * scale)
 
-        self.icon = Region2D(Coordinate2D(left, top),
-            Size2D(sizes['icon_x'], sizes['icon_y']))
+        width = round(sizes['icon_x'] * scale)
+        height = round(sizes['icon_y'] * scale)
+
+        self.icon = Region2D(Coordinate2D(left, top), Size2D(width, height))
 
     def __calculate_inputs(self,
         scale: float = 1.0,
@@ -226,21 +230,24 @@ class ComponentGeometry(object):
             + paddings['inputs_y'] * (len(self.component.inputs) - 1)
             * scale), 0)
 
-        left = self.location.x + offsets['input_x']
-        left -= translate.x
-        left = round(left * scale)
+        left = round(self.location.x * scale)
+        left += round(offsets['input_x'] * scale)
+        left -= round(translate.x * scale)
+
+        width = round(sizes['input_x'] * scale)
+        height = round(sizes['input_y'] * scale)
 
         self.inputs = []
         i = 0
         for input in self.component.inputs:
-            top = self.location.y + offsets['icon_y']  # Start at the top of the icon
-            top += sizes['icon_y'] / 2  # Move down by half the height of the icon
-            top -= total_height / 2  # Move back up by half the height of the full input bar
-            top += i * (sizes['input_y'] + paddings['inputs_y'])  # Offset down
-            top -= translate.y
-            top = round(top * scale)
-            self.inputs.append(Region2D(Coordinate2D(left, top),
-                Size2D(sizes['input_x'], sizes['input_y'])))
+            top = round(self.location.y * scale)
+            top += round(offsets['icon_y'] * scale)  # Start at the top of the icon
+            top += round(sizes['icon_y'] * scale / 2)  # Move down by half the height of the icon
+            top -= round(total_height * scale / 2)  # Move back up by half the height of the full input bar
+            top += round(i * (sizes['input_y'] + paddings['inputs_y']) * scale)  # Offset down
+            top -= round(translate.y * scale)
+
+            self.inputs.append(Region2D(Coordinate2D(left, top), Size2D(width, height)))
             i += 1
 
     def __calculate_label(self,
@@ -253,26 +260,22 @@ class ComponentGeometry(object):
         # We can only determine the size of the label by actually laying it out with Pango
         font = Pango.FontDescription.new()
         font.set_family(font_family)
-        font.set_size(font_size * Pango.SCALE)
+        font.set_size(font_size * scale * Pango.SCALE)
         pango_layout = Pango.Layout(pango_context)
         pango_layout.set_font_description(font)
         pango_layout.set_text(self.component.name)
         label_width, label_height = pango_layout.get_pixel_size()
-        label_size = Size2D(
-            round(label_width * scale),
-            round(label_height * scale))
+        label_size = Size2D(label_width, label_height)
 
         # Center the text under the icon
-        left = self.location.x  # Start at the canvas location
-        left += sizes['component_x'] / 2  # Move right to the center of the component
-        left -= label_size.width / 2  # Left by half the width of the label to center it
-        left -= translate.x     # Translate and scale
-        left = round(left * scale)
+        left = round(self.location.x * scale)  # Start at the canvas location
+        left += round(sizes['component_x'] * scale / 2)  # Move right to the center of the component
+        left -= round(label_size.width / 2)  # Left by half the width of the label to center it
+        left -= round(translate.x)     # Translate and scale
 
-        top = self.location.y  # Start at the canvas location
-        top += offsets['label_y']  # Move down by a hardcoded offset
-        top -= translate.y  # Translate and scale
-        top = round(top * scale)
+        top = round(self.location.y * scale)  # Start at the canvas location
+        top += round(offsets['label_y'] * scale)  # Move down by a hardcoded offset
+        top -= round(translate.y)  # Translate and scale
 
         self.label = Region2D(Coordinate2D(left, top), label_size)
 
@@ -284,21 +287,24 @@ class ComponentGeometry(object):
             + paddings['outputs_y'] * (len(self.component.outputs) - 1)
             * scale), 0)
 
-        left = self.location.x + offsets['output_x']
-        left -= translate.x
-        left = round(left * scale)
+        left = round(self.location.x * scale)
+        left += round(offsets['output_x'] * scale)
+        left -= round(translate.x * scale)
 
         self.outputs = []
         i = 0
         for output in self.component.outputs:
-            top = self.location.y + offsets['icon_y']  # Start at the top of the icon
-            top += sizes['icon_y'] / 2  # Move down by half the height of the icon
-            top -= total_height / 2  # Move back up by half the height of the full output bar
-            top += i * (sizes['output_y'] + paddings['outputs_y'])  # Offset down
-            top -= translate.y
-            top = round(top * scale)
-            self.outputs.append(Region2D(Coordinate2D(left, top),
-                Size2D(sizes['output_x'], sizes['output_y'])))
+            top = round(self.location.y * scale)
+            top += round(offsets['icon_y'] * scale)  # Start at the top of the icon
+            top += round(sizes['icon_y'] * scale / 2)  # Move down by half the height of the icon
+            top -= round(total_height * scale / 2)  # Move back up by half the height of the full output bar
+            top += round(i * (sizes['output_y'] + paddings['outputs_y']) * scale)  # Offset down
+            top -= round(translate.y * scale)
+
+            width = round(sizes['output_x'] * scale)
+            height = round(sizes['output_y'] * scale)
+
+            self.outputs.append(Region2D(Coordinate2D(left, top), Size2D(width, height)))
             i += 1
 
     def calculate(self,

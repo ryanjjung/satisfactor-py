@@ -50,7 +50,7 @@ def build_test_blueprint():
     blueprint.add_component(convOreToSmelter, geometry.Coordinate2D())
     blueprint.add_component(smelter, geometry.Coordinate2D(220, 20))
     blueprint.add_component(convIngotsToStorage, geometry.Coordinate2D())
-    blueprint.add_component(storage, geometry.Coordinate2D(370, 20))
+    blueprint.add_component(storage, geometry.Coordinate2D(380, 20))
     blueprint.viewport.scale = 1.0
     return blueprint
 
@@ -115,4 +115,5 @@ class FactoryDesignerWidget(Gtk.Widget):
         '''
 
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
+        self.blueprint.viewport.scale = 0.5
         self.blueprint.draw_frame(self, snapshot)
