@@ -40,8 +40,8 @@ def build_test_blueprint():
     oreSupply.outputs[0].connect(convOreToSmelter.inputs[0])
     oreSupply.constructed = True
     convOreToSmelter.outputs[0].connect(smelter.inputs[0])
-    storage = storages.StorageContainer(name='Iron Ore Storage')
-    convIngotsToStorage = smelter.connect(storage, conveyances.ConveyorBeltMk1)
+    # storage = storages.StorageContainer(name='Iron Ore Storage')
+    # convIngotsToStorage = smelter.connect(storage, conveyances.ConveyorBeltMk1)
 
     # Add them to a blueprint with coordinates, except for Conveyances, which don't need them
     blueprint = drawing.Blueprint()

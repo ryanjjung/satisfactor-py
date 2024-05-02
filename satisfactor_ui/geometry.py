@@ -30,6 +30,7 @@ sizes = {
     'badges_y': 16,
     'component_x': 128,
     'component_y': 128,
+    'conveyance_width': 4,
     'icon_x': 64,
     'icon_y': 64,
     'input_x': 16,
@@ -340,7 +341,6 @@ class ConveyanceGeometry(object):
         target_comp: Component,
         target_geo: ComponentGeometry,
         target_input: int,
-        scale: float,
     ):
         self.conveyance = conveyance
         self.source_comp = source_comp
@@ -349,17 +349,20 @@ class ConveyanceGeometry(object):
         self.target_comp = target_comp
         self.target_geo = target_geo
         self.target_input = target_input
-        self.width = round(4 * scale)
+        self.width = sizes['conveyance_width']
 
-        self.path = Gsk.Path()
+        self.path = None
         self.source_pt = Coordinate2D()  # The point to start the path at
         self.source_cp = Coordinate2D()  # The control point for the curve leaving the source
         self.target_pt = Coordinate2D()  # The point to end the path at
         self.target_cp = Coordinate2D()  # The control point for the curve entering the target
         self.midpoint = Coordinate2D()   # The middle point of the vertical portion of the line
 
-    def calculate(self):
-        if source_comp and target_comp:
+    def calculate(self,
+        scale: float = 1.0
+    ):
+        self.width = round(4 * scale)
+        if self.source_comp and self.target_comp:
             self.source_pt = self.source_geo.outputs[self.source_output].location
             self.target_pt = self.target_geo.inputs[self.target_input].location
 
@@ -373,7 +376,8 @@ class ConveyanceGeometry(object):
             path_str = f'M {self.source_pt.x} {self.source_pt.y} '
             path_str += f'Q {self.source_cp.x} {self.source_cp.y} {midpoint_x} {midpoint_y}'
             path_str += f'Q {self.target_cp.x} {self.target_cp.y} {self.target_pt.x} {self.target_pt.y}'
-            self.path.parse(path_str)
+            logging.debug(f'Path string: {path_str}')
+            self.path = Gsk.Path.parse(path_str)
         else:
             self.source_geo = None
             self.source_output = None

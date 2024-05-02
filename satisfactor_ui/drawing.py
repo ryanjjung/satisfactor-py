@@ -4,7 +4,7 @@ logging.basicConfig(level=logging.DEBUG)
 import gi
 gi.require_version('Gdk', '4.0')
 gi.require_version('Gsk', '4.0')
-gi.require_version('Gtk', '4.14')
+gi.require_version('Gtk', '4.0')
 gi.require_version('Pango', '1.0')
 
 import pickle
@@ -22,6 +22,7 @@ from satisfactor_ui.geometry import (
 
 
 BASE_IMAGE_FILE_PATH = './static/images'
+FIRST_RUN=True
 
 
 class Blueprint(object):
@@ -117,7 +118,6 @@ class Blueprint(object):
                     target_comp,
                     self.geometry[target_comp.id],
                     target_comp.inputs.index(component.outputs[0].target),
-                    self.viewport.scale
                 )
         else:
             self.geometry[component.id] = ComponentGeometry(component, location)
@@ -361,20 +361,34 @@ class Blueprint(object):
         conveyance: Conveyance,
         geometry: ConveyanceGeometry,
     ):
+        logging.debug(f'Drawing a conveyance: {conveyance}')
         stroke = Gsk.Stroke.new(geometry.width)
-        snapshot.push_stroke(geometry.path, stroke)
-        snapshot.append_color(self.line_color)
-        snapshot.pop()
+        bounds_detected, bounds = geometry.path.get_bounds()
+        if not bounds_detected:
+            logging.debug('Could not detect bounds for GTK path')
+        else:
+            line_color = Gdk.RGBA()
+            line_color.parse(self.line_color)
+            snapshot.push_stroke(geometry.path, stroke)
+            snapshot.append_color(line_color, bounds)
+            snapshot.pop()
 
     def draw_frame(self, widget, snapshot):
         '''
         Draws a single frame of the contents of the viewport.
         '''
 
+        global FIRST_RUN
+
         # Make sure the components have geometry
         for id, geometry in self.geometry.items():
             if not isinstance(self.factory.get_component_by_id(id), Conveyance):
-                if not geometry.background \
+                if FIRST_RUN:
+                    geometry.calculate(
+                        widget.get_pango_context(),
+                        scale=self.viewport.scale,
+                        translate=self.viewport.region.location)
+                elif not geometry.background \
                     or not geometry.badges \
                     or not geometry.icon \
                     or not geometry.inputs \
@@ -391,6 +405,8 @@ class Blueprint(object):
 
         # Determine if any components which are offscreen are attached to any onscreen components.
         # If so, we'll need to include them in the drawing so we can later draw the conveyance.
+        # NOTE: Do we actually have to do this? We build the geometry for everything, and that
+        # should be all we need. Maybe we can delete this code.
         offscreen_components = self.get_offscreen_component_geometry(visible_components)
 
         # Draw those components
@@ -399,18 +415,27 @@ class Blueprint(object):
 
         # Make sure the conveyances have geometry
         for id, geometry in self.geometry.items():
-            if isinstance(self.factory.get_component_by_id(id), Conveyance):
+            conveyance = self.factory.get_component_by_id(id)
+            if isinstance(conveyance, Conveyance):
                 if geometry.source_comp and geometry.target_comp:
-                    if not geometry.source_pt \
+                    if FIRST_RUN:
+                        geometry.calculate()
+                    elif not geometry.source_pt \
                         or not geometry.target_pt \
                         or not geometry.midpoint \
                         or not geometry.source_cp \
-                        or not geometry.target_cp:
-                            geometry.calculate()
+                        or not geometry.target_cp \
+                        or not geometry.path:
+                            geometry.calculate(self.viewport.scale)
 
+        visible_conveyances = self.get_conveyances_from_components(visible_components)
         # Draw the conveyances between the components
-        for component, geometry in visible_component_geometry:
-            self.draw_conveyance(snapshot)
+        for component in visible_conveyances:
+            if isinstance(component, Conveyance):
+                geometry = self.geometry.get(component.id)
+                self.draw_conveyance(snapshot, component, geometry)
+        
+        if FIRST_RUN: FIRST_RUN = False
 
     def get_visible_component_geometry(self) -> list[tuple]:
         '''
@@ -469,6 +494,25 @@ class Blueprint(object):
                                     offscreen_components.append((output_attachment,
                                         self.geometry.get(output_attachment.id)))
         return offscreen_components
+
+    def get_conveyances_from_components(self, components) -> list[tuple]:
+        conveyances = []
+        for component in components:
+            if isinstance(component, Conveyance):
+                conveyances.append(component)
+            if len(component.inputs) > 0:
+                for input in component.inputs:
+                    if input.source:
+                        if isinstance(input.source.attached_to, Conveyance):
+                            if not input.source.attached_to in conveyances:
+                                conveyances.append(input.source.attached_to)
+            if len(component.outputs) > 0:
+                for output in component.outputs:
+                    if output.target:
+                        if isinstance(output.target.attached_to, Conveyance):
+                            if not output.target.attached_to in conveyances:
+                                conveyances.append(output.target.attached_to)
+        return conveyances
 
     def get_component_location(self,
         component: Component
