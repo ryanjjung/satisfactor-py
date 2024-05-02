@@ -47,11 +47,10 @@ def build_test_blueprint():
     blueprint = drawing.Blueprint()
     blueprint.factory.name = 'Test Blueprint'
     blueprint.add_component(oreSupply, geometry.Coordinate2D(50, 20))
+    blueprint.add_component(smelter, geometry.Coordinate2D(320, 100))
     blueprint.add_component(convOreToSmelter, geometry.Coordinate2D())
-    blueprint.add_component(smelter, geometry.Coordinate2D(220, 20))
-    blueprint.add_component(convIngotsToStorage, geometry.Coordinate2D())
-    blueprint.add_component(storage, geometry.Coordinate2D(380, 20))
-    blueprint.viewport.scale = 1.0
+    # blueprint.add_component(convIngotsToStorage, geometry.Coordinate2D())
+    # blueprint.add_component(storage, geometry.Coordinate2D(380, 20))
     return blueprint
 
 def get_texture_from_file(filename: str) -> Gdk.Texture:
@@ -115,5 +114,5 @@ class FactoryDesignerWidget(Gtk.Widget):
         '''
 
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
-        self.blueprint.viewport.scale = 0.5
+        self.blueprint.viewport.scale = 1.0
         self.blueprint.draw_frame(self, snapshot)

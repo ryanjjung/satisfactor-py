@@ -3,7 +3,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 import gi
 gi.require_version('Gdk', '4.0')
-gi.require_version('Gtk', '4.0')
+gi.require_version('Gsk', '4.0')
+gi.require_version('Gtk', '4.14')
 gi.require_version('Pango', '1.0')
 
 import pickle
@@ -13,6 +14,7 @@ from satisfactor_py.factories import Factory
 from satisfactor_ui.geometry import (
     sizes,
     ComponentGeometry,
+    ConveyanceGeometry,
     Coordinate2D,
     Region2D,
     Size2D
@@ -99,7 +101,25 @@ class Blueprint(object):
         '''
 
         self.factory.add([component])
-        if not isinstance(component, Conveyance):
+        if isinstance(component, Conveyance):
+            source_comp = None
+            target_comp = None
+            if component.inputs[0].source:
+                source_comp = component.inputs[0].source.attached_to
+            if component.outputs[0].target:
+                target_comp = component.outputs[0].target.attached_to
+            if source_comp and target_comp:
+                self.geometry[component.id] = ConveyanceGeometry(
+                    component,
+                    source_comp,
+                    self.geometry[source_comp.id],
+                    source_comp.outputs.index(component.inputs[0].source),
+                    target_comp,
+                    self.geometry[target_comp.id],
+                    target_comp.inputs.index(component.outputs[0].target),
+                    self.viewport.scale
+                )
+        else:
             self.geometry[component.id] = ComponentGeometry(component, location)
 
     def draw_widget_background(self,
@@ -336,12 +356,22 @@ class Blueprint(object):
         snapshot.append_layout(layout, label_color)
         snapshot.restore()
 
+    def draw_conveyance(self,
+        snapshot: Gtk.Snapshot,
+        conveyance: Conveyance,
+        geometry: ConveyanceGeometry,
+    ):
+        stroke = Gsk.Stroke.new(geometry.width)
+        snapshot.push_stroke(geometry.path, stroke)
+        snapshot.append_color(self.line_color)
+        snapshot.pop()
+
     def draw_frame(self, widget, snapshot):
         '''
         Draws a single frame of the contents of the viewport.
         '''
 
-        # Make sure everything has geometry
+        # Make sure the components have geometry
         for id, geometry in self.geometry.items():
             if not isinstance(self.factory.get_component_by_id(id), Conveyance):
                 if not geometry.background \
@@ -366,6 +396,21 @@ class Blueprint(object):
         # Draw those components
         for component, geometry in visible_component_geometry:
             self.draw_component(widget, snapshot, component, geometry)
+
+        # Make sure the conveyances have geometry
+        for id, geometry in self.geometry.items():
+            if isinstance(self.factory.get_component_by_id(id), Conveyance):
+                if geometry.source_comp and geometry.target_comp:
+                    if not geometry.source_pt \
+                        or not geometry.target_pt \
+                        or not geometry.midpoint \
+                        or not geometry.source_cp \
+                        or not geometry.target_cp:
+                            geometry.calculate()
+
+        # Draw the conveyances between the components
+        for component, geometry in visible_component_geometry:
+            self.draw_conveyance(snapshot)
 
     def get_visible_component_geometry(self) -> list[tuple]:
         '''

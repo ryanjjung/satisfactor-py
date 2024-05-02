@@ -4,8 +4,8 @@ logging.basicConfig()
 import gi
 gi.require_version('Pango', '1.0')
 
-from gi.repository import Pango
-from satisfactor_py.base import Building, Component
+from gi.repository import Gsk, Pango
+from satisfactor_py.base import Building, Component, Conveyance
 
 # Hardcoded layout data
 offsets = {
@@ -325,3 +325,62 @@ class ComponentGeometry(object):
             scale,
             translate)
         self.__calculate_outputs(scale, translate)
+
+
+class ConveyanceGeometry(object):
+    '''
+    Calculates the pathing used to draw conveyances on the screen.
+    '''
+
+    def __init__(self,
+        conveyance: Conveyance,
+        source_comp: Component,
+        source_geo: ComponentGeometry,
+        source_output: int,
+        target_comp: Component,
+        target_geo: ComponentGeometry,
+        target_input: int,
+        scale: float,
+    ):
+        self.conveyance = conveyance
+        self.source_comp = source_comp
+        self.source_geo = source_geo
+        self.source_output = source_output
+        self.target_comp = target_comp
+        self.target_geo = target_geo
+        self.target_input = target_input
+        self.width = round(4 * scale)
+
+        self.path = Gsk.Path()
+        self.source_pt = Coordinate2D()  # The point to start the path at
+        self.source_cp = Coordinate2D()  # The control point for the curve leaving the source
+        self.target_pt = Coordinate2D()  # The point to end the path at
+        self.target_cp = Coordinate2D()  # The control point for the curve entering the target
+        self.midpoint = Coordinate2D()   # The middle point of the vertical portion of the line
+
+    def calculate(self):
+        if source_comp and target_comp:
+            self.source_pt = self.source_geo.outputs[self.source_output].location
+            self.target_pt = self.target_geo.inputs[self.target_input].location
+
+            midpoint_x = round((self.target_pt.x - self.source_pt.x) / 2) + self.source_pt.x
+            midpoint_y = round((self.target_pt.y - self.source_pt.y) / 2) + self.source_pt.y
+
+            self.source_cp = Coordinate2D(midpoint_x, self.source_pt.y)
+            self.target_cp = Coordinate2D(midpoint_x, self.target_pt.y)
+            self.midpoint = Coordinate2D(midpoint_x, midpoint_y)
+
+            path_str = f'M {self.source_pt.x} {self.source_pt.y} '
+            path_str += f'Q {self.source_cp.x} {self.source_cp.y} {midpoint_x} {midpoint_y}'
+            path_str += f'Q {self.target_cp.x} {self.target_cp.y} {self.target_pt.x} {self.target_pt.y}'
+            self.path.parse(path_str)
+        else:
+            self.source_geo = None
+            self.source_output = None
+            self.source_pt = None
+            self.source_cp = None
+            self.target_geo = None
+            self.target_input = None
+            self.target_pt = None
+            self.target_cp = None
+            self.midpoint = None
