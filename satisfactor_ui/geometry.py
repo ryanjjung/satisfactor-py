@@ -2,11 +2,11 @@ import logging
 logging.basicConfig()
 
 import gi
-gi.require_version('Pango', '1.0')
+gi.require_version('Gsk', '4.0')
 
 from copy import copy
 from enum import Enum
-from gi.repository import Gsk, Pango
+from gi.repository import Gsk
 from satisfactor_py.base import Building, Component, Conveyance
 
 # Hardcoded layout data
@@ -133,7 +133,7 @@ class ComponentGeometry(object):
     Calculates and stores the geometry involved in drawing components on the screen. There are
     several pieces of a component icon, including:
 
-        - background: A colored rectangle behind the icon and badges which changes color when the
+        - background: A colored rectangle behind the icon and badges, which changes color when the
             component is selected.
         - icon: An image of the component
         - badges: A series of small graphics in a row beneath the icon which indicate basic info
@@ -167,6 +167,11 @@ class ComponentGeometry(object):
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
+        '''
+        Calculates the geometry for the bordered background behind the icon, badges, inputs, and
+        outputs.
+        '''
+
         left = round(self.location.x * scale)
         left += round(offsets['background_x'] * scale)
         left -= round(translate.x * scale)
@@ -184,6 +189,11 @@ class ComponentGeometry(object):
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
+        '''
+        Based on the state of the component, calculates the geometry of a series of small badge
+        icons beneath the icon showing certain basic facts about the component.
+        '''
+
         # Determine which badges to include
         self.badges = {}
         if self.component.constructed:
@@ -205,15 +215,15 @@ class ComponentGeometry(object):
         # Calculate each badge's geometry
         i = 0
         for badge in self.badges.keys():
-            left = round(self.location.x * scale)               # Start at the left edge
-            left += round(sizes['component_x'] * scale / 2)     # Right to the centerpoint
-            left -= round(total_width / 2)              # Left by half the width of the whole row
-            left += round(i * (sizes['badges_x'] + paddings['badges_x']) * scale ) # Offset to the right
-            left -= round(translate.x * scale)                  # Translate
+            left = round(self.location.x * scale)  # Start at the left edge
+            left += round(sizes['component_x'] * scale / 2)  # Move right to the centerpoint
+            left -= round(total_width / 2)  # Go back left by half the width of the whole row
+            left += round(i * (sizes['badges_x'] + paddings['badges_x']) * scale ) # Offset from other badges
+            left -= round(translate.x * scale)  # Translate
 
-            top = round(self.location.y * scale)                # Start at the top edge of the component
-            top += round(offsets['badges_y'] * scale)           # Down by a hardcoded vertical offset
-            top -= round(translate.y * scale)                   # Translate
+            top = round(self.location.y * scale) # Start at the top edge of the component
+            top += round(offsets['badges_y'] * scale) # Move down by a hardcoded vertical offset
+            top -= round(translate.y * scale) # Translate
 
             width = round(sizes['badges_x'] * scale)
             height = round(sizes['badges_y'] * scale)
@@ -225,6 +235,10 @@ class ComponentGeometry(object):
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
+        '''
+        Calculates the geometry describing the component's icon.
+        '''
+
         left = round(self.location.x * scale)
         left += round(offsets['icon_x'] * scale)
         left -= round(translate.x * scale)
@@ -242,6 +256,11 @@ class ComponentGeometry(object):
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
+        '''
+        Calculates the geometry for a series of inputs running along the left side of the
+        background.
+        '''
+
         total_height = max(round(sizes['input_y'] * len(self.component.inputs)
             + paddings['inputs_y'] * (len(self.component.inputs) - 1)
             * scale), 0)
@@ -267,20 +286,18 @@ class ComponentGeometry(object):
             i += 1
 
     def __calculate_label(self,
-        pango_context: Pango.Context,
-        font_family: str = 'Sans',
-        font_size: int = 10,
+        label_width: int,
+        label_height: int,
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
-        # We can only determine the size of the label by actually laying it out with Pango
-        font = Pango.FontDescription.new()
-        font.set_family(font_family)
-        font.set_size(font_size * scale * Pango.SCALE)
-        pango_layout = Pango.Layout(pango_context)
-        pango_layout.set_font_description(font)
-        pango_layout.set_text(self.component.name)
-        label_width, label_height = pango_layout.get_pixel_size()
+        '''
+        Calculates the geometry describing the textual label beneath the component. This requires
+        that we already know the size of the label. That means using Pango to create the layout
+        somewhere else, then using PangoLayout.get_pixel_size() to determine the label_width and
+        label_height parameters to this function.
+        '''
+
         label_size = Size2D(label_width, label_height)
 
         # Center the text under the icon
@@ -299,6 +316,11 @@ class ComponentGeometry(object):
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D
     ):
+        '''
+        Calculates the geometry for a series of outputs running along the right side of the
+        background.
+        '''
+
         total_height = max(round(sizes['output_y'] * len(self.component.outputs)
             + paddings['outputs_y'] * (len(self.component.outputs) - 1)
             * scale), 0)
@@ -324,20 +346,25 @@ class ComponentGeometry(object):
             i += 1
 
     def calculate(self,
-        pango_context: Pango.Context,
-        font_family: str = 'Sans',
-        font_size: int = 10,
+        label_width: int,
+        label_height: int,
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
+        '''
+        Calculates the full set of geometry describing the different pieces of a component icon.
+        The dimensions of the label must already be known. That means using Pango to lay out the
+        text and then running PangoLayout.get_pixel_size() to form the label_width and label_height
+        parameters to this function.
+        '''
+
         self.__calculate_background(scale, translate)
         self.__calculate_badges(scale, translate)
         self.__calculate_icon(scale, translate)
         self.__calculate_inputs(scale, translate)
         self.__calculate_label(
-            pango_context,
-            font_family,
-            font_size,
+            label_width,
+            label_height,
             scale,
             translate)
         self.__calculate_outputs(scale, translate)
@@ -379,12 +406,12 @@ class ConveyanceGeometry(object):
 
     def __init__(self,
         conveyance: Conveyance = None,
-        source_comp: Component = None,
-        source_geo: ComponentGeometry = None,
-        source_output: int = None,
-        target_comp: Component = None,
-        target_geo: ComponentGeometry = None,
-        target_input: int = None,
+        source_comp: Component = None,  # The component connected to the conveyance's input
+        source_geo: ComponentGeometry = None,  # The source component's pre-calculated geometry
+        source_output: int = None,  # The index of the source component's output this connects to
+        target_comp: Component = None,  # The component connected to the conveyance's output
+        target_geo: ComponentGeometry = None,  # The target component's pre-calculated geometry
+        target_input: int = None,  # The index of the target component's input this connects to
     ):
         self.conveyance = conveyance
         self.geometry = None
@@ -416,16 +443,14 @@ class ConveyanceGeometry(object):
             # Set the width of the line
             self.width = round(sizes['input_y'] * scale)
 
-            # Build the outer points of the two turns, which should be parallel to the connections
-            # and the vertical center line. These points differ when components are arranged in
-            # different ways relative to one another.
+            # Build the two-turn geometry that describes the conveyance
             self.geometry = ConveyanceTwoTurnGeometry(
                     self.conveyance,
                     self.source_geo.outputs[self.source_output],
                     self.target_geo.inputs[self.target_input])
             self.geometry.calculate()
 
-            # Build a string describing the path according to Gsk.Path.parse docs:
+            # Build a Gsk.Path to draw the conveyance by constructing a string describing it.
             # https://docs.gtk.org/gsk4/type_func.Path.parse.html
 
             # Start at the source point
@@ -520,11 +545,26 @@ class ConveyanceTurnGeometry(object):
     def calculate(self,
         scale: float = 1.0,
     ):
+        '''
+        Calculates the geometry of a right-angle turn based on the points provided at construction
+        time.
+
+            - control_point: The control point of the bezier curve. This should be vertically
+                aligned with the connection and horizontally centered between two components.
+            - midpoint: The perfect center of the conveyance path.
+        '''
+
+        # Concieve of a circle of a certain radius
         radius = round(sizes['conveyance_radius'] * scale)
+
+        # The perfect top-center point of this circle is aligned to the control and midpoints, etc.
         top = Coordinate2D(self.midpoint.x, self.control_point.y - radius)
         bottom = Coordinate2D(self.midpoint.x, self.control_point.y + radius)
         left = Coordinate2D(self.midpoint.x - radius, self.control_point.y)
         right = Coordinate2D(self.midpoint.x + radius, self.control_point.y)
+        
+        # The turn connects two adjacent sides which share a right angle. Set these up based on the
+        # direction described by the enum.
         if self.direction == ConveyanceTurnDirection.TOP_TO_LEFT:
             self.point1 = top
             self.point2 = left
@@ -555,15 +595,16 @@ class ConveyanceTwoTurnGeometry(object):
     '''
     Contains the geometry that represents the right-angle turns in conveyance lines. Since a
     conveyance transports things from one component's output to another component's input, the
-    `output_region` is the Region2D describing the component output (which is hooked to the
-    conveyance's input), while the `input_region` is the Region2D describing the component input
-    (which is hooked to the conveyance's output).
+    `output_region` is the Region2D describing the source component's output which is hooked to the
+    conveyance's input. The `input_region` is the Region2D describing the target component's input
+    which is hooked to the conveyance's output.
 
-    When this is drawn, it will show a path which extends from the output horizontally to a point
-    halfway closer to the input. A right angle turn is then drawn in the vertical direction toward
-    the input. A vertical line is drawn, then a second turn in the horizontal direction of the
-    input. A horizontal line is then drawn to complete the path to the input. `turn_1` is therefore
-    the first of these turns, while `turn_2` is the second.
+    When this is drawn, it will show a path which extends from an output horizontally to a point
+    halfway closer to the target input. A right angle turn is then drawn in the vertical direction
+    toward the input. A vertical line is drawn, then a second turn in the horizontal direction of
+    the input. A horizontal line is then drawn to complete the path to the input. `turn_1` is
+    therefore the first of these turns (coming off the output), while `turn_2` is the second (going
+    into the input).
     '''
 
     def __init__(self,
@@ -575,37 +616,52 @@ class ConveyanceTwoTurnGeometry(object):
         self.conveyance = conveyance
         self.output_region = output_region
         self.input_region = input_region
-        self.turns = list[ConveyanceTurnGeometry]
+        self.turns = []
         self.scale = scale
 
     def calculate(self,
         scale: float = 1.0
     ):
+        '''
+        Calculates the geometry of the conveyance based on the orientation of its connected
+        components.
+        '''
+
         # Determine which kind of turns these will be
         turn1_dir = None
         turn2_dir = None
+
+        # The target is to the right of the source
         if self.input_region.left >= self.output_region.left:
+            # The target is above the source
             if self.input_region.top < self.output_region.top:
                 turn1_dir = ConveyanceTurnDirection.LEFT_TO_TOP
                 turn2_dir = ConveyanceTurnDirection.BOTTOM_TO_RIGHT
-            else:
+            else:  # The target is below the source
                 turn1_dir = ConveyanceTurnDirection.LEFT_TO_BOTTOM
                 turn2_dir = ConveyanceTurnDirection.TOP_TO_RIGHT
+        # The target is to the left of the source
         else:
+            # The target is above the source
             if self.input_region.top < self.output_region.top:
                 turn1_dir = ConveyanceTurnDirection.RIGHT_TO_TOP
                 turn2_dir = ConveyanceTurnDirection.BOTTOM_TO_LEFT
-            else:
+            else:  # The target is below the source
                 turn1_dir = ConveyanceTurnDirection.RIGHT_TO_BOTTOM
                 turn2_dir = ConveyanceTurnDirection.TOP_TO_LEFT
 
-        # Determine the midpoint of the vertical portion of the path
+        # Determine the horizontal halfway point between the two connections
         middle_x = round((self.input_region.middle.x - self.output_region.middle.x) / 2)
         middle_x += self.output_region.middle.x
+
+        # Determine the vertical halfway point
         middle_y = round((self.input_region.middle.y - self.output_region.middle.y) / 2)
         middle_y += self.input_region.middle.y
+
+        # That is the perfect midpoint
         midpoint = Coordinate2D(middle_x, middle_y)
 
+        # Generate the geometry of the two turns
         self.turns = [
             ConveyanceTurnGeometry(
                 Coordinate2D(midpoint.x, self.output_region.middle.y),

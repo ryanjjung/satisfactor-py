@@ -42,12 +42,13 @@ class Blueprint(object):
         component_bg_color: str = '#14132d',
         component_border_color: str = '#a3a8fa',
         connection_bg_color: str = '#403d7a',
-        conveyance_label_color: str = (56, 56, 117),  # Cairo only understands RGB values, not hex
+        # conveyance_label_color: str = (56, 56, 117),  # Cairo only understands RGB values, not hex
+        conveyance_label_color: str = (255, 0, 0),  # Cairo only understands RGB values, not hex
         conveyance_font_family: str = 'Sans',
-        conveyance_font_size: float = 8.0,
+        conveyance_font_size: float = 30.0,
         label_color: str = '#a3a8fa',
         label_font_family: str = 'Sans',
-        label_font_size: float = 10.0,
+        label_font_size: float = 80.0,
         line_color: str = '#a3a8fa',
         selected_component_bg_color: str = '#95d0ff',
         viewport_region: Region2D = Region2D()
@@ -335,37 +336,36 @@ class Blueprint(object):
         geometry: ComponentGeometry,
         scale: float
     ):
-        # Adjust font size based on viewport scale
-        label_font = Pango.FontDescription.new()
-        label_font.set_family(self.label_font_family)
-        label_font.set_size(self.label_font_size * scale * Pango.SCALE)
+        # Set up the label
+        label = PangoTextLabel(
+            component.name,
+            self.label_font_family,
+            self.label_font_size,
+            widget,
+            scale)
 
-        # Parse the color
+        # Set up color
         label_color = Gdk.RGBA()
         label_color.parse(self.label_color)
-
-        # Set up the Pango layout
-        context = widget.get_pango_context()
-        layout = Pango.Layout(context)
-        layout.set_font_description(label_font)
-        layout.set_text(component.name)
-        label_size = layout.get_pixel_size()
 
         # Set up positioning
         point = Graphene.Point()
         point.x = geometry.label.left
         point.y = geometry.label.top
 
+        # Draw the text, translate it, color it
         snapshot.save()
         snapshot.translate(point)
-        snapshot.append_layout(layout, label_color)
+        snapshot.append_layout(label.layout, label_color)
         snapshot.restore()
 
     def draw_conveyance(self,
+        widget: Gtk.Widget,
         snapshot: Gtk.Snapshot,
         conveyance: Conveyance,
         geometry: ConveyanceGeometry,
     ):
+        # Draw the twice-curving line of the conveyance
         stroke = Gsk.Stroke.new(geometry.width)
         line_color = Gdk.RGBA()
         line_color.parse(self.line_color)
@@ -377,15 +377,6 @@ class Blueprint(object):
         )
         snapshot.push_stroke(geometry.path, stroke)
         snapshot.append_color(line_color, bounds)
-        cairo_ctx = snapshot.append_cairo(bounds)
-        cairo_ctx.select_font_face(self.conveyance_font_family)
-        cairo_ctx.set_font_size(self.conveyance_font_size)
-        cairo_ctx.set_source_rgb(*self.conveyance_label_color)
-        cairo_ctx.text_path(f'>> {conveyance.name} >>')
-        cairo_path = geometry.path.to_cairo(cairo_ctx)
-        cairo_ctx.close_path()
-        cairo_ctx.fill()
-
         snapshot.pop()
 
     def draw_frame(self, widget, snapshot):
@@ -397,11 +388,19 @@ class Blueprint(object):
 
         # Make sure the components have geometry
         for id, geometry in self.geometry.items():
-            if not isinstance(self.factory.get_component_by_id(id), Conveyance):
+            component = self.factory.get_component_by_id(id)
+            if not isinstance(component, Conveyance):
+                label = PangoTextLabel(
+                    component.name,
+                    self.label_font_family,
+                    self.label_font_size,
+                    widget,
+                    self.viewport.scale
+                )
                 if FIRST_RUN:
                     logging.debug(f'Forcing geometry calculation for component {id}')
                     geometry.calculate(
-                        widget.get_pango_context(),
+                        *label.layout.get_pixel_size(),
                         scale=self.viewport.scale,
                         translate=self.viewport.region.location)
                 elif not geometry.background \
@@ -411,7 +410,7 @@ class Blueprint(object):
                     or not geometry.label \
                     or not geometry.outputs:
                         geometry.calculate(
-                            widget.get_pango_context(),
+                            *label.layout.get_pixel_size(),
                             scale=self.viewport.scale,
                             translate=self.viewport.region.location)
 
@@ -450,7 +449,7 @@ class Blueprint(object):
         for component in visible_conveyances:
             if isinstance(component, Conveyance):
                 geometry = self.geometry.get(component.id)
-                self.draw_conveyance(snapshot, component, geometry)
+                self.draw_conveyance(widget, snapshot, component, geometry)
 
         if FIRST_RUN: FIRST_RUN = False
 
@@ -541,6 +540,30 @@ class Blueprint(object):
         '''
 
         return self.coordinateMap.get(component.id, Coordinate2D())
+
+
+class PangoTextLabel(object):
+    '''
+    Represents a textual label drawn with Pango. Used to render text and get its geometry.
+    '''
+
+    def __init__(self,
+        text: str,
+        font_family: str,
+        font_size: float,
+        widget: Gtk.Widget,
+        scale: float = 1.0,
+    ):
+        # Set up the font
+        self.font = Pango.FontDescription.new()
+        self.font.set_family(font_family)
+        self.font.set_size(font_size * scale * Pango.SCALE)
+
+        # Set up a layout
+        self.pango_ctx = widget.get_pango_context()
+        self.layout = Pango.Layout(self.pango_ctx)
+        self.layout.set_font_description(self.font)
+        self.layout.set_text(text)
 
 
 class Viewport(object):
