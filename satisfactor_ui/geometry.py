@@ -4,6 +4,8 @@ logging.basicConfig()
 import gi
 gi.require_version('Pango', '1.0')
 
+from copy import copy
+from enum import Enum
 from gi.repository import Gsk, Pango
 from satisfactor_py.base import Building, Component, Conveyance
 
@@ -30,7 +32,8 @@ sizes = {
     'badges_y': 16,
     'component_x': 128,
     'component_y': 128,
-    'conveyance_width': 4,
+    'conveyance_radius': 16,
+    'conveyance_width': 16,
     'icon_x': 64,
     'icon_y': 64,
     'input_x': 16,
@@ -54,6 +57,9 @@ class Coordinate2D(object):
     ):
         self.x = x
         self.y = y
+    
+    def __repr__(self):
+        return f'<Coordinate2D ({self.x}, {self.y})>'
 
 
 class Size2D(object):
@@ -70,6 +76,9 @@ class Size2D(object):
     ):
         self.width = width
         self.height = height
+    
+    def __repr__(self):
+        return f'<Size2D ({self.width} x {self.height})>'
 
 
 class Region2D(object):
@@ -107,9 +116,16 @@ class Region2D(object):
     @property
     def bottom(self):
         return self.top + self.height
+    
+    @property
+    def middle(self):
+        return Coordinate2D(
+            self.left + round(self.width / 2),
+            self.top + round(self.height / 2)
+        )
 
-    def to_string(self):
-        return f'({self.left}, {self.top}); ({self.width} x {self.height})'
+    def __repr__(self):
+        return f'<Region2D({self.location}, {self.size})>'
 
 
 class ComponentGeometry(object):
@@ -183,22 +199,21 @@ class ComponentGeometry(object):
             self.badges['errors-true'] = Region2D()
 
         # The badges must be centered below the icon; calculate the total width
-        total_width = round(sizes['badges_x'] * len(self.badges)
-            + paddings['badges_x'] * (len(self.badges) - 1)
-            * scale)
+        total_width = round(sizes['badges_x'] * len(self.badges) * scale)
+        total_width += round(paddings['badges_x'] * (len(self.badges) - 1) * scale)
 
         # Calculate each badge's geometry
         i = 0
         for badge in self.badges.keys():
-            left = round(self.location.x * scale)               # Start at the left edge of the component
-            left += round(sizes['component_x'] * scale / 2)     # Right to the centerpoint of the component
-            left -= round(total_width * scale / 2)              # Left by half the width of the whole row
+            left = round(self.location.x * scale)               # Start at the left edge
+            left += round(sizes['component_x'] * scale / 2)     # Right to the centerpoint
+            left -= round(total_width / 2)              # Left by half the width of the whole row
             left += round(i * (sizes['badges_x'] + paddings['badges_x']) * scale ) # Offset to the right
-            left -= round(translate.x * scale)                  # Translate and scale
+            left -= round(translate.x * scale)                  # Translate
 
             top = round(self.location.y * scale)                # Start at the top edge of the component
             top += round(offsets['badges_y'] * scale)           # Down by a hardcoded vertical offset
-            top -= round(translate.y * scale)                   # Translate and scale
+            top -= round(translate.y * scale)                   # Translate
 
             width = round(sizes['badges_x'] * scale)
             height = round(sizes['badges_y'] * scale)
@@ -334,15 +349,16 @@ class ConveyanceGeometry(object):
     '''
 
     def __init__(self,
-        conveyance: Conveyance,
-        source_comp: Component,
-        source_geo: ComponentGeometry,
-        source_output: int,
-        target_comp: Component,
-        target_geo: ComponentGeometry,
-        target_input: int,
+        conveyance: Conveyance = None,
+        source_comp: Component = None,
+        source_geo: ComponentGeometry = None,
+        source_output: int = None,
+        target_comp: Component = None,
+        target_geo: ComponentGeometry = None,
+        target_input: int = None,
     ):
         self.conveyance = conveyance
+        self.geometry = None
         self.source_comp = source_comp
         self.source_geo = source_geo
         self.source_output = source_output
@@ -361,23 +377,73 @@ class ConveyanceGeometry(object):
     def calculate(self,
         scale: float = 1.0
     ):
-        self.width = round(4 * scale)
         if self.source_comp and self.target_comp:
-            self.source_pt = self.source_geo.outputs[self.source_output].location
-            self.target_pt = self.target_geo.inputs[self.target_input].location
+            # Set up the "source point" - the place where the line starts at the conveyance's input
+            self.source_pt = copy(self.source_geo.outputs[self.source_output].middle)
 
-            midpoint_x = round((self.target_pt.x - self.source_pt.x) / 2) + self.source_pt.x
-            midpoint_y = round((self.target_pt.y - self.source_pt.y) / 2) + self.source_pt.y
+            # Set up the "target point" - the place where the line ends at the conveyance's output
+            self.target_pt = copy(self.target_geo.inputs[self.target_input].middle)
 
-            self.source_cp = Coordinate2D(midpoint_x, self.source_pt.y)
-            self.target_cp = Coordinate2D(midpoint_x, self.target_pt.y)
-            self.midpoint = Coordinate2D(midpoint_x, midpoint_y)
+            # Set the width of the line
+            self.width = round(sizes['input_y'] * scale)
 
+            # Build the outer points of the two turns, which should be parallel to the connections
+            # and the vertical center line. These points differ when components are arranged in
+            # different ways relative to one another.
+            self.geometry = ConveyanceTwoTurnGeometry(
+                    self.conveyance,
+                    self.source_geo.outputs[self.source_output],
+                    self.target_geo.inputs[self.target_input])
+            self.geometry.calculate()
+
+            # Build a string describing the path according to Gsk.Path.parse docs:
+            # https://docs.gtk.org/gsk4/type_func.Path.parse.html
+
+            # Start at the source point
             path_str = f'M {self.source_pt.x} {self.source_pt.y} '
-            path_str += f'Q {self.source_cp.x} {self.source_cp.y} {midpoint_x} {midpoint_y}'
-            path_str += f'Q {self.target_cp.x} {self.target_cp.y} {self.target_pt.x} {self.target_pt.y}'
-            logging.debug(f'Path string: {path_str}')
+            
+            # Focus on the first turn
+            point1 = self.geometry.turns[0].point1
+            point2 = self.geometry.turns[0].point2
+            ctrl_pt = self.geometry.turns[0].control_point
+            
+            # Draw a line to the first turn
+            path_str += f'L {point1.x} {point1.y} '
+
+            # Draw a quadratic bezier curve around the turn radius
+            path_str += f'Q {ctrl_pt.x} {ctrl_pt.y} {point2.x} {point2.y} '
+
+            # Focus on the second turn
+            point1 = self.geometry.turns[1].point1
+            point2 = self.geometry.turns[1].point2
+            ctrl_pt = self.geometry.turns[1].control_point
+
+            # Draw a line to the second turn
+            path_str += f'L {point1.x} {point1.y} '
+
+            # Draw a bezier curve around the turn radius
+            path_str += f'Q {ctrl_pt.x} {ctrl_pt.y} {point2.x} {point2.y} '
+
+            # Draw a line to the target point
+            path_str += f'L {self.target_pt.x} {self.target_pt.y}'   # Line to the target point
+
+            # Try to parse the path string
             self.path = Gsk.Path.parse(path_str)
+            success, path_bounds = self.path.get_bounds()
+            if success:
+                # Determine the rectangle representing the outer boundary of this path when drawn
+                self.bounds = Region2D(
+                    Coordinate2D(
+                        path_bounds.get_x(),
+                        path_bounds.get_y() - round(sizes['conveyance_width'] / 2 * scale),
+                    ),
+                    Size2D(
+                        path_bounds.get_width(),
+                        path_bounds.get_height() + round(sizes['conveyance_width'] * scale)
+                    )
+                )
+            else:
+                logging.debug(f'Failed to get the path bounds for "{self.conveyance}"')
         else:
             self.source_geo = None
             self.source_output = None
@@ -388,3 +454,139 @@ class ConveyanceGeometry(object):
             self.target_pt = None
             self.target_cp = None
             self.midpoint = None
+
+
+class ConveyanceTurnDirection(Enum):
+    '''
+    Enum of values representing the flow of conveyance from one side of an imagined square to
+    another which shares a right angle.
+    '''
+
+    TOP_TO_LEFT     = 1
+    TOP_TO_RIGHT    = 2
+    RIGHT_TO_TOP    = 3
+    RIGHT_TO_BOTTOM = 4
+    BOTTOM_TO_RIGHT = 5
+    BOTTOM_TO_LEFT  = 6
+    LEFT_TO_BOTTOM  = 7
+    LEFT_TO_TOP     = 8
+
+
+class ConveyanceTurnGeometry(object):
+    '''
+    Represents the points in a single right-angle conveyance turn.
+    '''
+
+    def __init__(self,
+        control_point: Coordinate2D,
+        midpoint: Coordinate2D,
+        direction: ConveyanceTurnDirection,
+    ):
+        self.control_point = control_point
+        self.midpoint = midpoint
+        self.direction = direction
+        self.point1 = None
+        self.point2 = None
+    
+    def calculate(self,
+        scale: float = 1.0,
+    ):
+        radius = round(sizes['conveyance_radius'] * scale)
+        top = Coordinate2D(self.midpoint.x, self.control_point.y - radius)
+        bottom = Coordinate2D(self.midpoint.x, self.control_point.y + radius)
+        left = Coordinate2D(self.midpoint.x - radius, self.control_point.y)
+        right = Coordinate2D(self.midpoint.x + radius, self.control_point.y)
+        if self.direction == ConveyanceTurnDirection.TOP_TO_LEFT:
+            self.point1 = top
+            self.point2 = left
+        elif self.direction == ConveyanceTurnDirection.TOP_TO_RIGHT:
+            self.point1 = top
+            self.point2 = right
+        elif self.direction == ConveyanceTurnDirection.RIGHT_TO_TOP:
+            self.point1 = right
+            self.point2 = top
+        elif self.direction == ConveyanceTurnDirection.RIGHT_TO_BOTTOM:
+            self.point1 = right
+            self.point2 = bottom
+        elif self.direction == ConveyanceTurnDirection.BOTTOM_TO_RIGHT:
+            self.point1 = bottom
+            self.point2 = right
+        elif self.direction == ConveyanceTurnDirection.BOTTOM_TO_LEFT:
+            self.point1 = bottom
+            self.point2 = left
+        elif self.direction == ConveyanceTurnDirection.LEFT_TO_BOTTOM:
+            self.point1 = left
+            self.point2 = bottom
+        elif self.direction == ConveyanceTurnDirection.LEFT_TO_TOP:
+            self.point1 = left
+            self.point2 = top
+
+class ConveyanceTwoTurnGeometry(object):
+    '''
+    Contains the geometry that represents the right-angle turns in conveyance lines. Since a
+    conveyance transports things from one component's output to another component's input, the
+    `output_region` is the Region2D describing the component output (which is hooked to the
+    conveyance's input), while the `input_region` is the Region2D describing the component input
+    (which is hooked to the conveyance's output).
+
+    When this is drawn, it will show a path which extends from the output horizontally to a point
+    halfway closer to the input. A right angle turn is then drawn in the vertical direction toward
+    the input. A vertical line is drawn, then a second turn in the horizontal direction of the
+    input. A horizontal line is then drawn to complete the path to the input. `turn_1` is therefore
+    the first of these turns, while `turn_2` is the second.
+    '''
+
+    def __init__(self,
+        conveyance: Conveyance,
+        output_region: Region2D,  # Region of the output the conveyance is connected to
+        input_region: Region2D,   # Region of the input the conveyance is connected to
+        scale: float = 1.0
+    ):
+        self.conveyance = conveyance
+        self.output_region = output_region
+        self.input_region = input_region
+        self.turns = list[ConveyanceTurnGeometry]
+        self.scale = scale
+    
+    def calculate(self,
+        scale: float = 1.0
+    ):
+        # Determine which kind of turns these will be
+        turn1_dir = None
+        turn2_dir = None
+        if self.input_region.left >= self.output_region.left:
+            if self.input_region.top < self.output_region.top:
+                turn1_dir = ConveyanceTurnDirection.LEFT_TO_TOP
+                turn2_dir = ConveyanceTurnDirection.BOTTOM_TO_RIGHT
+            else:
+                turn1_dir = ConveyanceTurnDirection.LEFT_TO_BOTTOM
+                turn2_dir = ConveyanceTurnDirection.TOP_TO_RIGHT
+        else:
+            if self.input_region.top < self.output_region.top:
+                turn1_dir = ConveyanceTurnDirection.RIGHT_TO_TOP
+                turn2_dir = ConveyanceTurnDirection.BOTTOM_TO_LEFT
+            else:
+                turn1_dir = ConveyanceTurnDirection.RIGHT_TO_BOTTOM
+                turn2_dir = ConveyanceTurnDirection.TOP_TO_LEFT
+        
+        # Determine the midpoint of the vertical portion of the path
+        middle_x = round((self.input_region.middle.x - self.output_region.middle.x) / 2)
+        middle_x += self.output_region.middle.x
+        middle_y = round((self.input_region.middle.y - self.output_region.middle.y) / 2)
+        middle_y += self.input_region.middle.y
+        midpoint = Coordinate2D(middle_x, middle_y)
+
+        self.turns = [
+            ConveyanceTurnGeometry(
+                Coordinate2D(midpoint.x, self.output_region.middle.y),
+                midpoint,
+                turn1_dir
+            ),
+            ConveyanceTurnGeometry(
+                Coordinate2D(midpoint.x, self.input_region.middle.y),
+                midpoint,
+                turn2_dir
+            ),
+        ]
+        for turn in self.turns:
+            turn.calculate(self.scale)

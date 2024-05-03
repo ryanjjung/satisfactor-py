@@ -41,6 +41,7 @@ class Blueprint(object):
         background_color: str = '#383875',
         component_bg_color: str = '#14132d',
         component_border_color: str = '#a3a8fa',
+        connection_bg_color: str = '#403d7a',
         label_color: str = '#a3a8fa',
         label_font_family: str = "Sans",
         label_font_size: float = 10.0,
@@ -60,6 +61,7 @@ class Blueprint(object):
         self.background_color = background_color
         self.component_bg_color = component_bg_color
         self.component_border_color = component_border_color
+        self.connection_bg_color = connection_bg_color
         self.label_color = label_color
         self.line_color = line_color
         self.selected_component_bg_color = selected_component_bg_color
@@ -260,8 +262,7 @@ class Blueprint(object):
 
         # Set up colors
         bg_color = Gdk.RGBA()
-        bg_color.parse(self.selected_component_bg_color if self.selected == component
-            else self.component_bg_color)
+        bg_color.parse(self.connection_bg_color)
         border_color = Gdk.RGBA()
         border_color.parse(self.component_border_color)
         border_colors = [border_color, border_color, border_color, border_color]
@@ -301,8 +302,7 @@ class Blueprint(object):
 
         # Set up colors
         bg_color = Gdk.RGBA()
-        bg_color.parse(self.selected_component_bg_color if self.selected == component
-            else self.component_bg_color)
+        bg_color.parse(self.connection_bg_color)
         border_color = Gdk.RGBA()
         border_color.parse(self.component_border_color)
         border_colors = [border_color, border_color, border_color, border_color]
@@ -361,17 +361,18 @@ class Blueprint(object):
         conveyance: Conveyance,
         geometry: ConveyanceGeometry,
     ):
-        logging.debug(f'Drawing a conveyance: {conveyance}')
         stroke = Gsk.Stroke.new(geometry.width)
-        bounds_detected, bounds = geometry.path.get_bounds()
-        if not bounds_detected:
-            logging.debug('Could not detect bounds for GTK path')
-        else:
-            line_color = Gdk.RGBA()
-            line_color.parse(self.line_color)
-            snapshot.push_stroke(geometry.path, stroke)
-            snapshot.append_color(line_color, bounds)
-            snapshot.pop()
+        line_color = Gdk.RGBA()
+        line_color.parse(self.line_color)
+        bounds = Graphene.Rect().init(
+            geometry.bounds.left,
+            geometry.bounds.top,
+            geometry.bounds.width,
+            geometry.bounds.height
+        )
+        snapshot.push_stroke(geometry.path, stroke)
+        snapshot.append_color(line_color, bounds)
+        snapshot.pop()
 
     def draw_frame(self, widget, snapshot):
         '''
@@ -384,6 +385,7 @@ class Blueprint(object):
         for id, geometry in self.geometry.items():
             if not isinstance(self.factory.get_component_by_id(id), Conveyance):
                 if FIRST_RUN:
+                    logging.debug(f'Forcing geometry calculation for component {id}')
                     geometry.calculate(
                         widget.get_pango_context(),
                         scale=self.viewport.scale,
@@ -419,7 +421,8 @@ class Blueprint(object):
             if isinstance(conveyance, Conveyance):
                 if geometry.source_comp and geometry.target_comp:
                     if FIRST_RUN:
-                        geometry.calculate()
+                        logging.debug(f'Forcing geometry calculation for conveyance {id}')
+                        geometry.calculate(self.viewport.scale)
                     elif not geometry.source_pt \
                         or not geometry.target_pt \
                         or not geometry.midpoint \
