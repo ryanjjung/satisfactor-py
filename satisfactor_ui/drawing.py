@@ -37,20 +37,22 @@ class Blueprint(object):
     '''
 
     def __init__(self,
-        factory: Factory = None,
+        factory: Factory = Factory(),
         background_color: str = '#383875',
         component_bg_color: str = '#14132d',
         component_border_color: str = '#a3a8fa',
         connection_bg_color: str = '#403d7a',
+        conveyance_label_color: str = (56, 56, 117),  # Cairo only understands RGB values, not hex
+        conveyance_font_family: str = 'Sans',
+        conveyance_font_size: float = 8.0,
         label_color: str = '#a3a8fa',
-        label_font_family: str = "Sans",
+        label_font_family: str = 'Sans',
         label_font_size: float = 10.0,
         line_color: str = '#a3a8fa',
         selected_component_bg_color: str = '#95d0ff',
         viewport_region: Region2D = Region2D()
     ):
-        # Build a new factory if we weren't given one
-        self.factory = factory if factory else Factory()
+        self.factory = factory
 
         # Set up a few internals
         self.geometry = {} # Mapping of component UUIDs to ComponentGeometry objects
@@ -62,13 +64,16 @@ class Blueprint(object):
         self.component_bg_color = component_bg_color
         self.component_border_color = component_border_color
         self.connection_bg_color = connection_bg_color
+        self.conveyance_label_color = conveyance_label_color
+        self.conveyance_font_family = conveyance_font_family
+        self.conveyance_font_size = conveyance_font_size
         self.label_color = label_color
         self.line_color = line_color
         self.selected_component_bg_color = selected_component_bg_color
 
         # Set up fonts
         self.label_font_family = label_font_family
-        self.label_font_size = 10.0
+        self.label_font_size = label_font_size
 
     @staticmethod
     def load(filename: str):
@@ -372,6 +377,15 @@ class Blueprint(object):
         )
         snapshot.push_stroke(geometry.path, stroke)
         snapshot.append_color(line_color, bounds)
+        cairo_ctx = snapshot.append_cairo(bounds)
+        cairo_ctx.select_font_face(self.conveyance_font_family)
+        cairo_ctx.set_font_size(self.conveyance_font_size)
+        cairo_ctx.set_source_rgb(*self.conveyance_label_color)
+        cairo_ctx.text_path(f'>> {conveyance.name} >>')
+        cairo_path = geometry.path.to_cairo(cairo_ctx)
+        cairo_ctx.close_path()
+        cairo_ctx.fill()
+
         snapshot.pop()
 
     def draw_frame(self, widget, snapshot):
@@ -437,7 +451,7 @@ class Blueprint(object):
             if isinstance(component, Conveyance):
                 geometry = self.geometry.get(component.id)
                 self.draw_conveyance(snapshot, component, geometry)
-        
+
         if FIRST_RUN: FIRST_RUN = False
 
     def get_visible_component_geometry(self) -> list[tuple]:

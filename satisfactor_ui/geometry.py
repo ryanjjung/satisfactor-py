@@ -57,7 +57,7 @@ class Coordinate2D(object):
     ):
         self.x = x
         self.y = y
-    
+
     def __repr__(self):
         return f'<Coordinate2D ({self.x}, {self.y})>'
 
@@ -76,7 +76,7 @@ class Size2D(object):
     ):
         self.width = width
         self.height = height
-    
+
     def __repr__(self):
         return f'<Size2D ({self.width} x {self.height})>'
 
@@ -116,7 +116,7 @@ class Region2D(object):
     @property
     def bottom(self):
         return self.top + self.height
-    
+
     @property
     def middle(self):
         return Coordinate2D(
@@ -342,6 +342,35 @@ class ComponentGeometry(object):
             translate)
         self.__calculate_outputs(scale, translate)
 
+    @property
+    def bounds(self) -> Region2D:
+        '''
+        Returns a rectangle which encompasses the entire component.
+        '''
+
+        # The lowest x value will either be an input or the label
+        if len(self.inputs) == 0:
+            left = self.label.left
+        else:
+            left = min(self.label.left, self.inputs[0].left)
+
+        # The highest x value will either be an output or the label
+        if len(self.outputs) == 0:
+            width = self.label.right - left
+        else:
+            width = max(self.label.right, self.outputs[0].right) - left
+
+        # The lowest y value will always be the top of the background
+        top = self.background.top
+
+        # The highest y value will always be the bottom of the label
+        height = self.label.bottom - top
+
+        return Region2D(
+            Coordinate2D(left, top),
+            Size2D(width, height)
+        )
+
 
 class ConveyanceGeometry(object):
     '''
@@ -401,12 +430,12 @@ class ConveyanceGeometry(object):
 
             # Start at the source point
             path_str = f'M {self.source_pt.x} {self.source_pt.y} '
-            
+
             # Focus on the first turn
             point1 = self.geometry.turns[0].point1
             point2 = self.geometry.turns[0].point2
             ctrl_pt = self.geometry.turns[0].control_point
-            
+
             # Draw a line to the first turn
             path_str += f'L {point1.x} {point1.y} '
 
@@ -487,7 +516,7 @@ class ConveyanceTurnGeometry(object):
         self.direction = direction
         self.point1 = None
         self.point2 = None
-    
+
     def calculate(self,
         scale: float = 1.0,
     ):
@@ -521,6 +550,7 @@ class ConveyanceTurnGeometry(object):
             self.point1 = left
             self.point2 = top
 
+
 class ConveyanceTwoTurnGeometry(object):
     '''
     Contains the geometry that represents the right-angle turns in conveyance lines. Since a
@@ -547,7 +577,7 @@ class ConveyanceTwoTurnGeometry(object):
         self.input_region = input_region
         self.turns = list[ConveyanceTurnGeometry]
         self.scale = scale
-    
+
     def calculate(self,
         scale: float = 1.0
     ):
@@ -568,7 +598,7 @@ class ConveyanceTwoTurnGeometry(object):
             else:
                 turn1_dir = ConveyanceTurnDirection.RIGHT_TO_BOTTOM
                 turn2_dir = ConveyanceTurnDirection.TOP_TO_LEFT
-        
+
         # Determine the midpoint of the vertical portion of the path
         middle_x = round((self.input_region.middle.x - self.output_region.middle.x) / 2)
         middle_x += self.output_region.middle.x
