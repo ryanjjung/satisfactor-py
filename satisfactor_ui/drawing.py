@@ -45,10 +45,10 @@ class Blueprint(object):
         # conveyance_label_color: str = (56, 56, 117),  # Cairo only understands RGB values, not hex
         conveyance_label_color: str = (255, 0, 0),  # Cairo only understands RGB values, not hex
         conveyance_font_family: str = 'Sans',
-        conveyance_font_size: float = 30.0,
+        conveyance_font_size: float = 8.0,
         label_color: str = '#a3a8fa',
         label_font_family: str = 'Sans',
-        label_font_size: float = 80.0,
+        label_font_size: float = 10.0,
         line_color: str = '#a3a8fa',
         selected_component_bg_color: str = '#95d0ff',
         viewport_region: Region2D = Region2D()
@@ -336,12 +336,15 @@ class Blueprint(object):
         geometry: ComponentGeometry,
         scale: float
     ):
-        # Set up the label
+        # Set up the label and recalculate its geometry
         label = PangoTextLabel(
             component.name,
             self.label_font_family,
             self.label_font_size,
             widget,
+            scale)
+        geometry._ComponentGeometry__calculate_label(
+            *label.layout.get_pixel_size(),
             scale)
 
         # Set up color
