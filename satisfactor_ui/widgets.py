@@ -68,8 +68,21 @@ def get_texture_from_file(filename: str) -> Gdk.Texture:
 class InteractionMode(Enum):
     '''
     Discrete set of states the widget can be in with regards to user interaction.
+
+        - NORMAL: The "default" state of the app, as though it has just launched.
+        - NEW_COMPONENT_SELECTED: A component has been selected in the building list. Next, either
+            the component will be placed on the blueprint, or the action will be canceled.
+        - EXISTING_COMPONENT_SELECTED: A component already placed in the blueprint has been
+            selected. Details of the component have been displayed.
+        - EXISTING_COMPONENT_GRABBED: A component in the blueprint has had a mouse-down event, then
+            a mouse-move event without a mouse-up, indicating we want to move the component.
     '''
-    pass
+    
+    NORMAL = 0
+    NEW_COMPONENT_SELECTED = 1
+    EXISTING_COMPONENT_SELECTED  = 1
+    EXISTING_COMPONENT_GRABBED = 2
+
 
 class FactoryDesignerWidget(Gtk.Widget):
     '''
@@ -87,6 +100,8 @@ class FactoryDesignerWidget(Gtk.Widget):
         gesture_click = Gtk.GestureClick()
         self.add_controller(gesture_click)
         gesture_click.connect('pressed', self.on_pressed)
+
+        self.mode = InteractionMode.NORMAL
 
     def load_texture(self,
         filename: str,
@@ -135,6 +150,27 @@ class FactoryDesignerWidget(Gtk.Widget):
         x: float,
         y: float,
     ):
-        x = round(x * self.blueprint.viewport.scale) + self.blueprint.viewport.region.left
-        y = round(y * self.blueprint.viewport.scale) + self.blueprint.viewport.region.top
-        logging.debug(f'Click event {n_press} at ({x}, {y})')
+        x += self.blueprint.viewport.region.left
+        y += self.blueprint.viewport.region.top
+
+        components = self.blueprint.get_components_under_coordinate(
+            geometry.Coordinate2D(x, y))
+
+        if len(components) == 0:
+            self.blueprint.selected = None
+            self.mode = InteractionMode.NORMAL
+        elif len(components) == 1:
+            self.blueprint.selected = components[0]
+            self.mode = InteractionMode.EXISTING_COMPONENT_SELECTED
+        elif len(components) > 1:
+            if self.blueprint.selected:
+                index = components.index(self.blueprint.selected)
+                if index < len(components) - 1:
+                    index += 1
+                else:
+                    index = 0
+            else:
+                index = 0
+            self.blueprint.selected = components[index]
+            self.mode = InteractionMode.EXISTING_COMPONENT_SELECTED
+        self.queue_draw()

@@ -43,6 +43,8 @@ sizes = {
 }
 
 
+# Basic geometry primitives
+
 class Coordinate2D(object):
     '''
     A simple class used to pass around 2-dimensional coordinates.
@@ -124,9 +126,23 @@ class Region2D(object):
             self.top + round(self.height / 2)
         )
 
+    def contains(self,
+        point: Coordinate2D
+    ) -> bool:
+        '''
+        Returns True if the given Coordinate2D lies within the boundaries of the region, else False.
+        '''
+
+        if ((point.x >= self.left and point.x <= self.right)
+            and (point.y >= self.top and point.y <= self.bottom)):
+                return True
+        return False
+
     def __repr__(self):
         return f'<Region2D({self.location}, {self.size})>'
 
+
+# More complex constructions of the above primitives
 
 class ComponentGeometry(object):
     '''
@@ -414,6 +430,7 @@ class ConveyanceGeometry(object):
         target_input: int = None,  # The index of the target component's input this connects to
     ):
         self.conveyance = conveyance
+        self.label = Region2D()
         self.geometry = None
         self.source_comp = source_comp
         self.source_geo = source_geo
@@ -555,6 +572,7 @@ class ConveyanceGeometry(object):
     @property
     def runs_up(self) -> bool:
         return not self.runs_down
+
 
 class ConveyanceTurnDirection(Enum):
     '''

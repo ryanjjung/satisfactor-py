@@ -50,6 +50,7 @@ class Blueprint(object):
         label_font_size: float = 10.0,
         line_color: str = '#a3a8fa',
         selected_component_bg_color: str = '#95d0ff',
+        selected_line_color: str = '#95d0ff',
         viewport_region: Region2D = Region2D()
     ):
         self.factory = factory
@@ -70,6 +71,7 @@ class Blueprint(object):
         self.label_color = label_color
         self.line_color = line_color
         self.selected_component_bg_color = selected_component_bg_color
+        self.selected_line_color = selected_line_color
 
         # Set up fonts
         self.label_font_family = label_font_family
@@ -86,7 +88,6 @@ class Blueprint(object):
         with open(filename, 'rb') as fh:
             blueprint = pickle.load(fh)
         return blueprint
-
 
     def save(self,
         filename: str
@@ -370,7 +371,11 @@ class Blueprint(object):
         # Draw the twice-curving line of the conveyance
         stroke = Gsk.Stroke.new(geometry.width)
         line_color = Gdk.RGBA()
-        line_color.parse(self.line_color)
+        if self.selected == conveyance:
+            line_color.parse(self.selected_line_color)
+        else:
+            line_color.parse(self.line_color)
+            
         bounds = Graphene.Rect().init(
             geometry.bounds.left,
             geometry.bounds.top,
@@ -587,6 +592,19 @@ class Blueprint(object):
         '''
 
         return self.coordinateMap.get(component.id, Coordinate2D())
+
+    def get_components_under_coordinate(self,
+        coordinate: Coordinate2D
+    ) -> list[Component]:
+        '''
+        Returns a list of Components whose geometry contains the given coordinate.
+        '''
+
+        components = []
+        for id, geometry in self.geometry.items():
+            if geometry.bounds.contains(coordinate):
+                components.append(self.factory.get_component_by_id(id))
+        return components
 
 
 class PangoTextLabel(object):
