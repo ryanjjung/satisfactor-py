@@ -47,11 +47,10 @@ def build_test_blueprint():
     blueprint = drawing.Blueprint()
     blueprint.factory.name = 'Test Blueprint'
     blueprint.add_component(oreSupply, geometry.Coordinate2D(50, 20))
+    blueprint.add_component(smelter, geometry.Coordinate2D(225, 100))
     blueprint.add_component(convOreToSmelter, geometry.Coordinate2D())
-    blueprint.add_component(smelter, geometry.Coordinate2D(220, 20))
+    blueprint.add_component(storage, geometry.Coordinate2D(380, 20))
     blueprint.add_component(convIngotsToStorage, geometry.Coordinate2D())
-    blueprint.add_component(storage, geometry.Coordinate2D(370, 20))
-    blueprint.viewport.scale = 1.0
     return blueprint
 
 def get_texture_from_file(filename: str) -> Gdk.Texture:
@@ -78,6 +77,10 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.textures = {}
         self.blueprint = blueprint if blueprint else drawing.Blueprint()
 
+        gesture_click = Gtk.GestureClick()
+        self.add_controller(gesture_click)
+        gesture_click.connect('pressed', self.on_pressed)
+
     def load_texture(self,
         filename: str,
         category: str,
@@ -92,7 +95,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         if category not in self.textures.keys():
             self.textures[category] = {}
         self.textures[category][key] = texture
-        logging.debug(f'Loaded texture: {texture}')
+        logging.debug(f'Loaded texture: {category}/{key}')
         return texture
 
     def get_texture(self,
@@ -105,6 +108,7 @@ class FactoryDesignerWidget(Gtk.Widget):
 
         if category in self.textures.keys() and key in self.textures[category]:
             return self.textures[category][key]
+        logging.debug(f'Texture cache miss for {category}/{key}')
         return None
 
     def do_snapshot(self,
@@ -114,5 +118,16 @@ class FactoryDesignerWidget(Gtk.Widget):
         Draws the entire factory designer widget
         '''
 
-        self.blueprint.viewport.size = drawing.Size2D(self.get_width(), self.get_height())
+        self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
+        self.blueprint.viewport.scale = 2.5
         self.blueprint.draw_frame(self, snapshot)
+
+    def on_pressed(self,
+        click: Gtk.GestureClick,
+        n_press: int,
+        x: float,
+        y: float,
+    ):
+        x = round(x * self.blueprint.viewport.scale) + self.blueprint.viewport.region.left
+        y = round(y * self.blueprint.viewport.scale) + self.blueprint.viewport.region.top
+        logging.debug(f'Click event {n_press} at ({x}, {y})')
