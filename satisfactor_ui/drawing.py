@@ -382,8 +382,9 @@ class Blueprint(object):
         snapshot.pop()
 
         # Draw the label
+        text = conveyance.conveyance_type.name.title()
         label = PangoTextLabel(
-            f'>> {conveyance.name} >>',
+            text,
             self.conveyance_font_family,
             self.conveyance_font_size,
             widget,
@@ -401,9 +402,16 @@ class Blueprint(object):
         point.x = geometry.label.left
         point.y = geometry.label.top
 
-        # Draw the text, translate it, color it
+        # Draw the text, translate it, rotate it, color it
+        target_top = geometry.target_geo.inputs[geometry.target_input].top
+        source_top = geometry.source_geo.outputs[geometry.source_output].top
+        if target_top < source_top:
+            angle = -90.0
+        else:
+            angle = 90.0
         snapshot.save()
         snapshot.translate(point)
+        snapshot.rotate(angle)
         snapshot.append_layout(label.layout, label_color)
         snapshot.restore()
 
@@ -462,7 +470,7 @@ class Blueprint(object):
             if isinstance(conveyance, Conveyance):
                 if geometry.source_comp and geometry.target_comp:
                     label = PangoTextLabel(
-                        f'>> {conveyance.name} >>',
+                        conveyance.conveyance_type.name.title(),
                         self.conveyance_font_family,
                         self.conveyance_font_size,
                         widget,

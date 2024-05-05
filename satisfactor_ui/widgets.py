@@ -119,7 +119,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         '''
 
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
-        self.blueprint.viewport.scale = 1.0
+        self.blueprint.viewport.scale = 2.5
         self.blueprint.draw_frame(self, snapshot)
 
     def on_pressed(self,
@@ -128,4 +128,6 @@ class FactoryDesignerWidget(Gtk.Widget):
         x: float,
         y: float,
     ):
+        x = round(x * self.blueprint.viewport.scale) + self.blueprint.viewport.region.left
+        y = round(y * self.blueprint.viewport.scale) + self.blueprint.viewport.region.top
         logging.debug(f'Click event {n_press} at ({x}, {y})')

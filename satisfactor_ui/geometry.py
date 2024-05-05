@@ -438,15 +438,26 @@ class ConveyanceGeometry(object):
         Calculate the geometry for the conveyance's label
         '''
 
-        # TODO: Do we need to rotate the geometry here?
-        left = self.geometry.midpoint.x - round(label_width / 2)
-        top = self.geometry.midpoint.y - round(label_height / 2)
+        # import pdb; pdb.set_trace()
+        # Swap these measurements since the text will be rotated 90 degrees
+        width = label_height
+        height = label_width
+
+        if self.runs_down:
+            left = self.geometry.bounds.middle.x + round(width / 2)
+        else:
+            left = self.geometry.bounds.middle.x - round(width / 2)
+
+        if self.runs_down:
+            top = self.geometry.bounds.middle.y - round(height / 2)
+        else:
+            top = self.geometry.bounds.middle.y + round(height / 2)
+        top += round(self.geometry.turns[0].radius / 2)
+
         self.label = Region2D(
             Coordinate2D(left, top),
             Size2D(label_width, label_height)
         )
-        logging.debug(f'Label region: {self.label}')
-
 
     def __calculate_turns(self,
         scale: float = 1.0,
@@ -535,6 +546,15 @@ class ConveyanceGeometry(object):
         self.__calculate_turns(scale)
         self.__calculate_label(label_width, label_height)
 
+    @property
+    def runs_down(self) -> bool:
+        return True \
+            if self.geometry.input_region.middle.y > self.geometry.output_region.middle.y \
+            else False
+
+    @property
+    def runs_up(self) -> bool:
+        return not self.runs_down
 
 class ConveyanceTurnDirection(Enum):
     '''
@@ -567,6 +587,7 @@ class ConveyanceTurnGeometry(object):
         self.direction = direction
         self.point1 = None
         self.point2 = None
+        self.radius = None
 
     def calculate(self,
         scale: float = 1.0,
@@ -581,13 +602,13 @@ class ConveyanceTurnGeometry(object):
         '''
 
         # Concieve of a circle of a certain radius
-        radius = round(sizes['conveyance_radius'] * scale)
+        self.radius = round(sizes['conveyance_radius'] * scale)
 
         # The perfect top-center point of this circle is aligned to the control and midpoints, etc.
-        top = Coordinate2D(self.midpoint.x, self.control_point.y - radius)
-        bottom = Coordinate2D(self.midpoint.x, self.control_point.y + radius)
-        left = Coordinate2D(self.midpoint.x - radius, self.control_point.y)
-        right = Coordinate2D(self.midpoint.x + radius, self.control_point.y)
+        top = Coordinate2D(self.midpoint.x, self.control_point.y - self.radius)
+        bottom = Coordinate2D(self.midpoint.x, self.control_point.y + self.radius)
+        left = Coordinate2D(self.midpoint.x - self.radius, self.control_point.y)
+        right = Coordinate2D(self.midpoint.x + self.radius, self.control_point.y)
 
         # The turn connects two adjacent sides which share a right angle. Set these up based on the
         # direction described by the enum.
@@ -703,3 +724,23 @@ class ConveyanceTwoTurnGeometry(object):
         ]
         for turn in self.turns:
             turn.calculate(self.scale)
+
+    @property
+    def bounds(self) -> Region2D:
+        if self.input_region.middle.x >= self.output_region.middle.x:
+            left = self.output_region.middle.x
+        else:
+            left = self.input_region.left
+        width = abs(self.output_region.middle.x - self.input_region.middle.x)
+
+        if self.input_region.top < self.output_region.top:
+            top = self.input_region.top
+        else:
+            top = self.output_region.top
+        height = abs(self.output_region.middle.y - self.input_region.middle.y)
+
+        return Region2D(
+            Coordinate2D(left, top),
+            Size2D(width, height)
+        )
+
