@@ -388,7 +388,8 @@ class Blueprint(object):
             self.conveyance_font_family,
             self.conveyance_font_size,
             widget,
-            self.viewport.scale)
+            font_weight=Pango.Weight.MEDIUM,
+            scale=self.viewport.scale)
         geometry._ConveyanceGeometry__calculate_label(
             *label.layout.get_pixel_size(),
         )
@@ -599,11 +600,15 @@ class PangoTextLabel(object):
         font_size: float,
         widget: Gtk.Widget,
         scale: float = 1.0,
+        font_style: Pango.Style = Pango.Style.NORMAL,
+        font_weight: Pango.Weight = Pango.Weight.NORMAL,
     ):
         # Set up the font
         self.font = Pango.FontDescription.new()
         self.font.set_family(font_family)
         self.font.set_size(font_size * scale * Pango.SCALE)
+        self.font.set_style(font_style)
+        self.font.set_weight(font_weight)
 
         # Set up a layout
         self.pango_ctx = widget.get_pango_context()

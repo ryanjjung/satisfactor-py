@@ -5,6 +5,7 @@ import gi
 gi.require_version('Gdk', '4.0')
 gi.require_version('Gtk', '4.0')
 
+from enum import Enum
 from gi.repository import Gdk, Gtk, Gio, GObject
 from pathlib import Path
 from satisfactor_py import (
@@ -64,6 +65,12 @@ def get_texture_from_file(filename: str) -> Gdk.Texture:
     return None
 
 
+class InteractionMode(Enum):
+    '''
+    Discrete set of states the widget can be in with regards to user interaction.
+    '''
+    pass
+
 class FactoryDesignerWidget(Gtk.Widget):
     '''
     A FactoryDesginerWidget is a GTK Widget that draws a factory's components in a 2D visible space
@@ -119,7 +126,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         '''
 
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
-        self.blueprint.viewport.scale = 2.5
+        self.blueprint.viewport.scale = 1.5
         self.blueprint.draw_frame(self, snapshot)
 
     def on_pressed(self,
