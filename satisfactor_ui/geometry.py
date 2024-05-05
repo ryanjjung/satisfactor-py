@@ -430,8 +430,26 @@ class ConveyanceGeometry(object):
         self.target_cp = Coordinate2D()  # The control point for the curve entering the target
         self.midpoint = Coordinate2D()   # The middle point of the vertical portion of the line
 
-    def calculate(self,
-        scale: float = 1.0
+    def __calculate_label(self,
+        label_width: int,
+        label_height: int,
+    ):
+        '''
+        Calculate the geometry for the conveyance's label
+        '''
+
+        # TODO: Do we need to rotate the geometry here?
+        left = self.geometry.midpoint.x - round(label_width / 2)
+        top = self.geometry.midpoint.y - round(label_height / 2)
+        self.label = Region2D(
+            Coordinate2D(left, top),
+            Size2D(label_width, label_height)
+        )
+        logging.debug(f'Label region: {self.label}')
+
+
+    def __calculate_turns(self,
+        scale: float = 1.0,
     ):
         if self.source_comp and self.target_comp:
             # Set up the "source point" - the place where the line starts at the conveyance's input
@@ -509,6 +527,14 @@ class ConveyanceGeometry(object):
             self.target_cp = None
             self.midpoint = None
 
+    def calculate(self,
+        label_width: int,
+        label_height: int,
+        scale: float = 1.0
+    ):
+        self.__calculate_turns(scale)
+        self.__calculate_label(label_width, label_height)
+
 
 class ConveyanceTurnDirection(Enum):
     '''
@@ -562,7 +588,7 @@ class ConveyanceTurnGeometry(object):
         bottom = Coordinate2D(self.midpoint.x, self.control_point.y + radius)
         left = Coordinate2D(self.midpoint.x - radius, self.control_point.y)
         right = Coordinate2D(self.midpoint.x + radius, self.control_point.y)
-        
+
         # The turn connects two adjacent sides which share a right angle. Set these up based on the
         # direction described by the enum.
         if self.direction == ConveyanceTurnDirection.TOP_TO_LEFT:
@@ -616,6 +642,7 @@ class ConveyanceTwoTurnGeometry(object):
         self.conveyance = conveyance
         self.output_region = output_region
         self.input_region = input_region
+        self.midpoint = Coordinate2D()
         self.turns = []
         self.scale = scale
 
@@ -659,18 +686,18 @@ class ConveyanceTwoTurnGeometry(object):
         middle_y += self.input_region.middle.y
 
         # That is the perfect midpoint
-        midpoint = Coordinate2D(middle_x, middle_y)
+        self.midpoint = Coordinate2D(middle_x, middle_y)
 
         # Generate the geometry of the two turns
         self.turns = [
             ConveyanceTurnGeometry(
-                Coordinate2D(midpoint.x, self.output_region.middle.y),
-                midpoint,
+                Coordinate2D(self.midpoint.x, self.output_region.middle.y),
+                self.midpoint,
                 turn1_dir
             ),
             ConveyanceTurnGeometry(
-                Coordinate2D(midpoint.x, self.input_region.middle.y),
-                midpoint,
+                Coordinate2D(self.midpoint.x, self.input_region.middle.y),
+                self.midpoint,
                 turn2_dir
             ),
         ]

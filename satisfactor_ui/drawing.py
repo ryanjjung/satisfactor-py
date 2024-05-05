@@ -42,8 +42,7 @@ class Blueprint(object):
         component_bg_color: str = '#14132d',
         component_border_color: str = '#a3a8fa',
         connection_bg_color: str = '#403d7a',
-        # conveyance_label_color: str = (56, 56, 117),  # Cairo only understands RGB values, not hex
-        conveyance_label_color: str = (255, 0, 0),  # Cairo only understands RGB values, not hex
+        conveyance_label_color: str = '#383875',
         conveyance_font_family: str = 'Sans',
         conveyance_font_size: float = 8.0,
         label_color: str = '#a3a8fa',
@@ -382,6 +381,33 @@ class Blueprint(object):
         snapshot.append_color(line_color, bounds)
         snapshot.pop()
 
+        # Draw the label
+        label = PangoTextLabel(
+            f'>> {conveyance.name} >>',
+            self.conveyance_font_family,
+            self.conveyance_font_size,
+            widget,
+            self.viewport.scale)
+        geometry._ConveyanceGeometry__calculate_label(
+            *label.layout.get_pixel_size(),
+        )
+
+        # Set up color
+        label_color = Gdk.RGBA()
+        label_color.parse(self.conveyance_label_color)
+
+        # Set up positioning
+        point = Graphene.Point()
+        point.x = geometry.label.left
+        point.y = geometry.label.top
+
+        # Draw the text, translate it, color it
+        snapshot.save()
+        snapshot.translate(point)
+        snapshot.append_layout(label.layout, label_color)
+        snapshot.restore()
+
+
     def draw_frame(self, widget, snapshot):
         '''
         Draws a single frame of the contents of the viewport.
@@ -398,8 +424,7 @@ class Blueprint(object):
                     self.label_font_family,
                     self.label_font_size,
                     widget,
-                    self.viewport.scale
-                )
+                    self.viewport.scale)
                 if FIRST_RUN:
                     logging.debug(f'Forcing geometry calculation for component {id}')
                     geometry.calculate(
@@ -436,16 +461,26 @@ class Blueprint(object):
             conveyance = self.factory.get_component_by_id(id)
             if isinstance(conveyance, Conveyance):
                 if geometry.source_comp and geometry.target_comp:
+                    label = PangoTextLabel(
+                        f'>> {conveyance.name} >>',
+                        self.conveyance_font_family,
+                        self.conveyance_font_size,
+                        widget,
+                        self.viewport.scale)
                     if FIRST_RUN:
                         logging.debug(f'Forcing geometry calculation for conveyance {id}')
-                        geometry.calculate(self.viewport.scale)
+                        geometry.calculate(
+                            *label.layout.get_pixel_size(),
+                            self.viewport.scale)
                     elif not geometry.source_pt \
                         or not geometry.target_pt \
                         or not geometry.midpoint \
                         or not geometry.source_cp \
                         or not geometry.target_cp \
                         or not geometry.path:
-                            geometry.calculate(self.viewport.scale)
+                            geometry.calculate(
+                                *label.layout.get_pixel_size(),
+                                self.viewport.scale)
 
         visible_conveyances = self.get_conveyances_from_components(visible_components)
         # Draw the conveyances between the components

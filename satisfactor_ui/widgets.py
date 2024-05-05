@@ -77,6 +77,10 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.textures = {}
         self.blueprint = blueprint if blueprint else drawing.Blueprint()
 
+        gesture_click = Gtk.GestureClick()
+        self.add_controller(gesture_click)
+        gesture_click.connect('pressed', self.on_pressed)
+
     def load_texture(self,
         filename: str,
         category: str,
@@ -115,5 +119,13 @@ class FactoryDesignerWidget(Gtk.Widget):
         '''
 
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
-        self.blueprint.viewport.scale = 1.5
+        self.blueprint.viewport.scale = 1.0
         self.blueprint.draw_frame(self, snapshot)
+
+    def on_pressed(self,
+        click: Gtk.GestureClick,
+        n_press: int,
+        x: float,
+        y: float,
+    ):
+        logging.debug(f'Click event {n_press} at ({x}, {y})')
