@@ -382,7 +382,8 @@ class Blueprint(object):
             geometry.bounds.width,
             geometry.bounds.height
         )
-        snapshot.push_stroke(geometry.path, stroke)
+        path = Gsk.Path.parse(geometry.path_str)
+        snapshot.push_stroke(path, stroke)
         snapshot.append_color(line_color, bounds)
         snapshot.pop()
 

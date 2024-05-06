@@ -352,7 +352,7 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         self.scrollFactoryDesigner = Gtk.ScrolledWindow()
-        self.factoryDesigner = FactoryDesignerWidget(self.blueprint)
+        self.factoryDesigner = FactoryDesignerWidget(self, self.blueprint)
         self.scrollFactoryDesigner.set_child(self.factoryDesigner)
 
     def __build_top_bar(self):

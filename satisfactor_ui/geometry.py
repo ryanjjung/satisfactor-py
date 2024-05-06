@@ -302,8 +302,8 @@ class ComponentGeometry(object):
             i += 1
 
     def __calculate_label(self,
-        label_width: int,
-        label_height: int,
+        label_width: int = None,
+        label_height: int = None,
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
@@ -313,6 +313,11 @@ class ComponentGeometry(object):
         somewhere else, then using PangoLayout.get_pixel_size() to determine the label_width and
         label_height parameters to this function.
         '''
+
+        if not label_height:
+            label_height = self.label.height
+        if not label_width:
+            label_width = self.label.width
 
         label_size = Size2D(label_width, label_height)
 
@@ -362,8 +367,8 @@ class ComponentGeometry(object):
             i += 1
 
     def calculate(self,
-        label_width: int,
-        label_height: int,
+        label_width: int = None,
+        label_height: int = None,
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
@@ -448,14 +453,19 @@ class ConveyanceGeometry(object):
         self.midpoint = Coordinate2D()   # The middle point of the vertical portion of the line
 
     def __calculate_label(self,
-        label_width: int,
-        label_height: int,
+        label_width: int = None,
+        label_height: int = None,
     ):
         '''
         Calculate the geometry for the conveyance's label
         '''
 
-        # import pdb; pdb.set_trace()
+        # Use old measurements if there aren't new ones
+        if not label_width:
+            label_width = self.label.width
+        if not label_height:
+            label_height = self.label.height
+
         # Swap these measurements since the text will be rotated 90 degrees
         width = label_height
         height = label_width
@@ -479,6 +489,7 @@ class ConveyanceGeometry(object):
     def __calculate_turns(self,
         scale: float = 1.0,
     ):
+        logging.debug(f'source_comp: {self.source_comp}; target_comp: {self.target_comp}')
         if self.source_comp and self.target_comp:
             # Set up the "source point" - the place where the line starts at the conveyance's input
             self.source_pt = copy(self.source_geo.outputs[self.source_output].middle)
@@ -500,7 +511,7 @@ class ConveyanceGeometry(object):
             # https://docs.gtk.org/gsk4/type_func.Path.parse.html
 
             # Start at the source point
-            path_str = f'M {self.source_pt.x} {self.source_pt.y} '
+            self.path_str = f'M {self.source_pt.x} {self.source_pt.y} '
 
             # Focus on the first turn
             point1 = self.geometry.turns[0].point1
@@ -508,10 +519,10 @@ class ConveyanceGeometry(object):
             ctrl_pt = self.geometry.turns[0].control_point
 
             # Draw a line to the first turn
-            path_str += f'L {point1.x} {point1.y} '
+            self.path_str += f'L {point1.x} {point1.y} '
 
             # Draw a quadratic bezier curve around the turn radius
-            path_str += f'Q {ctrl_pt.x} {ctrl_pt.y} {point2.x} {point2.y} '
+            self.path_str += f'Q {ctrl_pt.x} {ctrl_pt.y} {point2.x} {point2.y} '
 
             # Focus on the second turn
             point1 = self.geometry.turns[1].point1
@@ -519,17 +530,18 @@ class ConveyanceGeometry(object):
             ctrl_pt = self.geometry.turns[1].control_point
 
             # Draw a line to the second turn
-            path_str += f'L {point1.x} {point1.y} '
+            self.path_str += f'L {point1.x} {point1.y} '
 
             # Draw a bezier curve around the turn radius
-            path_str += f'Q {ctrl_pt.x} {ctrl_pt.y} {point2.x} {point2.y} '
+            self.path_str += f'Q {ctrl_pt.x} {ctrl_pt.y} {point2.x} {point2.y} '
 
             # Draw a line to the target point
-            path_str += f'L {self.target_pt.x} {self.target_pt.y}'   # Line to the target point
+            self.path_str += f'L {self.target_pt.x} {self.target_pt.y}'   # Line to the target point
+            logging.debug(f'path_str: {self.path_str}')
 
             # Try to parse the path string
-            self.path = Gsk.Path.parse(path_str)
-            success, path_bounds = self.path.get_bounds()
+            path = Gsk.Path.parse(self.path_str)
+            success, path_bounds = path.get_bounds()
             if success:
                 # Determine the rectangle representing the outer boundary of this path when drawn
                 self.bounds = Region2D(
@@ -556,8 +568,8 @@ class ConveyanceGeometry(object):
             self.midpoint = None
 
     def calculate(self,
-        label_width: int,
-        label_height: int,
+        label_width: int = None,
+        label_height: int = None,
         scale: float = 1.0
     ):
         self.__calculate_turns(scale)
