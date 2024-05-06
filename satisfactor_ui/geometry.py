@@ -470,10 +470,17 @@ class ConveyanceGeometry(object):
         width = label_height
         height = label_width
 
+        # Apply some adjustments that are needed due to rotation
         if self.runs_down:
-            left = self.geometry.bounds.middle.x + round(width / 2)
+            if self.geometry.output_region.middle.x < self.geometry.input_region.middle.x:
+                left = self.geometry.bounds.middle.x + round(width / 2)
+            else:
+                left = self.geometry.bounds.middle.x + width
         else:
-            left = self.geometry.bounds.middle.x - round(width / 2)
+            if self.geometry.output_region.middle.x < self.geometry.input_region.middle.x:
+                left = self.geometry.bounds.middle.x - round(width / 2)
+            else:
+                left = self.geometry.bounds.middle.x
 
         if self.runs_down:
             top = self.geometry.bounds.middle.y - round(height / 2)
@@ -489,7 +496,6 @@ class ConveyanceGeometry(object):
     def __calculate_turns(self,
         scale: float = 1.0,
     ):
-        logging.debug(f'source_comp: {self.source_comp}; target_comp: {self.target_comp}')
         if self.source_comp and self.target_comp:
             # Set up the "source point" - the place where the line starts at the conveyance's input
             self.source_pt = copy(self.source_geo.outputs[self.source_output].middle)
@@ -537,7 +543,6 @@ class ConveyanceGeometry(object):
 
             # Draw a line to the target point
             self.path_str += f'L {self.target_pt.x} {self.target_pt.y}'   # Line to the target point
-            logging.debug(f'path_str: {self.path_str}')
 
             # Try to parse the path string
             path = Gsk.Path.parse(self.path_str)

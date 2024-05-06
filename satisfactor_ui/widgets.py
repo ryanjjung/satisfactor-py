@@ -69,7 +69,7 @@ class ComponentGrabEvent(object):
     '''
     Contains the state we need to remember in order to complete a drag-n-drop of a component.
     '''
-    
+
     def __init__(self,
         component: base.Component,              # What component is being dragged?
         geometry: geometry.ComponentGeometry,   # What does it look like when drawn?
@@ -92,7 +92,7 @@ class InteractionMode(Enum):
         - EXISTING_COMPONENT_GRABBED: A component in the blueprint has had a mouse-down event, then
             a mouse-move event without a mouse-up, indicating we want to move the component.
     '''
-    
+
     NORMAL = 0
     NEW_COMPONENT_SELECTED = 1
     EXISTING_COMPONENT_SELECTED  = 1
@@ -176,7 +176,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
         self.blueprint.viewport.scale = 1.0
         self.blueprint.draw_frame(self, snapshot)
-    
+
     def __update_selection(self,
         x: float,
         y: float,
@@ -211,7 +211,7 @@ class FactoryDesignerWidget(Gtk.Widget):
                 index = 0
             self.blueprint.selected = components[index]
             self.mode = InteractionMode.EXISTING_COMPONENT_SELECTED
-    
+
     def on_button_press(self,
         gesture_click: Gtk.GestureClick,
         n_press: int,
@@ -229,7 +229,6 @@ class FactoryDesignerWidget(Gtk.Widget):
         x: float,
         y: float,
     ):
-        logging.debug(f'on_button_release -- n_press: {n_press}, x: {x}, y: {y}')
         if self.blueprint.selected:
             self.mode = InteractionMode.EXISTING_COMPONENT_SELECTED
         else:
@@ -259,7 +258,7 @@ class FactoryDesignerWidget(Gtk.Widget):
                         )
                     )
                     self.mode = InteractionMode.EXISTING_COMPONENT_GRABBED
-        
+
         if self.mode == InteractionMode.EXISTING_COMPONENT_GRABBED:
             self.component_grab_event.geometry.location = geometry.Coordinate2D(
                 x / self.blueprint.viewport.scale - self.component_grab_event.pointer_offset.x,
