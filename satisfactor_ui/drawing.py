@@ -77,6 +77,9 @@ class Blueprint(object):
         self.label_font_family = label_font_family
         self.label_font_size = label_font_size
 
+        # Track whether the geometry needs to be recalculated
+        self.__invalid_geo = False
+
     @staticmethod
     def load(filename: str):
         '''
@@ -100,6 +103,9 @@ class Blueprint(object):
 
         with open(filename, 'wb') as fh:
             pickle.dump(self, fh, pickle.HIGHEST_PROTOCOL)
+
+    def invalidate_geometry(self):
+        self.__invalid_geo = True
 
     def add_component(self,
         component: Component,
@@ -154,7 +160,8 @@ class Blueprint(object):
         widget: Gtk.Widget,
         snapshot: Gdk.Snapshot,
         component: Component,
-        geometry: ComponentGeometry
+        geometry: ComponentGeometry,
+        label  # PangoTextLabel
     ):
         '''
         Draws a graphical representation of a factory component on the screen.
@@ -163,7 +170,7 @@ class Blueprint(object):
         self.draw_component_background(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_icon(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_badges(widget, snapshot, component, geometry, self.viewport.scale)
-        self.draw_component_label(widget, snapshot, component, geometry, self.viewport.scale)
+        self.draw_component_label(widget, snapshot, component, geometry, label, self.viewport.scale)
         self.draw_component_inputs(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_outputs(widget, snapshot, component, geometry, self.viewport.scale)
 
@@ -334,6 +341,7 @@ class Blueprint(object):
         snapshot: Gdk.Snapshot,
         component: Component,
         geometry: ComponentGeometry,
+        label, # PangoTextLabel
         scale: float
     ):
         # Set up the label and recalculate its geometry
@@ -345,7 +353,8 @@ class Blueprint(object):
             scale)
         geometry._ComponentGeometry__calculate_label(
             *label.layout.get_pixel_size(),
-            scale)
+            scale,
+            self.viewport.region.location)
 
         # Set up color
         label_color = Gdk.RGBA()
@@ -375,7 +384,7 @@ class Blueprint(object):
             line_color.parse(self.selected_line_color)
         else:
             line_color.parse(self.line_color)
-            
+
         bounds = Graphene.Rect().init(
             geometry.bounds.left,
             geometry.bounds.top,
@@ -422,8 +431,10 @@ class Blueprint(object):
         snapshot.append_layout(label.layout, label_color)
         snapshot.restore()
 
-
-    def draw_frame(self, widget, snapshot):
+    def draw_frame(self,
+        widget: Gtk.Widget,
+        snapshot: Gtk.Snapshot
+    ):
         '''
         Draws a single frame of the contents of the viewport.
         '''
@@ -440,7 +451,7 @@ class Blueprint(object):
                     self.label_font_size,
                     widget,
                     self.viewport.scale)
-                if FIRST_RUN:
+                if FIRST_RUN or self.__invalid_geo:
                     logging.debug(f'Forcing geometry calculation for component {id}')
                     geometry.calculate(
                         *label.layout.get_pixel_size(),
@@ -469,7 +480,7 @@ class Blueprint(object):
 
         # Draw those components
         for component, geometry in visible_component_geometry:
-            self.draw_component(widget, snapshot, component, geometry)
+            self.draw_component(widget, snapshot, component, geometry, label)
 
         # Make sure the conveyances have geometry
         for id, geometry in self.geometry.items():
@@ -482,7 +493,7 @@ class Blueprint(object):
                         self.conveyance_font_size,
                         widget,
                         self.viewport.scale)
-                    if FIRST_RUN:
+                    if FIRST_RUN or self.__invalid_geo:
                         logging.debug(f'Forcing geometry calculation for conveyance {id}')
                         geometry.calculate(
                             *label.layout.get_pixel_size(),
@@ -505,6 +516,7 @@ class Blueprint(object):
                 self.draw_conveyance(widget, snapshot, component, geometry)
 
         if FIRST_RUN: FIRST_RUN = False
+        self.__invalid_geo = False
 
     def get_visible_component_geometry(self) -> list[tuple]:
         '''

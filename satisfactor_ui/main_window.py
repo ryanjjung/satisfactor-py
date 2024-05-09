@@ -269,11 +269,11 @@ class MainWindow(Gtk.ApplicationWindow):
         # Build the left-hand panel containing the list of buildings
         self.__build_buildings_options()
         self.paneLeft.set_start_child(self.paneBuildingsOptions)
-        self.paneLeft.set_position(600)
+        self.paneLeft.set_position(300)
         self.paneLeft.set_vexpand(True)
 
         # Build the right-hand panel as another split panel
-        self.paneRight = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.paneRight = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.paneRight.set_position(800)
         self.paneLeft.set_end_child(self.paneRight)
 

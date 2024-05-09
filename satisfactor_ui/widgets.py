@@ -80,6 +80,7 @@ class ComponentGrabEvent(object):
         self.origin = geometry.location         # Remember the original location
         self.pointer_offset = pointer_offset
 
+
 class InteractionMode(Enum):
     '''
     Discrete set of states the widget can be in with regards to user interaction.
@@ -108,6 +109,7 @@ class PointerState(Enum):
     UP   = 0
     DOWN = 1
 
+
 class FactoryDesignerWidget(Gtk.Widget):
     '''
     A FactoryDesginerWidget is a GTK Widget that draws a factory's components in a 2D visible space
@@ -122,6 +124,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.textures = {}
         self.blueprint = blueprint if blueprint else drawing.Blueprint()
         self.mode = InteractionMode.NORMAL
+        self.pointer_down_at = None
         self.pointer_state = PointerState.UP
         self.window = window
 
@@ -188,9 +191,6 @@ class FactoryDesignerWidget(Gtk.Widget):
         cycle through those components.
         '''
 
-        x += self.blueprint.viewport.region.left
-        y += self.blueprint.viewport.region.top
-
         components = self.blueprint.get_components_under_coordinate(
             geometry.Coordinate2D(x, y))
 
@@ -218,9 +218,13 @@ class FactoryDesignerWidget(Gtk.Widget):
         x: float,
         y: float,
     ):
-        logging.debug(f'on_button_press -- n_press: {n_press}, x: {x}, y: {y}')
         self.__update_selection(x, y)
+        if self.blueprint.selected:
+            self.mode = InteractionMode.EXISTING_COMPONENT_SELECTED
+        else:
+            self.mode = InteractionMode.NORMAL
         self.pointer_state = PointerState.DOWN
+        self.pointer_down_at = geometry.Coordinate2D(x, y)
         self.queue_draw()
 
     def on_button_release(self,
@@ -234,6 +238,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         else:
             self.mode = InteractionMode.NORMAL
         self.pointer_state = PointerState.UP
+        self.pointer_down_at = None
         self.component_grab_event = None
         self.queue_draw()
         self.window.unsaved_changes = True
@@ -244,25 +249,29 @@ class FactoryDesignerWidget(Gtk.Widget):
         x: float,
         y: float,
     ):
-        if self.mode in [InteractionMode.NORMAL, InteractionMode.EXISTING_COMPONENT_SELECTED]:
+        redraw = False
+        if self.mode == InteractionMode.EXISTING_COMPONENT_SELECTED:
             if self.pointer_state == PointerState.DOWN \
                 and self.blueprint.selected \
                 and not isinstance(self.blueprint.selected, base.Conveyance):
                     geo = self.blueprint.geometry[self.blueprint.selected.id]
+                    logging.debug(f'Component location: {geo.location}')
                     self.component_grab_event = ComponentGrabEvent(
                         self.blueprint.selected,
                         geo,
                         geometry.Coordinate2D(
-                            x / self.blueprint.viewport.scale - geo.location.x,
-                            y / self.blueprint.viewport.scale - geo.location.y
+                            x / self.blueprint.viewport.scale - geo.location.x + self.blueprint.viewport.region.left,
+                            y / self.blueprint.viewport.scale - geo.location.y + self.blueprint.viewport.region.top
                         )
                     )
                     self.mode = InteractionMode.EXISTING_COMPONENT_GRABBED
+                    redraw = True
 
-        if self.mode == InteractionMode.EXISTING_COMPONENT_GRABBED:
+        elif self.mode == InteractionMode.EXISTING_COMPONENT_GRABBED:
             self.component_grab_event.geometry.location = geometry.Coordinate2D(
                 x / self.blueprint.viewport.scale - self.component_grab_event.pointer_offset.x,
                 y / self.blueprint.viewport.scale - self.component_grab_event.pointer_offset.y)
+            logging.debug(f'Grab event location: {self.component_grab_event.geometry.location}')
             self.component_grab_event.geometry.calculate(
                 label_height=None,
                 label_width=None,
@@ -281,5 +290,17 @@ class FactoryDesignerWidget(Gtk.Widget):
                         if conv_tgt:
                             conv_geo = self.blueprint.geometry[output.target.attached_to.id]
                             conv_geo.calculate(scale=self.blueprint.viewport.scale)
+            redraw = True
 
-            self.queue_draw()
+        elif self.pointer_state == PointerState.DOWN and self.mode == InteractionMode.NORMAL:
+            shift_x = x - self.pointer_down_at.x
+            shift_y = y - self.pointer_down_at.y
+            self.blueprint.viewport.region.location = geometry.Coordinate2D(
+                self.blueprint.viewport.region.left - shift_x,
+                self.blueprint.viewport.region.top - shift_y
+            )
+            self.pointer_down_at = geometry.Coordinate2D(x, y)
+            self.blueprint.invalidate_geometry()
+            redraw = True
+
+        if redraw: self.queue_draw()
