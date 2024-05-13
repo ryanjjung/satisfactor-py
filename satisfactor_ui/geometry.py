@@ -164,12 +164,14 @@ class ComponentGeometry(object):
 
     def __init__(self,
         component: Component,
-        location: Coordinate2D,
+        canvas_location: Coordinate2D,
         font_family: str = 'Sans',
-        font_size: int = 10,
+        font_size: float = 10.0,
     ):
+        # The canvas_location tracks placement on an imaginary canvas. All other values (background,
+        # badges, etc.) are pixel values derived from the canvas_location.
         self.component = component
-        self.location = location
+        self.canvas_location = canvas_location
 
         # The things we'll calculate
         self.background = None
@@ -188,15 +190,15 @@ class ComponentGeometry(object):
         outputs.
         '''
 
-        left = round(self.location.x * scale)
-        left += round(offsets['background_x'] * scale)
-        left -= round(translate.x * scale)
+        left = round(self.canvas_location.x * scale)   # Align bg to the component's left side
+        left += round(offsets['background_x'] * scale) # Offset by predetermined amount
+        left -= round(translate.x * scale)             # Subtract viewport x value
 
-        top = round(self.location.y * scale)
-        top += round(offsets['background_y'] * scale)
-        top -= round(translate.y * scale)
+        top = round(self.canvas_location.y * scale)    # Align bg to the component's top side
+        top += round(offsets['background_y'] * scale)  # Offset by predetermined amount
+        top -= round(translate.y * scale)              # Subtract viewport y value
 
-        width = round(sizes['background_x'] * scale)
+        width = round(sizes['background_x'] * scale)   # Scale out the size
         height = round(sizes['background_y'] * scale)
 
         self.background = Region2D(Coordinate2D(left, top), Size2D(width, height))
@@ -231,13 +233,13 @@ class ComponentGeometry(object):
         # Calculate each badge's geometry
         i = 0
         for badge in self.badges.keys():
-            left = round(self.location.x * scale)  # Start at the left edge
+            left = round(self.canvas_location.x * scale)     # Start at the left edge
             left += round(sizes['component_x'] * scale / 2)  # Move right to the centerpoint
             left -= round(total_width / 2)  # Go back left by half the width of the whole row
             left += round(i * (sizes['badges_x'] + paddings['badges_x']) * scale ) # Offset from other badges
             left -= round(translate.x * scale)  # Translate
 
-            top = round(self.location.y * scale) # Start at the top edge of the component
+            top = round(self.canvas_location.y * scale) # Start at the top edge of the component
             top += round(offsets['badges_y'] * scale) # Move down by a hardcoded vertical offset
             top -= round(translate.y * scale) # Translate
 
@@ -255,11 +257,11 @@ class ComponentGeometry(object):
         Calculates the geometry describing the component's icon.
         '''
 
-        left = round(self.location.x * scale)
+        left = round(self.canvas_location.x * scale)
         left += round(offsets['icon_x'] * scale)
         left -= round(translate.x * scale)
 
-        top = round(self.location.y * scale)
+        top = round(self.canvas_location.y * scale)
         top += round(offsets['icon_y'] * scale)
         top -= round(translate.y * scale)
 
@@ -281,7 +283,7 @@ class ComponentGeometry(object):
             + paddings['inputs_y'] * (len(self.component.inputs) - 1)
             * scale), 0)
 
-        left = round(self.location.x * scale)
+        left = round(self.canvas_location.x * scale)
         left += round(offsets['input_x'] * scale)
         left -= round(translate.x * scale)
 
@@ -291,7 +293,7 @@ class ComponentGeometry(object):
         self.inputs = []
         i = 0
         for input in self.component.inputs:
-            top = round(self.location.y * scale)
+            top = round(self.canvas_location.y * scale)
             top += round(offsets['icon_y'] * scale)  # Start at the top of the icon
             top += round(sizes['icon_y'] * scale / 2)  # Move down by half the height of the icon
             top -= round(total_height * scale / 2)  # Move back up by half the height of the full input bar
@@ -322,12 +324,12 @@ class ComponentGeometry(object):
         label_size = Size2D(label_width, label_height)
 
         # Center the text under the icon
-        left = round(self.location.x * scale)  # Start at the canvas location
+        left = round(self.canvas_location.x * scale)  # Start at the canvas location
         left += round(sizes['component_x'] * scale / 2)  # Move right to the center of the component
         left -= round(label_size.width / 2)  # Left by half the width of the label to center it
         left -= round(translate.x)     # Translate and scale
 
-        top = round(self.location.y * scale)  # Start at the canvas location
+        top = round(self.canvas_location.y * scale)  # Start at the canvas location
         top += round(offsets['label_y'] * scale)  # Move down by a hardcoded offset
         top -= round(translate.y)  # Translate and scale
 
@@ -346,14 +348,14 @@ class ComponentGeometry(object):
             + paddings['outputs_y'] * (len(self.component.outputs) - 1)
             * scale), 0)
 
-        left = round(self.location.x * scale)
+        left = round(self.canvas_location.x * scale)
         left += round(offsets['output_x'] * scale)
         left -= round(translate.x * scale)
 
         self.outputs = []
         i = 0
         for output in self.component.outputs:
-            top = round(self.location.y * scale)
+            top = round(self.canvas_location.y * scale)
             top += round(offsets['icon_y'] * scale)  # Start at the top of the icon
             top += round(sizes['icon_y'] * scale / 2)  # Move down by half the height of the icon
             top -= round(total_height * scale / 2)  # Move back up by half the height of the full output bar

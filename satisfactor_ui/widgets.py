@@ -212,6 +212,10 @@ class FactoryDesignerWidget(Gtk.Widget):
             self.blueprint.selected = components[index]
             self.mode = InteractionMode.EXISTING_COMPONENT_SELECTED
 
+        if self.blueprint.selected:
+            geo = self.blueprint.geometry.get(self.blueprint.selected.id)
+            logging.debug(f'Selected component {self.blueprint.selected} with location {geo.location.x}, {geo.location.y}')
+
     def on_button_press(self,
         gesture_click: Gtk.GestureClick,
         n_press: int,
@@ -250,6 +254,9 @@ class FactoryDesignerWidget(Gtk.Widget):
         y: float,
     ):
         redraw = False
+
+        # If the mouse is moving and we've already got a component selected and the mouse button is
+        # down, then we have to move a component. Set the current grab event to start tracking it.
         if self.mode == InteractionMode.EXISTING_COMPONENT_SELECTED:
             if self.pointer_state == PointerState.DOWN \
                 and self.blueprint.selected \
@@ -260,22 +267,37 @@ class FactoryDesignerWidget(Gtk.Widget):
                         self.blueprint.selected,
                         geo,
                         geometry.Coordinate2D(
-                            x / self.blueprint.viewport.scale - geo.location.x + self.blueprint.viewport.region.left,
-                            y / self.blueprint.viewport.scale - geo.location.y + self.blueprint.viewport.region.top
+                            x - geo.location.x - self.blueprint.viewport.region.left,
+                            y - geo.location.y - self.blueprint.viewport.region.top
                         )
+                        #geometry.Coordinate2D(
+                        #    x / self.blueprint.viewport.scale - geo.location.x + self.blueprint.viewport.region.left,
+                        #    y / self.blueprint.viewport.scale - geo.location.y + self.blueprint.viewport.region.top
+                        #)
                     )
                     self.mode = InteractionMode.EXISTING_COMPONENT_GRABBED
                     redraw = True
 
+        # If the mouse is moving and a component has already been grabbed, then we have to move that
+        # component.
         elif self.mode == InteractionMode.EXISTING_COMPONENT_GRABBED:
+            comp_x = self.component_grab_event.geometry.location.x
+            comp_y = self.component_grab_event.geometry.location.y
+            offset_x = self.component_grab_event.pointer_offset.x
+            offset_y = self.component_grab_event.pointer_offset.y
             self.component_grab_event.geometry.location = geometry.Coordinate2D(
-                x / self.blueprint.viewport.scale - self.component_grab_event.pointer_offset.x,
-                y / self.blueprint.viewport.scale - self.component_grab_event.pointer_offset.y)
-            logging.debug(f'Grab event location: {self.component_grab_event.geometry.location}')
+                comp_x - offset_x,
+                comp_y - offset_y
+            )
+            # self.component_grab_event.geometry.location = geometry.Coordinate2D(
+            #     x / self.blueprint.viewport.scale - self.component_grab_event.pointer_offset.x,
+            #     y / self.blueprint.viewport.scale - self.component_grab_event.pointer_offset.y)
             self.component_grab_event.geometry.calculate(
                 label_height=None,
                 label_width=None,
                 scale=self.blueprint.viewport.scale)
+
+            # When the component moves, we have to redraw any conveyances attached to it
             for input in self.component_grab_event.component.inputs:
                 if input.source:
                     if isinstance(input.source.attached_to, base.Conveyance):

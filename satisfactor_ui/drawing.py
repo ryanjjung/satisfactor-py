@@ -24,6 +24,16 @@ from satisfactor_ui.geometry import (
 BASE_IMAGE_FILE_PATH = './static/images'
 FIRST_RUN=True
 
+COLORS = {
+    'comp_bg_deselected': None,
+    'comp_bg_selected': None,
+    'comp_bg_border': None,
+    'comp_label': None,
+    'conn_bg': None,
+    'conn_deselected': None,
+    'conn_selected': None,
+    'conn_label': None,
+}
 
 class Blueprint(object):
     '''
@@ -109,7 +119,7 @@ class Blueprint(object):
 
     def add_component(self,
         component: Component,
-        location: Coordinate2D
+        canvas_location: Coordinate2D
     ):
         '''
         Adds a component to the factory and sets up its coordinate mapping
@@ -134,7 +144,7 @@ class Blueprint(object):
                     target_comp.inputs.index(component.outputs[0].target),
                 )
         else:
-            self.geometry[component.id] = ComponentGeometry(component, location)
+            self.geometry[component.id] = ComponentGeometry(component, canvas_location)
 
     def draw_widget_background(self,
         snapshot: Gdk.Snapshot,
@@ -181,20 +191,37 @@ class Blueprint(object):
         geometry: ComponentGeometry,
         scale: float
     ):
-        bg_color = Gdk.RGBA()
-        bg_color.parse(self.selected_component_bg_color if self.selected == component
-            else self.component_bg_color)
-        border_color = Gdk.RGBA()
-        border_color.parse(self.component_border_color)
+        # Set up the colors
+        if not COLORS['comp_bg_selected']:
+            COLORS['comp_bg_selected'] = Gdk.RGBA()
+            COLORS['comp_bg_selected'].parse(self.selected_component_bg_color)
+        if not COLORS['comp_bg_deselected']:
+            COLORS['comp_bg_deselected'] = Gdk.RGBA()
+            COLORS['comp_bg_deselected'].parse(self.selected_component_bg_color)
+        if not COLORS['comp_bg_border']:
+            COLORS['comp_bg_border'] = Gdk.RGBA()
+            COLORS['comp_bg_border'].parse(self.component_border_color)
 
+        # Set up the rounded rectangle
         geo = geometry.background
         rect = Graphene.Rect().init(geo.left, geo.top, geo.width, geo.height)
         rounded_rect = Gsk.RoundedRect()
         rounded_rect.init_from_rect(rect, radius=4)
 
-        border_colors = [border_color, border_color, border_color, border_color]
+        # Define the border
+        border_colors = [
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+        ]
         border_sizes = [2.0, 2.0, 2.0, 2.0]
 
+        # Define the background
+        bg_color = COLORS['comp_bg_selected'] if component == self.selected \
+            else COLORS['comp_bg_deselected']
+
+        # Do the drawing
         snapshot.push_rounded_clip(rounded_rect)
         snapshot.append_color(bg_color, rect)
         snapshot.append_border(rounded_rect, border_sizes, border_colors)
@@ -274,11 +301,18 @@ class Blueprint(object):
             input_texture = widget.load_texture(filename, 'badges', 'input')
 
         # Set up colors
-        bg_color = Gdk.RGBA()
-        bg_color.parse(self.connection_bg_color)
-        border_color = Gdk.RGBA()
-        border_color.parse(self.component_border_color)
-        border_colors = [border_color, border_color, border_color, border_color]
+        if not COLORS['conn_bg']:
+            COLORS['conn_bg'] = Gdk.RGBA()
+            COLORS['conn_bg'].parse(self.connection_bg_color)
+        if not COLORS['comp_bg_border']:
+            COLORS['comp_bg_border'] = Gdk.RGBA()
+            COLORS['comp_bg_border'].parse(self.component_border_color)
+        border_colors = [
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+        ]
         border_sizes = [1.0, 0.0, 1.0, 0.0]
 
         for input in geometry.inputs:
@@ -314,11 +348,18 @@ class Blueprint(object):
             output_texture = widget.load_texture(filename, 'badges', 'output')
 
         # Set up colors
-        bg_color = Gdk.RGBA()
-        bg_color.parse(self.connection_bg_color)
-        border_color = Gdk.RGBA()
-        border_color.parse(self.component_border_color)
-        border_colors = [border_color, border_color, border_color, border_color]
+        if not COLORS['conn_bg']:
+            COLORS['conn_bg'] = Gdk.RGBA()
+            COLORS['conn_bg'].parse(self.connection_bg_color)
+        if not COLORS['comp_bg_border']:
+            COLORS['comp_bg_border'] = Gdk.RGBA()
+            COLORS['comp_bg_border'].parse(self.component_border_color)
+        border_colors = [
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+        ]
         border_sizes = [1.0, 0.0, 1.0, 0.0]
 
         for output in geometry.outputs:
@@ -341,24 +382,26 @@ class Blueprint(object):
         snapshot: Gdk.Snapshot,
         component: Component,
         geometry: ComponentGeometry,
-        label, # PangoTextLabel
-        scale: float
+        label = None, # PangoTextLabel
+        scale: float = 1.0
     ):
         # Set up the label and recalculate its geometry
-        label = PangoTextLabel(
-            component.name,
-            self.label_font_family,
-            self.label_font_size,
-            widget,
-            scale)
+        if not label:
+            label = PangoTextLabel(
+                component.name,
+                self.label_font_family,
+                self.label_font_size,
+                widget,
+                scale)
         geometry._ComponentGeometry__calculate_label(
             *label.layout.get_pixel_size(),
             scale,
             self.viewport.region.location)
 
         # Set up color
-        label_color = Gdk.RGBA()
-        label_color.parse(self.label_color)
+        if not COLORS['comp_label']:
+            COLORS['comp_label'] = Gdk.RGBA()
+            COLORS['comp_label'].parse(self.label_color)
 
         # Set up positioning
         point = Graphene.Point()
@@ -377,13 +420,24 @@ class Blueprint(object):
         conveyance: Conveyance,
         geometry: ConveyanceGeometry,
     ):
+        # Set up colors
+        if not COLORS['conn_deselected']:
+            COLORS['conn_deselected'] = Gdk.RGBA()
+            COLORS['conn_deselected'].parse(self.line_color)
+        if not COLORS['conn_selected']:
+            COLORS['conn_selected'] = Gdk.RGBA()
+            COLORS['conn_selected'].parse(self.selected_line_color)
+        if not COLORS['conn_label']:
+            COLORS['conn_label'] = Gdk.RGBA()
+            COLORS['conn_label'].parse(self.conveyance_label_color)
+
+        if self.selected == conveyance:
+            line_color = COLORS['conn_selected']
+        else:
+            line_color = COLORS['conn_deselected']
+
         # Draw the twice-curving line of the conveyance
         stroke = Gsk.Stroke.new(geometry.width)
-        line_color = Gdk.RGBA()
-        if self.selected == conveyance:
-            line_color.parse(self.selected_line_color)
-        else:
-            line_color.parse(self.line_color)
 
         bounds = Graphene.Rect().init(
             geometry.bounds.left,
@@ -409,10 +463,6 @@ class Blueprint(object):
             *label.layout.get_pixel_size(),
         )
 
-        # Set up color
-        label_color = Gdk.RGBA()
-        label_color.parse(self.conveyance_label_color)
-
         # Set up positioning
         point = Graphene.Point()
         point.x = geometry.label.left
@@ -428,7 +478,7 @@ class Blueprint(object):
         snapshot.save()
         snapshot.translate(point)
         snapshot.rotate(angle)
-        snapshot.append_layout(label.layout, label_color)
+        snapshot.append_layout(label.layout, COLORS['conn_label'])
         snapshot.restore()
 
     def draw_frame(self,
