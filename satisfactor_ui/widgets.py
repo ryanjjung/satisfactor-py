@@ -214,7 +214,6 @@ class FactoryDesignerWidget(Gtk.Widget):
 
         if self.blueprint.selected:
             geo = self.blueprint.geometry.get(self.blueprint.selected.id)
-            logging.debug(f'Selected component {self.blueprint.selected} with location {geo.canvas_location.x}, {geo.canvas_location.y}')
 
     def on_button_press(self,
         gesture_click: Gtk.GestureClick,
