@@ -197,7 +197,7 @@ class Blueprint(object):
             COLORS['comp_bg_selected'].parse(self.selected_component_bg_color)
         if not COLORS['comp_bg_deselected']:
             COLORS['comp_bg_deselected'] = Gdk.RGBA()
-            COLORS['comp_bg_deselected'].parse(self.selected_component_bg_color)
+            COLORS['comp_bg_deselected'].parse(self.deselected_component_bg_color)
         if not COLORS['comp_bg_border']:
             COLORS['comp_bg_border'] = Gdk.RGBA()
             COLORS['comp_bg_border'].parse(self.component_border_color)
@@ -322,7 +322,7 @@ class Blueprint(object):
             bg_rect.init_from_rect(input_rect, radius=0)
 
             snapshot.push_rounded_clip(bg_rect)
-            snapshot.append_color(bg_color, input_rect)
+            snapshot.append_color(COLORS['comp_bg_deselected'], input_rect)
             snapshot.append_border(bg_rect, border_sizes, border_colors)
             snapshot.pop()
 
@@ -369,7 +369,7 @@ class Blueprint(object):
             bg_rect.init_from_rect(output_rect, radius=0)
 
             snapshot.push_rounded_clip(bg_rect)
-            snapshot.append_color(bg_color, output_rect)
+            snapshot.append_color(COLORS['conn_bg'], output_rect)
             snapshot.append_border(bg_rect, border_sizes, border_colors)
             snapshot.pop()
 
@@ -411,7 +411,7 @@ class Blueprint(object):
         # Draw the text, translate it, color it
         snapshot.save()
         snapshot.translate(point)
-        snapshot.append_layout(label.layout, label_color)
+        snapshot.append_layout(label.layout, COLORS['comp_label'])
         snapshot.restore()
 
     def draw_conveyance(self,
@@ -419,6 +419,7 @@ class Blueprint(object):
         snapshot: Gtk.Snapshot,
         conveyance: Conveyance,
         geometry: ConveyanceGeometry,
+        label_text: str,
     ):
         # Set up colors
         if not COLORS['conn_deselected']:
@@ -451,9 +452,8 @@ class Blueprint(object):
         snapshot.pop()
 
         # Draw the label
-        text = conveyance.conveyance_type.name.title()
         label = PangoTextLabel(
-            text,
+            label_text,
             self.conveyance_font_family,
             self.conveyance_font_size,
             widget,
@@ -494,6 +494,7 @@ class Blueprint(object):
         # Make sure the components have geometry
         for id, geometry in self.geometry.items():
             component = self.factory.get_component_by_id(id)
+            # Conveyances are special; exclude them here
             if not isinstance(component, Conveyance):
                 label = PangoTextLabel(
                     component.name,
@@ -501,12 +502,13 @@ class Blueprint(object):
                     self.label_font_size,
                     widget,
                     self.viewport.scale)
+                # Always generate geometry if we haven't already or if it's been marked as invalid
                 if FIRST_RUN or self.__invalid_geo:
-                    logging.debug(f'Forcing geometry calculation for component {id}')
                     geometry.calculate(
                         *label.layout.get_pixel_size(),
                         scale=self.viewport.scale,
                         translate=self.viewport.region.location)
+                # Otherwise, generate geometry if we lack any of these calculations
                 elif not geometry.background \
                     or not geometry.badges \
                     or not geometry.icon \
@@ -518,7 +520,10 @@ class Blueprint(object):
                             scale=self.viewport.scale,
                             translate=self.viewport.region.location)
 
+        # Fill the background first; everything else gets drawn on top
         self.draw_widget_background(snapshot=snapshot)
+
+        # Determine what components are actually visible and must be drawn
         visible_component_geometry = self.get_visible_component_geometry()
         visible_components = [component[0] for component in visible_component_geometry]
 
@@ -536,35 +541,34 @@ class Blueprint(object):
         for id, geometry in self.geometry.items():
             conveyance = self.factory.get_component_by_id(id)
             if isinstance(conveyance, Conveyance):
+                # Only worry about drawing a conveyance if it's attached to something visible
                 if geometry.source_comp and geometry.target_comp:
+                    label_text = conveyance.__class__.__name__
                     label = PangoTextLabel(
-                        conveyance.conveyance_type.name.title(),
+                        label_text,
                         self.conveyance_font_family,
                         self.conveyance_font_size,
                         widget,
                         self.viewport.scale)
+                    # Same as before, always generate geometry on the first run and if anything is
+                    # invalidated. Otherwise, generate it if some piece of data is missing.
                     if FIRST_RUN or self.__invalid_geo:
-                        logging.debug(f'Forcing geometry calculation for conveyance {id}')
                         geometry.calculate(
                             *label.layout.get_pixel_size(),
                             self.viewport.scale)
-                    elif not geometry.source_pt \
-                        or not geometry.target_pt \
-                        or not geometry.midpoint \
-                        or not geometry.source_cp \
-                        or not geometry.target_cp \
-                        or not geometry.path:
-                            geometry.calculate(
-                                *label.layout.get_pixel_size(),
-                                self.viewport.scale)
+                    elif geometry.geometry is None:
+                        geometry.calculate(
+                            *label.layout.get_pixel_size(),
+                            self.viewport.scale)
 
+        # Determine which conveyances are visible and draw them
         visible_conveyances = self.get_conveyances_from_components(visible_components)
-        # Draw the conveyances between the components
         for component in visible_conveyances:
             if isinstance(component, Conveyance):
                 geometry = self.geometry.get(component.id)
-                self.draw_conveyance(widget, snapshot, component, geometry)
+                self.draw_conveyance(widget, snapshot, component, geometry, label_text)
 
+        # Clear out these flags since we've just generated all this geometry
         if FIRST_RUN: FIRST_RUN = False
         self.__invalid_geo = False
 
@@ -577,7 +581,7 @@ class Blueprint(object):
         viewport and must be drawn when updating the widget.
         '''
 
-        # Filter out components without coordinate mappings
+        # Filter out conveyances and components without coordinate mappings
         drawable_components = [ (component, self.geometry[component.id]) \
             for component in self.factory.components
             if component.id in self.geometry.keys()
@@ -587,10 +591,10 @@ class Blueprint(object):
         canvas_region = self.viewport.get_visible_canvas_region()
         visible_components = []
         for component, geometry in drawable_components:
-            if (geometry.location.x + sizes['component_x'] >= canvas_region.left
-                and geometry.location.y + sizes['component_y'] >= canvas_region.top) \
-            and (geometry.location.x <= canvas_region.right
-                and geometry.location.y <= canvas_region.top + canvas_region.height):
+            if (geometry.canvas_location.x + sizes['component_x'] >= canvas_region.left
+                and geometry.canvas_location.y + sizes['component_y'] >= canvas_region.top) \
+            and (geometry.canvas_location.x <= canvas_region.right
+                and geometry.canvas_location.y <= canvas_region.top + canvas_region.height):
                     visible_components.append((component, geometry))
         return visible_components
 
@@ -604,8 +608,13 @@ class Blueprint(object):
         '''
 
         offscreen_components = []
+        # If there are no onscreen components at all, we don't need to draw any offscreen ones
         if len(visible_components) > 0:
             for component in visible_components:
+                # Scan each component's inputs to see if they're connected. If so, are they
+                # connected to a Conveyance? If so, is that Conveyance connected to something on the
+                # other end? Only if all of these things are true should we include the attached
+                # component.
                 for input in component.inputs:
                     if input.source:
                         input_attachment = input.source.attached_to
@@ -615,6 +624,7 @@ class Blueprint(object):
                                 if input_attachment.id in self.geometry.keys():
                                     offscreen_components.append((input_attachment,
                                         self.geometry.get(input_attachment.id)))
+                # Do the same checks but for this component's outputs
                 for output in component.outputs:
                     if output.target:
                         output_attachment = output.target.attached_to
@@ -627,6 +637,10 @@ class Blueprint(object):
         return offscreen_components
 
     def get_conveyances_from_components(self, components) -> list[tuple]:
+        '''
+        Given a list of components, returns a list of conveyances attached to them
+        '''
+
         conveyances = []
         for component in components:
             if isinstance(component, Conveyance):
