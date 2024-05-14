@@ -77,7 +77,7 @@ class ComponentGrabEvent(object):
     ):
         self.component = component
         self.geometry = geometry
-        self.origin = geometry.location         # Remember the original location
+        self.origin = geometry.canvas_location  # Remember the original location
         self.pointer_offset = pointer_offset
 
 
@@ -214,7 +214,7 @@ class FactoryDesignerWidget(Gtk.Widget):
 
         if self.blueprint.selected:
             geo = self.blueprint.geometry.get(self.blueprint.selected.id)
-            logging.debug(f'Selected component {self.blueprint.selected} with location {geo.location.x}, {geo.location.y}')
+            logging.debug(f'Selected component {self.blueprint.selected} with location {geo.canvas_location.x}, {geo.canvas_location.y}')
 
     def on_button_press(self,
         gesture_click: Gtk.GestureClick,
@@ -262,13 +262,13 @@ class FactoryDesignerWidget(Gtk.Widget):
                 and self.blueprint.selected \
                 and not isinstance(self.blueprint.selected, base.Conveyance):
                     geo = self.blueprint.geometry[self.blueprint.selected.id]
-                    logging.debug(f'Component location: {geo.location}')
+                    logging.debug(f'Component location: {geo.canvas_location}')
                     self.component_grab_event = ComponentGrabEvent(
                         self.blueprint.selected,
                         geo,
                         geometry.Coordinate2D(
-                            x - geo.location.x - self.blueprint.viewport.region.left,
-                            y - geo.location.y - self.blueprint.viewport.region.top
+                            x - geo.canvas_location.x - self.blueprint.viewport.region.left,
+                            y - geo.canvas_location.y - self.blueprint.viewport.region.top
                         )
                         #geometry.Coordinate2D(
                         #    x / self.blueprint.viewport.scale - geo.location.x + self.blueprint.viewport.region.left,
@@ -281,11 +281,11 @@ class FactoryDesignerWidget(Gtk.Widget):
         # If the mouse is moving and a component has already been grabbed, then we have to move that
         # component.
         elif self.mode == InteractionMode.EXISTING_COMPONENT_GRABBED:
-            comp_x = self.component_grab_event.geometry.location.x
-            comp_y = self.component_grab_event.geometry.location.y
+            comp_x = self.component_grab_event.geometry.canvas_location.x
+            comp_y = self.component_grab_event.geometry.canvas_location.y
             offset_x = self.component_grab_event.pointer_offset.x
             offset_y = self.component_grab_event.pointer_offset.y
-            self.component_grab_event.geometry.location = geometry.Coordinate2D(
+            self.component_grab_event.geometry.canvas_location = geometry.Coordinate2D(
                 comp_x - offset_x,
                 comp_y - offset_y
             )

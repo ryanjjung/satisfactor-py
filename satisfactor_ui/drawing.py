@@ -197,7 +197,7 @@ class Blueprint(object):
             COLORS['comp_bg_selected'].parse(self.selected_component_bg_color)
         if not COLORS['comp_bg_deselected']:
             COLORS['comp_bg_deselected'] = Gdk.RGBA()
-            COLORS['comp_bg_deselected'].parse(self.deselected_component_bg_color)
+            COLORS['comp_bg_deselected'].parse(self.component_bg_color)
         if not COLORS['comp_bg_border']:
             COLORS['comp_bg_border'] = Gdk.RGBA()
             COLORS['comp_bg_border'].parse(self.component_border_color)
