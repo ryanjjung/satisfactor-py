@@ -353,9 +353,52 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         self.paneBottom = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self.lblFactoryContext = Gtk.Label(label='Factory Context')
+
+        # Contain all the factory-level functions within a box so they can all be enabled and
+        # disabled by doing so to this one widget
+        self.boxFactoryFunctions = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.boxFactoryFunctions.set_spacing(5)
+        self.boxFactoryFunctions.set_sensitive(True if self.blueprint else False)
+
+        # Build the text box showing the name of the factory
+        self.boxFactoryName = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxFactoryName.set_hexpand(True)
+        self.boxFactoryName.set_spacing(5)
+        self.lblFactoryName = Gtk.Label(label='Factory Name:')
+        self.lblFactoryName.set_margin_start(5)
+        self.entryFactoryName = Gtk.Entry()
+        self.entryFactoryName.set_hexpand(True)
+        self.boxFactoryName.append(self.lblFactoryName)
+        self.boxFactoryName.append(self.entryFactoryName)
+        self.boxFactoryFunctions.append(self.boxFactoryName)
+
+        # Build the controls allowing tier/upgrade selection
+        self.boxTierUpgrade = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxTierUpgrade.set_spacing(5)
+        self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
+        self.lblTierUpgrade.set_margin_start(5)
+        self.boxTierUpgrade.append(self.lblTierUpgrade)
+
+        # The "Tier" combo box is populated from the satisfactor_py.base.Availability class
+        self.cboTier = Gtk.ComboBoxText()
+        for tier in Availability.get_tier_strings():
+            self.cboTier.append(tier, tier)
+        self.cboTier.set_active(0)
+        self.boxTierUpgrade.append(self.cboTier)
+
+        # The "/" character between the combo boxes
+        self.lblTierUpgradeSlash = Gtk.Label(label='/')
+        self.boxTierUpgrade.append(self.lblTierUpgradeSlash)
+
+        # The "Upgrade" combo box gets populated based on the "Tier" selection
+        self.cboUpgrade = Gtk.ComboBoxText()
+        self.__cboTier_changed(self.cboUpgrade)
+        self.boxTierUpgrade.append(self.cboUpgrade)
+
+        self.boxFactoryFunctions.append(self.boxTierUpgrade)
+
+        self.paneBottom.set_start_child(self.boxFactoryFunctions)
         self.lblComponentContext = Gtk.Label(label='Component Context')
-        self.paneBottom.set_start_child(self.lblFactoryContext)
         self.paneBottom.set_end_child(self.lblComponentContext)
         self.paneBottom.set_position(600)
 
@@ -404,39 +447,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxTopBar.append(self.btnOpenFactory)
         self.boxTopBar.append(self.btnSaveFactory)
         self.boxTopBar.append(self.btnSaveFactoryAs)
-
-        # Contain all the factory-level functions within a box so they can all be enabled and
-        # disabled by doing so to this one widget
-        self.boxFactoryFunctions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.boxFactoryFunctions.set_sensitive(True if self.blueprint else False)
-        self.boxTopBar.append(self.boxFactoryFunctions)
-
-        # Build the text box showing the name of the factory
-        self.entryFactoryName = Gtk.Entry()
-        self.entryFactoryName.set_size_request(300, -1)
-        self.boxFactoryFunctions.append(self.entryFactoryName)
-
-        # Build the controls allowing tier/upgrade selection
-        self.lblTierUpgrade = Gtk.Label(label='Tier/Upgrade:')
-        self.lblTierUpgrade.set_margin_start(10)
-        self.lblTierUpgrade.set_margin_end(10)
-        self.boxFactoryFunctions.append(self.lblTierUpgrade)
-
-        # The "Tier" combo box is populated from the satisfactor_py.base.Availability class
-        self.cboTier = Gtk.ComboBoxText()
-        for tier in Availability.get_tier_strings():
-            self.cboTier.append(tier, tier)
-        self.cboTier.set_active(0)
-        self.boxFactoryFunctions.append(self.cboTier)
-
-        # The "/" character between the combo boxes
-        self.lblTierUpgradeSlash = Gtk.Label(label='/')
-        self.boxFactoryFunctions.append(self.lblTierUpgradeSlash)
-
-        # The "Upgrade" combo box gets populated based on the "Tier" selection
-        self.cboUpgrade = Gtk.ComboBoxText()
-        self.__cboTier_changed(self.cboUpgrade)
-        self.boxFactoryFunctions.append(self.cboUpgrade)
 
         return self.boxTopBar
 
