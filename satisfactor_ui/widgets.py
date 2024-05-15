@@ -73,12 +73,11 @@ class ComponentGrabEvent(object):
     def __init__(self,
         component: base.Component,              # What component is being dragged?
         geometry: geometry.ComponentGeometry,   # What does it look like when drawn?
-        pointer_offset: geometry.Coordinate2D,  # How far away is the pointer from the origin?
+        mouse_position: geometry.Coordinate2D,  # How far away is the pointer from the origin?
     ):
         self.component = component
         self.geometry = geometry
-        self.origin = geometry.canvas_location  # Remember the original location
-        self.pointer_offset = pointer_offset
+        self.mouse_position = mouse_position
 
 
 class InteractionMode(Enum):
@@ -263,38 +262,50 @@ class FactoryDesignerWidget(Gtk.Widget):
                     geo = self.blueprint.geometry[self.blueprint.selected.id]
                     logging.debug(f'Component location: {geo.canvas_location}')
                     self.component_grab_event = ComponentGrabEvent(
-                        self.blueprint.selected,
-                        geo,
-                        geometry.Coordinate2D(
-                            x - geo.canvas_location.x - self.blueprint.viewport.region.left,
-                            y - geo.canvas_location.y - self.blueprint.viewport.region.top
-                        )
+                        self.blueprint.selected,     # The selected component
+                        geo,                         # Geometry for the selected component
+                        geometry.Coordinate2D(x, y)  # Pixel location of the mouse event
+                    )
                         #geometry.Coordinate2D(
                         #    x / self.blueprint.viewport.scale - geo.location.x + self.blueprint.viewport.region.left,
                         #    y / self.blueprint.viewport.scale - geo.location.y + self.blueprint.viewport.region.top
                         #)
-                    )
                     self.mode = InteractionMode.EXISTING_COMPONENT_GRABBED
                     redraw = True
 
         # If the mouse is moving and a component has already been grabbed, then we have to move that
         # component.
         elif self.mode == InteractionMode.EXISTING_COMPONENT_GRABBED:
+            # Get the canvas location of the component
             comp_x = self.component_grab_event.geometry.canvas_location.x
             comp_y = self.component_grab_event.geometry.canvas_location.y
-            offset_x = self.component_grab_event.pointer_offset.x
-            offset_y = self.component_grab_event.pointer_offset.y
+
+            # Get the location of the original mousedown event
+            mousedown_x = self.component_grab_event.mouse_position.x
+            mousedown_y = self.component_grab_event.mouse_position.y
+
+            # Get the difference between the mousedown event and the current mouse position
+            offset_x = x - mousedown_x
+            offset_y = y - mousedown_y
+
+            # Convert that into a difference in canvas position
+            offset_x /= self.blueprint.viewport.scale
+            offset_y /= self.blueprint.viewport.scale
+
+            # Update the component's canvas_location and force recalculation of its geometry
             self.component_grab_event.geometry.canvas_location = geometry.Coordinate2D(
-                comp_x - offset_x,
-                comp_y - offset_y
+                comp_x + offset_x,
+                comp_y + offset_y
             )
-            # self.component_grab_event.geometry.location = geometry.Coordinate2D(
-            #     x / self.blueprint.viewport.scale - self.component_grab_event.pointer_offset.x,
-            #     y / self.blueprint.viewport.scale - self.component_grab_event.pointer_offset.y)
+            # import pdb; pdb.set_trace()
             self.component_grab_event.geometry.calculate(
                 label_height=None,
                 label_width=None,
-                scale=self.blueprint.viewport.scale)
+                scale=self.blueprint.viewport.scale,
+                translate=self.blueprint.viewport.region.location)
+
+            # Update the grab event's coordinates
+            self.component_grab_event.mouse_position = geometry.Coordinate2D(x, y)
 
             # When the component moves, we have to redraw any conveyances attached to it
             for input in self.component_grab_event.component.inputs:
@@ -313,14 +324,22 @@ class FactoryDesignerWidget(Gtk.Widget):
                             conv_geo.calculate(scale=self.blueprint.viewport.scale)
             redraw = True
 
+        # If the mouse moves and the mouse button is down, but we have not grabbed a component, then
+        # we must be moving the viewport.
         elif self.pointer_state == PointerState.DOWN and self.mode == InteractionMode.NORMAL:
+            # Determine the distance between where the mouse is now and where the pointer was last
+            # tracked. This is the distance we need to shift the viewport.
             shift_x = x - self.pointer_down_at.x
             shift_y = y - self.pointer_down_at.y
             self.blueprint.viewport.region.location = geometry.Coordinate2D(
                 self.blueprint.viewport.region.left - shift_x,
                 self.blueprint.viewport.region.top - shift_y
             )
+
+            # Update the pointer position
             self.pointer_down_at = geometry.Coordinate2D(x, y)
+
+            # Force all geometry to be recalculated, then redraw the widget
             self.blueprint.invalidate_geometry()
             redraw = True
 
