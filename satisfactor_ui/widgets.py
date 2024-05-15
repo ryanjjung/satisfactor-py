@@ -127,6 +127,9 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.pointer_state = PointerState.UP
         self.window = window
 
+        self.mouse_position = geometry.Coordinate2D()
+        self.zoom_factor = 0.05
+
         click_controller = Gtk.GestureClick()
         click_controller.connect('pressed', self.on_button_press)
         click_controller.connect('released', self.on_button_release)
@@ -135,6 +138,11 @@ class FactoryDesignerWidget(Gtk.Widget):
         motion_controller = Gtk.EventControllerMotion()
         motion_controller.connect('motion', self.on_motion)
         self.add_controller(motion_controller)
+
+        scroll_controller = Gtk.EventControllerScroll()
+        scroll_controller.set_flags(Gtk.EventControllerScrollFlags.VERTICAL)
+        scroll_controller.connect('scroll', self.on_scroll)
+        self.add_controller(scroll_controller)
 
         self.component_grab_event = None
 
@@ -176,7 +184,6 @@ class FactoryDesignerWidget(Gtk.Widget):
         '''
 
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
-        self.blueprint.viewport.scale = 1.0
         self.blueprint.draw_frame(self, snapshot)
 
     def __update_selection(self,
@@ -252,6 +259,8 @@ class FactoryDesignerWidget(Gtk.Widget):
         y: float,
     ):
         redraw = False
+
+        self.mouse_position = geometry.Coordinate2D(x, y)
 
         # If the mouse is moving and we've already got a component selected and the mouse button is
         # down, then we have to move a component. Set the current grab event to start tracking it.
@@ -329,8 +338,8 @@ class FactoryDesignerWidget(Gtk.Widget):
         elif self.pointer_state == PointerState.DOWN and self.mode == InteractionMode.NORMAL:
             # Determine the distance between where the mouse is now and where the pointer was last
             # tracked. This is the distance we need to shift the viewport.
-            shift_x = x - self.pointer_down_at.x
-            shift_y = y - self.pointer_down_at.y
+            shift_x = (x - self.pointer_down_at.x) / self.blueprint.viewport.scale
+            shift_y = (y - self.pointer_down_at.y) / self.blueprint.viewport.scale
             self.blueprint.viewport.region.location = geometry.Coordinate2D(
                 self.blueprint.viewport.region.left - shift_x,
                 self.blueprint.viewport.region.top - shift_y
@@ -344,3 +353,34 @@ class FactoryDesignerWidget(Gtk.Widget):
             redraw = True
 
         if redraw: self.queue_draw()
+
+    def on_scroll(self,
+        scroll_controller: Gtk.EventControllerScroll,
+        x: float,
+        y: float,
+    ):
+        '''
+        Handles scroll events, which change the viewport scale.
+        '''
+
+        # When y is positive, we have a "scroll down" event, which means "zoom out" in this context
+        zoom_out = True if y > 0 else False
+
+        if zoom_out:
+            zoom_factor = -self.zoom_factor
+        else:
+            zoom_factor = self.zoom_factor
+        self.blueprint.viewport.scale += zoom_factor
+
+        # Center the viewport
+        shift_x = self.mouse_position.x * zoom_factor
+        shift_y = self.mouse_position.y * zoom_factor
+        self.blueprint.viewport.region.location = geometry.Coordinate2D(
+            self.blueprint.viewport.region.left + shift_x,
+            self.blueprint.viewport.region.top + shift_y,
+        )
+
+        # Force all geometry to be recalculated, then draw a new frame
+        logging.debug(f'Shifting viewport: ({shift_x}, {shift_y}) to {self.blueprint.viewport.region.location}')
+        self.blueprint.invalidate_geometry()
+        self.queue_draw()
