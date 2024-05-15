@@ -128,7 +128,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.window = window
 
         self.mouse_position = geometry.Coordinate2D()
-        self.zoom_factor = 0.05
+        self.zoom_factor = 0.1
 
         click_controller = Gtk.GestureClick()
         click_controller.connect('pressed', self.on_button_press)
@@ -235,6 +235,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.pointer_state = PointerState.DOWN
         self.pointer_down_at = geometry.Coordinate2D(x, y)
         self.queue_draw()
+        self.window.update_window()
 
     def on_button_release(self,
         gesture_click: Gtk.GestureClick,

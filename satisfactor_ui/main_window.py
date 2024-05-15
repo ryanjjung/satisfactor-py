@@ -272,18 +272,19 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneLeft.set_position(300)
         self.paneLeft.set_vexpand(True)
 
-        # Build the right-hand panel as another split panel
+        # Build the right-hand panel as another split panel with the designer on top and some panels
+        # providing context on the factory and components on the bottom
         self.paneRight = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.paneRight.set_position(800)
         self.paneLeft.set_end_child(self.paneRight)
 
-        # Build the center panel containing the factory designer
+        # Build the main panel containing the factory designer
         self.__build_factory_designer()
         self.paneRight.set_start_child(self.scrollFactoryDesigner)
 
-        # Build the content of the right-hand context panel
-        lblContext = Gtk.Label(label='Context Info')  # Placeholder
-        self.paneRight.set_end_child(lblContext)
+        # Build the content of the context panel on the bottom
+        self.__build_context_panel()
+        self.paneRight.set_end_child(self.paneBottom)
 
         # Add the top bar last since it causes the rest of the UI to update
         self.boxMain.prepend(self.__build_top_bar())
@@ -345,6 +346,18 @@ class MainWindow(Gtk.ApplicationWindow):
         # Compile panel contents
         self.paneBuildingsOptions.set_start_child(self.scrollBuildingFilters)
         self.paneBuildingsOptions.set_end_child(self.scrollBuildings)
+
+    def __build_context_panel(self):
+        '''
+        Builds the bottom panel showing context about the factory and selected component.
+        '''
+
+        self.paneBottom = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.lblFactoryContext = Gtk.Label(label='Factory Context')
+        self.lblComponentContext = Gtk.Label(label='Component Context')
+        self.paneBottom.set_start_child(self.lblFactoryContext)
+        self.paneBottom.set_end_child(self.lblComponentContext)
+        self.paneBottom.set_position(600)
 
     def __build_factory_designer(self):
         '''
