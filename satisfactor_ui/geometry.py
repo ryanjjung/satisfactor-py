@@ -327,11 +327,11 @@ class ComponentGeometry(object):
         left = round(self.canvas_location.x * scale)  # Start at the canvas location
         left += round(sizes['component_x'] * scale / 2)  # Move right to the center of the component
         left -= round(label_size.width / 2)  # Left by half the width of the label to center it
-        left -= round(translate.x)     # Translate and scale
+        left -= round(translate.x * scale)     # Translate and scale
 
         top = round(self.canvas_location.y * scale)  # Start at the canvas location
         top += round(offsets['label_y'] * scale)  # Move down by a hardcoded offset
-        top -= round(translate.y)  # Translate and scale
+        top -= round(translate.y * scale)  # Translate and scale
 
         self.label = Region2D(Coordinate2D(left, top), label_size)
 
