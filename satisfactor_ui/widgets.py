@@ -176,7 +176,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         '''
 
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
-        self.blueprint.viewport.scale = 1.5
+        self.blueprint.viewport.scale = 1.0
         self.blueprint.draw_frame(self, snapshot)
 
     def __update_selection(self,
