@@ -128,7 +128,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.window = window
 
         self.mouse_position = geometry.Coordinate2D()
-        self.zoom_factor = 0.1
+        self.zoom_factor = 0.05
 
         click_controller = Gtk.GestureClick()
         click_controller.connect('pressed', self.on_button_press)
