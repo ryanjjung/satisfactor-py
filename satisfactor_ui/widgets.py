@@ -47,8 +47,9 @@ def build_test_blueprint():
     # Add them to a blueprint with coordinates, except for Conveyances, which don't need them
     blueprint = drawing.Blueprint()
     blueprint.factory.name = 'Test Blueprint'
+    blueprint.factory.availability = base.Availability(0, 5)
     blueprint.add_component(oreSupply, geometry.Coordinate2D(50, 20))
-    blueprint.add_component(smelter, geometry.Coordinate2D(225, 100))
+    blueprint.add_component(smelter, geometry.Coordinate2D(225, 150))
     blueprint.add_component(convOreToSmelter, geometry.Coordinate2D())
     blueprint.add_component(storage, geometry.Coordinate2D(380, 20))
     blueprint.add_component(convIngotsToStorage, geometry.Coordinate2D())

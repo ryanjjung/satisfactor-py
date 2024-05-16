@@ -17,6 +17,7 @@ from satisfactor_py.buildings import get_all as get_all_buildings
 from satisfactor_py.conveyances import get_all as get_all_conveyances
 from satisfactor_py.factories import Factory
 from satisfactor_py.items import get_all as get_all_items
+from satisfactor_py.recipes import get_all as get_all_recipes
 from satisfactor_py.storages import get_all as get_all_storages
 from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
 from satisfactor_ui.drawing import Blueprint
@@ -48,7 +49,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         logging.debug('Initiating main window')
         self.blueprint = None
-        self.blueprintFile = None
+        self.blueprintFile = filename
         self.unsaved_changes = False
 
         self.filters = {
@@ -63,8 +64,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
         if filename:
             self.load_blueprint(filename)
-        else:
-            self.update_window()
+
+        self.update_window()
 
 
     # Common Functions
@@ -123,6 +124,42 @@ class MainWindow(Gtk.ApplicationWindow):
             logging.error(f'An error occurred when loading a blueprint from file {filename}\n  {ex}')
             # TODO: Replace with an actual ErrorDialog
 
+    def set_component_context(self):
+        '''
+        Populates the widgets in the component context panels.
+        '''
+
+        if self.blueprint and self.blueprint.selected:
+            c = self.blueprint.selected  # This just makes the rest of this code read better
+            self.lblComponentAvailability.set_text(
+                f'Available at Tier {c.availability.tier}, Upgrade {c.availability.upgrade}')
+            
+            # Recipe model is (item image, amount, item name)
+            recipe_store = Gtk.ListStore(Pixbuf, str)
+
+            # Get the recipe to build the component
+            try:
+                comp_recipe_name, comp_recipe = [ (name, recipe) for name, recipe
+                    in get_all_recipes()
+                    if name == c.__class__.__name__ ][0]
+                logging.debug(f'Recipe for {comp_recipe_name}: {comp_recipe}')
+            except IndexError:
+                logging.debug('Failed to get the component recipe')
+                comp_recipe = None
+
+            if comp_recipe:
+                logging.debug(f'Recipe consumes {comp_recipe.consumes}')
+                for ingredient in comp_recipe.consumes:
+                    logging.debug(f'Appending item {comp_recipe_name}: {ingredient.amount}x {ingredient.item.name}')
+                    recipe_store.append((
+                        self.pixelBuffers['items'][comp_recipe_name],
+                        f'{ingredient.amount}x {ingredient.item.name}'))
+            self.icovwComponentRecipe.set_model(recipe_store)
+            self.icovwComponentRecipe.set_pixbuf_column(0)
+            self.icovwComponentRecipe.set_text_column(1)
+        else:
+            pass
+
     def set_tier_and_upgrade(self,
         tier: int = None,
         upgrade: int = None
@@ -138,20 +175,20 @@ class MainWindow(Gtk.ApplicationWindow):
             self.block_all_signals()
             # Update the factory model first
             if tier is not None:
-                self.blueprint.factory.tier = tier
-            if upgrade:
-                self.blueprint.factory.upgrade = upgrade
+                self.blueprint.factory.availability.tier = tier
+            if upgrade is not None:
+                self.blueprint.factory.availability.upgrade = upgrade
             logging.debug(f'Selecting tier/upgrade values: '
-                f'{self.blueprint.factory.tier}/{self.blueprint.factory.upgrade}')
+                f'{self.blueprint.factory.availability.tier}/{self.blueprint.factory.availability.upgrade}')
 
             # Set the tier value in the combo box
-            self.cboTier.set_active(self.blueprint.factory.tier)
+            self.cboTier.set_active(self.blueprint.factory.availability.tier)
 
             # Populate the appropriate upgrade values
             self.cboUpgrade.remove_all()
-            for upgrade in Availability.get_upgrade_strings(self.blueprint.factory.tier):
+            for upgrade in Availability.get_upgrade_strings(self.blueprint.factory.availability.tier):
                 self.cboUpgrade.append(upgrade, upgrade)
-            self.cboUpgrade.set_active(self.blueprint.factory.upgrade - 1)
+            self.cboUpgrade.set_active(self.blueprint.factory.availability.upgrade - 1)
             self.unblock_all_signals()
 
     def set_window_title(self):
@@ -186,10 +223,10 @@ class MainWindow(Gtk.ApplicationWindow):
             if self.filters['availability']:
                 avail_buildings = []
                 for building in all_buildings:
-                    if self.blueprint.factory.tier > building.availability.tier:
+                    if self.blueprint.factory.availability.tier > building.availability.tier:
                         avail_buildings.append(building)
-                    elif self.blueprint.factory.tier == building.availability.tier:
-                        if self.blueprint.factory.upgrade >= building.availability.upgrade:
+                    elif self.blueprint.factory.availability.tier == building.availability.tier:
+                        if self.blueprint.factory.availability.upgrade >= building.availability.upgrade:
                             avail_buildings.append(building)
             else:
                 avail_buildings = all_buildings
@@ -229,6 +266,9 @@ class MainWindow(Gtk.ApplicationWindow):
         logging.debug('Updating window')
         self.block_all_signals()
         self.set_window_title()
+        self.set_component_context()
+
+        # Set availability of various widgets
         if self.blueprint:
             self.boxFactoryFunctions.set_sensitive(True)
             self.btnSaveFactory.set_sensitive(self.unsaved_changes)
@@ -269,7 +309,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # Build the left-hand panel containing the list of buildings
         self.__build_buildings_options()
         self.paneLeft.set_start_child(self.paneBuildingsOptions)
-        self.paneLeft.set_position(300)
+        self.paneLeft.set_position(350)
         self.paneLeft.set_vexpand(True)
 
         # Build the right-hand panel as another split panel with the designer on top and some panels
@@ -309,7 +349,11 @@ class MainWindow(Gtk.ApplicationWindow):
         # Top pane: filtering options for the bottom pane
         self.scrollBuildingFilters = Gtk.ScrolledWindow()
         self.boxFilters = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.boxFilters.set_spacing(10)
+        self.boxFilters.set_margin_start(5)
+        self.boxFilters.set_margin_end(5)
+        self.boxFilters.set_margin_bottom(5)
+        self.boxFilters.set_margin_top(5)
+        self.boxFilters.set_spacing(5)
 
         # Top pane: Factory availability checkbox
         self.chkAvailability = Gtk.CheckButton(label='Availability')
@@ -321,6 +365,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxBuildingCategory = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.chkBuildingCategory = Gtk.CheckButton(label='Building category: ')
         self.cboBuildingCategory = Gtk.ComboBoxText()
+        self.cboBuildingCategory.set_hexpand(True)
         for category in BuildingCategory:
             self.cboBuildingCategory.append(category.name, category.name.title())
 
@@ -332,6 +377,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxNameFilter = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.chkNameFilter = Gtk.CheckButton(label='Name: ')
         self.entryNameFilter = Gtk.Entry()
+        self.entryNameFilter.set_hexpand(True)
         self.boxNameFilter.append(self.chkNameFilter)
         self.boxNameFilter.append(self.entryNameFilter)
         self.boxFilters.append(self.boxNameFilter)
@@ -339,7 +385,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # Bottom pane: list of buildings
         self.scrollBuildings = Gtk.ScrolledWindow()
         self.icovwBuildings = Gtk.IconView()
-        self.icovwBuildings.set_spacing(10)
+        self.icovwBuildings.set_spacing(5)
         self.scrollBuildings.set_child(self.icovwBuildings)
         self.scrollBuildings.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
@@ -347,17 +393,85 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneBuildingsOptions.set_start_child(self.scrollBuildingFilters)
         self.paneBuildingsOptions.set_end_child(self.scrollBuildings)
 
+    def __build_component_context_panel(self):
+        '''
+        Builds the bottom-side panel containing info about the selected component.
+        '''
+
+        # editable
+        #   - name
+        #   - tags
+        #   - constructed
+        #   - processing recipe
+        #   - clock_rate
+        #   - standby
+        #   - dimensions
+        #   - base power usage
+        
+        # Build a panel sorting contents on read-only or editable traits
+        self.paneComponentDetails = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.paneComponentDetails.set_position(600)
+
+        # Set up read-only details in a box
+        self.boxComponentReadOnlyDetails = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.boxComponentReadOnlyDetails.set_margin_start(5)
+        self.boxComponentReadOnlyDetails.set_margin_end(5)
+        self.boxComponentReadOnlyDetails.set_margin_bottom(5)
+        self.boxComponentReadOnlyDetails.set_margin_top(5)
+        
+        self.lblComponentAvailability = Gtk.Label(label='')
+        self.icovwComponentRecipe = Gtk.IconView()
+        self.icovwComponentRecipe.set_item_orientation(Gtk.Orientation.HORIZONTAL)
+        # self.icovwComponentRecipe.set_vexpand(True)
+        #   - component recipe
+        #   - links:
+        #     - image
+        #     - wiki
+        #   - connections
+        #     - ingredients
+        self.boxComponentReadOnlyDetails.append(self.lblComponentAvailability)
+        self.boxComponentReadOnlyDetails.append(self.icovwComponentRecipe)
+
+        # Set up editable details
+        self.boxComponentEditableDetails = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.boxComponentEditableDetails.set_margin_start(5)
+        self.boxComponentEditableDetails.set_margin_end(5)
+        self.boxComponentEditableDetails.set_margin_bottom(5)
+        self.boxComponentEditableDetails.set_margin_top(5)
+        self.lblComponentEditableDetails = Gtk.Label(label='Component Editable Details')
+        self.boxComponentEditableDetails.append(self.lblComponentEditableDetails)
+
+        # Fill the panes
+        self.paneComponentDetails.set_start_child(self.boxComponentReadOnlyDetails)
+        self.paneComponentDetails.set_end_child(self.boxComponentEditableDetails)
+
+
     def __build_context_panel(self):
         '''
         Builds the bottom panel showing context about the factory and selected component.
         '''
 
         self.paneBottom = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__build_factory_context_panel()
+        self.paneBottom.set_start_child(self.boxFactoryFunctions)
+
+        self.__build_component_context_panel()
+        self.paneBottom.set_end_child(self.paneComponentDetails)
+        self.paneBottom.set_position(400)
+
+    def __build_factory_context_panel(self):
+        '''
+        Builds the bottom-side panel containing factory details.
+        '''
 
         # Contain all the factory-level functions within a box so they can all be enabled and
         # disabled by doing so to this one widget
         self.boxFactoryFunctions = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.boxFactoryFunctions.set_spacing(5)
+        self.boxFactoryFunctions.set_margin_start(5)
+        self.boxFactoryFunctions.set_margin_end(5)
+        self.boxFactoryFunctions.set_margin_bottom(5)
+        self.boxFactoryFunctions.set_margin_top(5)
         self.boxFactoryFunctions.set_sensitive(True if self.blueprint else False)
 
         # Build the text box showing the name of the factory
@@ -396,11 +510,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxTierUpgrade.append(self.cboUpgrade)
 
         self.boxFactoryFunctions.append(self.boxTierUpgrade)
-
-        self.paneBottom.set_start_child(self.boxFactoryFunctions)
-        self.lblComponentContext = Gtk.Label(label='Component Context')
-        self.paneBottom.set_end_child(self.lblComponentContext)
-        self.paneBottom.set_position(600)
 
     def __build_factory_designer(self):
         '''
@@ -537,15 +646,30 @@ class MainWindow(Gtk.ApplicationWindow):
         pixbuf = Pixbuf()
         self.pixelBuffers = {}
         building_pixbufs = {}
+        item_pixbufs = {}
+
+        # Load building pixel buffers
         all_buildings = MainWindow.get_building_options()
         for building in all_buildings:
             imageFile = Path(f'./static/images/components/{building.__class__.__name__}.png')
             if imageFile.exists():
+                #pb = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
                 pb = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
             else:
                 pb = None
             building_pixbufs[building.__class__.__name__] = pb
         self.pixelBuffers['building_options'] = building_pixbufs
+
+        # Load item pixel buffers
+        all_items = get_all_items()
+        for itemname, item in all_items:
+            imageFile = Path(f'./static/images/components/{itemname}.png')
+            if imageFile.exists():
+                pb = pixbuf.new_from_file_at_size(str(imageFile), 32, 32)
+            else:
+                pb = None
+            item_pixbufs[itemname] = pb
+        self.pixelBuffers['items'] = item_pixbufs
 
 
     # Signal Handlers

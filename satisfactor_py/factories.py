@@ -5,6 +5,7 @@ import pickle
 from threading import Thread
 from typing import Callable
 from satisfactor_py.base import (
+    Availability,
     Base,
     Building,
     BuildingType,
@@ -24,21 +25,18 @@ class Factory(Base):
     A Factory is a collection of interconnected Components.
 
         - components: A list of Components in the factory.
-        - tier: The numerical tier the factory has been ugpraded to
-        - upgrade: The numerical upgrade level the factory has been upgraded to
+        - availability: A base.Availability describing the unlock level of the factory
     '''
 
     def __init__(self,
         components: list[Component] = list(),
-        tier: int = 0,
-        upgrade: int = 1,
+        availability: Availability = Availability(0, 1),
         **kwargs
     ):
         super().__init__(**kwargs)
         self._components = components
         self._errors = list()
-        self.tier = tier
-        self.upgrade = upgrade
+        self.availability = availability
 
     def to_dict(self) -> dict:
         '''
