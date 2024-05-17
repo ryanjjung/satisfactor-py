@@ -212,6 +212,14 @@ class Base(object):
         self.wiki_path = wiki_path
         self.tags = tags
 
+    @property
+    def image_url(self) -> str:
+        return f'{IMAGE_URL_BASE}{self.image_path}'
+
+    @property
+    def wiki_url(self) -> str:
+        return f'{WIKI_URL_BASE}{self.wiki_path}'
+
     def to_dict(self) -> dict:
         '''
         Returns a dict representation of this object
@@ -222,9 +230,9 @@ class Base(object):
             'name': self.name,
             'availability': self.availability.to_dict(),
             'wiki_path': self.wiki_path,
-            'wiki_url': f'{WIKI_URL_BASE}{self.wiki_path}',
+            'wiki_url': self.wiki_url,
             'image_path': self.image_path,
-            'image_url': f'{IMAGE_URL_BASE}{self.image_path}',
+            'image_url': self.image_url,
             'tags': self.tags
         }
 
@@ -387,6 +395,10 @@ class Item(Base):
         self.stack_size = stack_size
         self.sink_value = sink_value
 
+    @property
+    def programmatic_name(self) -> str:
+        return self.name.title().replace(' ', '')
+
     def to_dict(self) -> dict:
         '''
         Returns a dict representation of this object
@@ -396,7 +408,8 @@ class Item(Base):
         base.update({
             'conveyance_type': self.conveyance_type.name if self.conveyance_type else None,
             'stack_size': self.stack_size if self.stack_size else None,
-            'sink_value': self.sink_value if self.sink_value else None
+            'sink_value': self.sink_value if self.sink_value else None,
+            'programmatic_name': self.programmatic_name
         })
         return base
 

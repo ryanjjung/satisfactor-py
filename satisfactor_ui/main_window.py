@@ -126,11 +126,12 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if self.blueprint and self.blueprint.selected:
+            # Update the availability display
             c = self.blueprint.selected  # This just makes the rest of this code read better
             self.lblComponentAvailability.set_text(
                 f'Available at Tier {c.availability.tier}, Upgrade {c.availability.upgrade}')
 
-            # Recipe model is (item image, amount, item name)
+            # Recipe displays show an item image and the amount/rate
             recipe_store = Gtk.ListStore(Pixbuf, str)
 
             # Get the recipe to build the component
@@ -142,15 +143,71 @@ class MainWindow(Gtk.ApplicationWindow):
                 logging.debug('Failed to get the component recipe')
                 comp_recipe = None
 
+            # If there is a recipe, display it
+            self.boxComponentRecipe.remove(self.lblComponentRecipe)
+            self.boxComponentRecipe.remove(self.icovwComponentRecipe)
             if comp_recipe:
                 for ingredient in comp_recipe.consumes:
-                    item_name = ingredient.item.name.title().replace(' ', '')
                     recipe_store.append((
-                        self.pixelBuffers['items'][item_name],
+                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
                         f'{ingredient.amount}x {ingredient.item.name}'))
-            self.icovwComponentRecipe.set_model(recipe_store)
-            self.icovwComponentRecipe.set_pixbuf_column(0)
-            self.icovwComponentRecipe.set_text_column(1)
+                self.icovwComponentRecipe.set_model(recipe_store)
+                self.icovwComponentRecipe.set_pixbuf_column(0)
+                self.icovwComponentRecipe.set_text_column(1)
+                self.boxComponentRecipe.append(self.lblComponentRecipe)
+                self.boxComponentRecipe.append(self.icovwComponentRecipe)
+
+            # Update the links
+            self.linkWiki.set_uri(c.wiki_url)
+            self.linkImage.set_uri(c.image_url)
+
+            # Clear out the old connection data
+            for icovw in self.icovwInputs:
+                self.boxComponentInputs.remove(icovw)
+            for icovw in self.icovwOutputs:
+                self.boxComponentOutputs.remove(icovw)
+
+            # Update inputs and outputs
+            self.boxComponentInputs.remove(self.lblInputs)
+            self.icovwInputs = []
+            for conn in c.inputs:
+                icovw = Gtk.IconView()
+                store = Gtk.ListStore(Pixbuf, str)
+                for ingredient in conn.ingredients:
+                    store.append((
+                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                        f'{ingredient.rate}x {ingredient.item.name} /m'
+                    ))
+                icovw.set_model(store)
+                icovw.set_pixbuf_column(0)
+                icovw.set_text_column(1)
+                self.icovwInputs.append(icovw)
+
+            if len(self.icovwInputs) > 0:
+                self.boxComponentInputs.append(self.lblInputs)
+            for icovw in self.icovwInputs:
+                self.boxComponentInputs.append(icovw)
+
+            self.boxComponentOutputs.remove(self.lblOutputs)
+            self.icovwOutputs = []
+            for conn in c.outputs:
+                icovw = Gtk.IconView()
+                store = Gtk.ListStore(Pixbuf, str)
+                for ingredient in conn.ingredients:
+                    store.append((
+                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                        f'{ingredient.rate}x {ingredient.item.name} /m'
+                    ))
+                icovw.set_model(store)
+                icovw.set_pixbuf_column(0)
+                icovw.set_text_column(1)
+                self.icovwOutputs.append(icovw)
+
+            if len(self.icovwOutputs) > 0:
+                self.boxComponentOutputs.append(self.lblOutputs)
+            for icovw in self.icovwOutputs:
+                self.boxComponentOutputs.append(icovw)
+
         else:
             pass
 
@@ -396,7 +453,11 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # Build a panel sorting contents on read-only or editable traits
         self.paneComponentDetails = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
-        self.paneComponentDetails.set_position(600)
+        self.paneComponentDetails.set_position(400)
+
+        # Wrap everything in a scrollable view
+        self.scrollComponentReadOnlyDetails = Gtk.ScrolledWindow()
+        self.scrollComponentEditableDetails = Gtk.ScrolledWindow()
 
         # Set up read-only details in a box
         self.boxComponentReadOnlyDetails = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -412,19 +473,42 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.lblComponentAvailability = Gtk.Label(label='')
 
+        self.boxComponentRecipe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.lblComponentRecipe = Gtk.Label(label='Component Build Cost:')
         self.lblComponentRecipe.set_margin_top(10) # Put a little visual space here
         self.icovwComponentRecipe = Gtk.IconView()
         self.icovwComponentRecipe.set_item_orientation(Gtk.Orientation.HORIZONTAL)
-        #   - component recipe
-        #   - links:
-        #     - image
-        #     - wiki
-        #   - connections
-        #     - ingredients
+        self.boxComponentRecipe.append(self.lblComponentRecipe)
+        self.boxComponentRecipe.append(self.icovwComponentRecipe)
+
         self.boxComponentReadOnlyDetails.append(self.lblComponentAvailability)
-        self.boxComponentReadOnlyDetails.append(self.lblComponentRecipe)
-        self.boxComponentReadOnlyDetails.append(self.icovwComponentRecipe)
+        self.boxComponentReadOnlyDetails.append(self.boxComponentRecipe)
+
+        self.boxComponentLinks = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentLinks.set_halign(Gtk.Align.CENTER)
+        self.lblLinks = Gtk.Label(label='Links:')
+        self.linkWiki = Gtk.LinkButton().new_with_label(uri='', label='Wiki')
+        self.linkImage = Gtk.LinkButton().new_with_label(uri='', label='Image')
+        self.boxComponentLinks.append(self.lblLinks)
+        self.boxComponentLinks.append(self.linkWiki)
+        self.boxComponentLinks.append(self.linkImage)
+        self.boxComponentReadOnlyDetails.append(self.boxComponentLinks)
+
+        # Connections
+        self.boxComponentInputs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.lblInputs = Gtk.Label(label='Inputs')
+        self.icovwInputs = [Gtk.IconView()]
+        self.boxComponentInputs.append(self.lblInputs)
+        self.boxComponentInputs.append(self.icovwInputs[0])
+
+        self.boxComponentOutputs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.lblOutputs = Gtk.Label(label='Outputs')
+        self.icovwOutputs = [Gtk.IconView()]
+        self.boxComponentOutputs.append(self.lblOutputs)
+        self.boxComponentOutputs.append(self.icovwOutputs[0])
+
+        self.boxComponentReadOnlyDetails.append(self.boxComponentInputs)
+        self.boxComponentReadOnlyDetails.append(self.boxComponentOutputs)
 
         # Set up editable details
         self.boxComponentEditableDetails = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -435,9 +519,13 @@ class MainWindow(Gtk.ApplicationWindow):
         self.lblComponentEditableDetails = Gtk.Label(label='Component Editable Details')
         self.boxComponentEditableDetails.append(self.lblComponentEditableDetails)
 
+        # Add it all to the scrollwindow
+        self.scrollComponentReadOnlyDetails.set_child(self.boxComponentReadOnlyDetails)
+        self.scrollComponentEditableDetails.set_child(self.boxComponentEditableDetails)
+
         # Fill the panes
-        self.paneComponentDetails.set_start_child(self.boxComponentReadOnlyDetails)
-        self.paneComponentDetails.set_end_child(self.boxComponentEditableDetails)
+        self.paneComponentDetails.set_start_child(self.scrollComponentReadOnlyDetails)
+        self.paneComponentDetails.set_end_child(self.scrollComponentEditableDetails)
 
     def __build_context_panel(self):
         '''
@@ -446,16 +534,19 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.paneContext = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.__build_factory_context_panel()
-        self.paneContext.set_start_child(self.boxFactoryFunctions)
+        self.paneContext.set_start_child(self.scrollFactoryFunctions)
 
         self.__build_component_context_panel()
         self.paneContext.set_end_child(self.paneComponentDetails)
-        self.paneContext.set_position(200)
+        self.paneContext.set_position(100)
 
     def __build_factory_context_panel(self):
         '''
         Builds the right-side panel containing factory details.
         '''
+
+        # Wrap everything in a scrollwindow
+        self.scrollFactoryFunctions = Gtk.ScrolledWindow()
 
         # Contain all the factory-level functions within a box so they can all be enabled and
         # disabled by doing so to this one widget
@@ -508,6 +599,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxTierUpgrade.append(self.cboUpgrade)
 
         self.boxFactoryFunctions.append(self.boxTierUpgrade)
+        self.scrollFactoryFunctions.set_child(self.boxFactoryFunctions)
 
     def __build_factory_designer(self):
         '''
