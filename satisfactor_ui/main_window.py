@@ -9,7 +9,9 @@ from gi.repository.GdkPixbuf import Pixbuf
 from pathlib import Path
 from satisfactor_py.base import (
     Availability,
+    Building,
     BuildingCategory,
+    BuildingType,
     ResourceNode,
     InfiniteSupplyNode
 )
@@ -126,10 +128,20 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if self.blueprint and self.blueprint.selected:
+            # This makes the rest of this code read better
+            c = self.blueprint.selected
+
             # Update the availability display
-            c = self.blueprint.selected  # This just makes the rest of this code read better
             self.lblComponentAvailability.set_text(
                 f'Available at Tier {c.availability.tier}, Upgrade {c.availability.upgrade}')
+
+            # Update the building type
+            if isinstance(c, Building):
+                self.lblComponentBuildingType.set_text(
+                    f'Building type: {c.building_type.name.title()}')
+                self.lblComponentBuildingType.set_visible(True)
+            else:
+                self.lblComponentBuildingType.set_visible(False)
 
             # Recipe displays show an item image and the amount/rate
             recipe_store = Gtk.ListStore(Pixbuf, str)
@@ -472,6 +484,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.lblComponentHeader.set_markup('<b>Component Details</b>')
         self.boxComponentReadOnlyDetails.append(self.lblComponentHeader)
 
+        # Label for building type
+        self.lblComponentBuildingType = Gtk.Label(label=f'Building type:')
+
         # Label for component availability
         self.lblComponentAvailability = Gtk.Label(label='')
 
@@ -493,6 +508,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentRecipe.append(self.lblComponentRecipe)
         self.boxComponentRecipe.append(self.icovwComponentRecipe)
 
+        self.boxComponentReadOnlyDetails.append(self.lblComponentBuildingType)
         self.boxComponentReadOnlyDetails.append(self.lblComponentAvailability)
         self.boxComponentReadOnlyDetails.append(self.boxComponentLinks)
         self.boxComponentReadOnlyDetails.append(self.boxComponentRecipe)
