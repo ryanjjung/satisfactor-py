@@ -208,8 +208,9 @@ class MainWindow(Gtk.ApplicationWindow):
             for icovw in self.icovwOutputs:
                 self.boxComponentOutputs.append(icovw)
 
+            self.boxComponentReadOnlyDetails.set_visible(True)
         else:
-            pass
+            self.boxComponentReadOnlyDetails.set_visible(False)
 
     def set_tier_and_upgrade(self,
         tier: int = None,

@@ -53,6 +53,7 @@ def build_test_blueprint():
     blueprint.add_component(convOreToSmelter, geometry.Coordinate2D())
     blueprint.add_component(storage, geometry.Coordinate2D(380, 20))
     blueprint.add_component(convIngotsToStorage, geometry.Coordinate2D())
+    blueprint.factory.simulate()
     return blueprint
 
 def get_texture_from_file(filename: str) -> Gdk.Texture:
