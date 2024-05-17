@@ -47,7 +47,6 @@ class MainWindow(Gtk.ApplicationWindow):
     ):
         super().__init__(*args, **kwargs)
 
-        logging.debug('Initiating main window')
         self.blueprint = None
         self.blueprintFile = filename
         self.unsaved_changes = False
@@ -76,7 +75,6 @@ class MainWindow(Gtk.ApplicationWindow):
         unblock_all_signals.
         '''
 
-        logging.debug('Blocking all signals')
         for handler in self.windowSignals:
             GObject.signal_handler_block(handler[0], handler[1])
 
@@ -96,7 +94,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
         global ALL_BUILDINGS
         if ALL_BUILDINGS is None:
-            logging.debug('Initializing buildings list')
             ALL_BUILDINGS = [ ResourceNode(), InfiniteSupplyNode() ]
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_buildings()])
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_conveyances()])
@@ -113,7 +110,6 @@ class MainWindow(Gtk.ApplicationWindow):
         try:
             # Load the blueprint and store it in the class as separate actions,
             # resulting in no change if an exception is thrown at load time.
-            logging.debug(f'Loading blueprint from file {filename}')
             loadedBlueprint = Blueprint.load(filename)
             self.blueprintFile = filename
             self.blueprint = loadedBlueprint
@@ -133,7 +129,7 @@ class MainWindow(Gtk.ApplicationWindow):
             c = self.blueprint.selected  # This just makes the rest of this code read better
             self.lblComponentAvailability.set_text(
                 f'Available at Tier {c.availability.tier}, Upgrade {c.availability.upgrade}')
-            
+
             # Recipe model is (item image, amount, item name)
             recipe_store = Gtk.ListStore(Pixbuf, str)
 
@@ -142,17 +138,15 @@ class MainWindow(Gtk.ApplicationWindow):
                 comp_recipe_name, comp_recipe = [ (name, recipe) for name, recipe
                     in get_all_recipes()
                     if name == c.__class__.__name__ ][0]
-                logging.debug(f'Recipe for {comp_recipe_name}: {comp_recipe}')
             except IndexError:
                 logging.debug('Failed to get the component recipe')
                 comp_recipe = None
 
             if comp_recipe:
-                logging.debug(f'Recipe consumes {comp_recipe.consumes}')
                 for ingredient in comp_recipe.consumes:
-                    logging.debug(f'Appending item {comp_recipe_name}: {ingredient.amount}x {ingredient.item.name}')
+                    item_name = ingredient.item.name.title().replace(' ', '')
                     recipe_store.append((
-                        self.pixelBuffers['items'][comp_recipe_name],
+                        self.pixelBuffers['items'][item_name],
                         f'{ingredient.amount}x {ingredient.item.name}'))
             self.icovwComponentRecipe.set_model(recipe_store)
             self.icovwComponentRecipe.set_pixbuf_column(0)
@@ -178,8 +172,6 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.blueprint.factory.availability.tier = tier
             if upgrade is not None:
                 self.blueprint.factory.availability.upgrade = upgrade
-            logging.debug(f'Selecting tier/upgrade values: '
-                f'{self.blueprint.factory.availability.tier}/{self.blueprint.factory.availability.upgrade}')
 
             # Set the tier value in the combo box
             self.cboTier.set_active(self.blueprint.factory.availability.tier)
@@ -196,7 +188,6 @@ class MainWindow(Gtk.ApplicationWindow):
         Update the window's title appropriately
         '''
 
-        logging.debug('Setting window title')
         title_prefix = f'{"*" if self.unsaved_changes else ""}'
         title_suffix = f' ({self.blueprintFile.split('/')[-1]})' if self.blueprintFile else ''
         self.set_title(f'{title_prefix}{MAIN_WINDOW_TITLE_BASE}{title_suffix}')
@@ -207,7 +198,6 @@ class MainWindow(Gtk.ApplicationWindow):
         signals were likely placed by block_all_signals.
         '''
 
-        logging.debug('Unblocking all signals')
         for handler in self.windowSignals:
             GObject.signal_handler_unblock(handler[0], handler[1])
 
@@ -217,7 +207,6 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         if self.blueprint:
-            logging.debug('Updating building options list')
             # Determine the available buildings
             all_buildings = MainWindow.get_building_options()
             if self.filters['availability']:
@@ -263,7 +252,6 @@ class MainWindow(Gtk.ApplicationWindow):
         UI elements depending on that context.
         '''
 
-        logging.debug('Updating window')
         self.block_all_signals()
         self.set_window_title()
         self.set_component_context()
@@ -295,7 +283,6 @@ class MainWindow(Gtk.ApplicationWindow):
         designer area.
         '''
 
-        logging.debug('Building the main window')
         # Track all signals so we can block/unblock them easily
         self.windowSignals = []
 
@@ -312,19 +299,19 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneLeft.set_position(350)
         self.paneLeft.set_vexpand(True)
 
-        # Build the right-hand panel as another split panel with the designer on top and some panels
-        # providing context on the factory and components on the bottom
-        self.paneRight = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
-        self.paneRight.set_position(800)
+        # Build the right-hand panel as another split panel with the designer on the left and some
+        # panels providing context on the factory and components on the right.
+        self.paneRight = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.paneRight.set_position(1000)
         self.paneLeft.set_end_child(self.paneRight)
 
         # Build the main panel containing the factory designer
         self.__build_factory_designer()
         self.paneRight.set_start_child(self.scrollFactoryDesigner)
 
-        # Build the content of the context panel on the bottom
+        # Build the content of the context panel on the right
         self.__build_context_panel()
-        self.paneRight.set_end_child(self.paneBottom)
+        self.paneRight.set_end_child(self.paneContext)
 
         # Add the top bar last since it causes the rest of the UI to update
         self.boxMain.prepend(self.__build_top_bar())
@@ -341,7 +328,6 @@ class MainWindow(Gtk.ApplicationWindow):
         available to the user.
         '''
 
-        logging.debug('Building widgets for building options')
         # Start with two vertical panes
         self.paneBuildingsOptions = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.paneBuildingsOptions.set_position(150)
@@ -395,7 +381,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __build_component_context_panel(self):
         '''
-        Builds the bottom-side panel containing info about the selected component.
+        Builds the right-side panel containing info about the selected component.
         '''
 
         # editable
@@ -407,9 +393,9 @@ class MainWindow(Gtk.ApplicationWindow):
         #   - standby
         #   - dimensions
         #   - base power usage
-        
+
         # Build a panel sorting contents on read-only or editable traits
-        self.paneComponentDetails = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.paneComponentDetails = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.paneComponentDetails.set_position(600)
 
         # Set up read-only details in a box
@@ -418,11 +404,18 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentReadOnlyDetails.set_margin_end(5)
         self.boxComponentReadOnlyDetails.set_margin_bottom(5)
         self.boxComponentReadOnlyDetails.set_margin_top(5)
-        
+
+        # Place a header
+        self.lblComponentHeader = Gtk.Label()
+        self.lblComponentHeader.set_markup('<b>Component Details</b>')
+        self.boxComponentReadOnlyDetails.append(self.lblComponentHeader)
+
         self.lblComponentAvailability = Gtk.Label(label='')
+
+        self.lblComponentRecipe = Gtk.Label(label='Component Build Cost:')
+        self.lblComponentRecipe.set_margin_top(10) # Put a little visual space here
         self.icovwComponentRecipe = Gtk.IconView()
         self.icovwComponentRecipe.set_item_orientation(Gtk.Orientation.HORIZONTAL)
-        # self.icovwComponentRecipe.set_vexpand(True)
         #   - component recipe
         #   - links:
         #     - image
@@ -430,6 +423,7 @@ class MainWindow(Gtk.ApplicationWindow):
         #   - connections
         #     - ingredients
         self.boxComponentReadOnlyDetails.append(self.lblComponentAvailability)
+        self.boxComponentReadOnlyDetails.append(self.lblComponentRecipe)
         self.boxComponentReadOnlyDetails.append(self.icovwComponentRecipe)
 
         # Set up editable details
@@ -445,23 +439,22 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneComponentDetails.set_start_child(self.boxComponentReadOnlyDetails)
         self.paneComponentDetails.set_end_child(self.boxComponentEditableDetails)
 
-
     def __build_context_panel(self):
         '''
         Builds the bottom panel showing context about the factory and selected component.
         '''
 
-        self.paneBottom = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.paneContext = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.__build_factory_context_panel()
-        self.paneBottom.set_start_child(self.boxFactoryFunctions)
+        self.paneContext.set_start_child(self.boxFactoryFunctions)
 
         self.__build_component_context_panel()
-        self.paneBottom.set_end_child(self.paneComponentDetails)
-        self.paneBottom.set_position(400)
+        self.paneContext.set_end_child(self.paneComponentDetails)
+        self.paneContext.set_position(200)
 
     def __build_factory_context_panel(self):
         '''
-        Builds the bottom-side panel containing factory details.
+        Builds the right-side panel containing factory details.
         '''
 
         # Contain all the factory-level functions within a box so they can all be enabled and
@@ -473,6 +466,11 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxFactoryFunctions.set_margin_bottom(5)
         self.boxFactoryFunctions.set_margin_top(5)
         self.boxFactoryFunctions.set_sensitive(True if self.blueprint else False)
+
+        # Place a header
+        self.lblFactoryHeader = Gtk.Label()
+        self.lblFactoryHeader.set_markup('<b>Factory Details</b>')
+        self.boxFactoryFunctions.append(self.lblFactoryHeader)
 
         # Build the text box showing the name of the factory
         self.boxFactoryName = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -525,8 +523,6 @@ class MainWindow(Gtk.ApplicationWindow):
         Builds the UI controls which run across the top bar of the window.
         '''
 
-        logging.debug('Building the top bar')
-
         # The bar's top level object is a horizontal box with some padding
         self.boxTopBar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.boxTopBar.set_spacing(10)
@@ -564,7 +560,6 @@ class MainWindow(Gtk.ApplicationWindow):
         Builds reusable items which are unique to this application
         '''
 
-        logging.debug('Building resuable UI helpers')
         self.satFileFilter = Gtk.FileFilter()
         self.satFileFilter.set_name('Satisfactory Blueprints (*.sat)')
         self.satFileFilter.add_pattern('*.sat')
@@ -578,8 +573,6 @@ class MainWindow(Gtk.ApplicationWindow):
         window has been fully constructed. This prevents signals from being emitted before the
         window is functional.
         '''
-
-        logging.debug('Connecting widget signals')
 
         # Signals for widgets in the top bar containing factory-level options
         self.windowSignals.append((
@@ -642,7 +635,6 @@ class MainWindow(Gtk.ApplicationWindow):
         Load all images that get used in this window from disk and store them in memory.
         '''
 
-        logging.debug('Loading images')
         pixbuf = Pixbuf()
         self.pixelBuffers = {}
         building_pixbufs = {}

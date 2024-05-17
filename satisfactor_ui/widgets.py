@@ -156,12 +156,10 @@ class FactoryDesignerWidget(Gtk.Widget):
         Loads an image into memory and stores it under the given key in the given category.
         '''
 
-        logging.debug(f'Loading texture from filename: {filename} into {category}/{key}')
         texture = get_texture_from_file(filename)
         if category not in self.textures.keys():
             self.textures[category] = {}
         self.textures[category][key] = texture
-        logging.debug(f'Loaded texture: {category}/{key}')
         return texture
 
     def get_texture(self,
@@ -174,7 +172,6 @@ class FactoryDesignerWidget(Gtk.Widget):
 
         if category in self.textures.keys() and key in self.textures[category]:
             return self.textures[category][key]
-        logging.debug(f'Texture cache miss for {category}/{key}')
         return None
 
     def do_snapshot(self,
@@ -271,7 +268,6 @@ class FactoryDesignerWidget(Gtk.Widget):
                 and self.blueprint.selected \
                 and not isinstance(self.blueprint.selected, base.Conveyance):
                     geo = self.blueprint.geometry[self.blueprint.selected.id]
-                    logging.debug(f'Component location: {geo.canvas_location}')
                     self.component_grab_event = ComponentGrabEvent(
                         self.blueprint.selected,     # The selected component
                         geo,                         # Geometry for the selected component
@@ -383,6 +379,5 @@ class FactoryDesignerWidget(Gtk.Widget):
         )
 
         # Force all geometry to be recalculated, then draw a new frame
-        logging.debug(f'Shifting viewport: ({shift_x}, {shift_y}) to {self.blueprint.viewport.region.location}')
         self.blueprint.invalidate_geometry()
         self.queue_draw()
