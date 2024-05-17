@@ -168,7 +168,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.boxComponentOutputs.remove(icovw)
 
             # Update inputs and outputs
-            self.boxComponentInputs.remove(self.lblInputs)
+            self.boxComponentInputs.remove(self.lblNoInputs)
             self.icovwInputs = []
             for conn in c.inputs:
                 icovw = Gtk.IconView()
@@ -183,8 +183,8 @@ class MainWindow(Gtk.ApplicationWindow):
                 icovw.set_text_column(1)
                 self.icovwInputs.append(icovw)
 
-            if len(self.icovwInputs) > 0:
-                self.boxComponentInputs.append(self.lblInputs)
+            if len(self.icovwInputs) == 0:
+                self.boxComponentInputs.append(self.lblNoInputs)
             for icovw in self.icovwInputs:
                 self.boxComponentInputs.append(icovw)
 
@@ -467,15 +467,26 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentReadOnlyDetails.set_margin_bottom(5)
         self.boxComponentReadOnlyDetails.set_margin_top(5)
 
-        # Place a header
+        # Place a bold header for the section
         self.lblComponentHeader = Gtk.Label()
         self.lblComponentHeader.set_markup('<b>Component Details</b>')
         self.boxComponentReadOnlyDetails.append(self.lblComponentHeader)
 
+        # Label for component availability
         self.lblComponentAvailability = Gtk.Label(label='')
 
+        # Box to contain links to wiki and image
+        self.boxComponentLinks = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentLinks.set_halign(Gtk.Align.CENTER)
+        self.linkWiki = Gtk.LinkButton().new_with_label(uri='', label='Wiki')
+        self.linkImage = Gtk.LinkButton().new_with_label(uri='', label='Image')
+        self.boxComponentLinks.append(self.linkWiki)
+        self.boxComponentLinks.append(self.linkImage)
+
+        # Box to contain the build cost recipe for the component
         self.boxComponentRecipe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.lblComponentRecipe = Gtk.Label(label='Component Build Cost:')
+        self.lblComponentRecipe = Gtk.Label()
+        self.lblComponentRecipe.set_markup('<b>Component Build Cost</b>')
         self.lblComponentRecipe.set_margin_top(10) # Put a little visual space here
         self.icovwComponentRecipe = Gtk.IconView()
         self.icovwComponentRecipe.set_item_orientation(Gtk.Orientation.HORIZONTAL)
@@ -483,33 +494,43 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentRecipe.append(self.icovwComponentRecipe)
 
         self.boxComponentReadOnlyDetails.append(self.lblComponentAvailability)
+        self.boxComponentReadOnlyDetails.append(self.boxComponentLinks)
         self.boxComponentReadOnlyDetails.append(self.boxComponentRecipe)
 
-        self.boxComponentLinks = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.boxComponentLinks.set_halign(Gtk.Align.CENTER)
-        self.lblLinks = Gtk.Label(label='Links:')
-        self.linkWiki = Gtk.LinkButton().new_with_label(uri='', label='Wiki')
-        self.linkImage = Gtk.LinkButton().new_with_label(uri='', label='Image')
-        self.boxComponentLinks.append(self.lblLinks)
-        self.boxComponentLinks.append(self.linkWiki)
-        self.boxComponentLinks.append(self.linkImage)
-        self.boxComponentReadOnlyDetails.append(self.boxComponentLinks)
-
         # Connections
+        self.boxComponentConnections = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentConnections.set_halign(Gtk.Align.FILL)
+        self.boxComponentConnections.set_hexpand(True)
+        self.boxComponentConnections.set_spacing(5)
+
         self.boxComponentInputs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.lblInputs = Gtk.Label(label='Inputs')
+        self.boxComponentInputs.set_halign(Gtk.Align.FILL)
+        self.boxComponentInputs.set_hexpand(True)
+        self.lblInputs = Gtk.Label()
+        self.lblInputs.set_markup('<b>Inputs</b>')
         self.icovwInputs = [Gtk.IconView()]
         self.boxComponentInputs.append(self.lblInputs)
         self.boxComponentInputs.append(self.icovwInputs[0])
 
         self.boxComponentOutputs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.boxComponentOutputs.set_halign(Gtk.Align.FILL)
+        self.boxComponentOutputs.set_hexpand(True)
         self.lblOutputs = Gtk.Label(label='Outputs')
+        self.lblOutputs.set_markup('<b>Outputs</b>')
         self.icovwOutputs = [Gtk.IconView()]
         self.boxComponentOutputs.append(self.lblOutputs)
         self.boxComponentOutputs.append(self.icovwOutputs[0])
 
-        self.boxComponentReadOnlyDetails.append(self.boxComponentInputs)
-        self.boxComponentReadOnlyDetails.append(self.boxComponentOutputs)
+        # Labels for when there is no input or output
+        self.lblNoInputs = Gtk.Label(label='None')
+        self.lblNoOutputs = Gtk.Label(label='None')
+        self.lblNoInputs.set_margin_top(10)
+
+        # Pack the outer box
+        self.boxComponentConnections.append(self.boxComponentInputs)
+        self.boxComponentConnections.append(self.boxComponentOutputs)
+
+        self.boxComponentReadOnlyDetails.append(self.boxComponentConnections)
 
         # Set up editable details
         self.boxComponentEditableDetails = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
