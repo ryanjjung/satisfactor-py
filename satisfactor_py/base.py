@@ -2,6 +2,8 @@
 Contains all data required to track in-game items affecting production.
 '''
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 import math
 import random
@@ -1000,6 +1002,7 @@ class Building(Component):
         Determines if the conditions are met for the recipe to be processed.
         '''
 
+        import json
         success = True
         # Can't process if there's no recipe to process
         if self.recipe is None:
@@ -1029,20 +1032,23 @@ class Building(Component):
 
             # Can't process if the inputs don't match the recipe
             requirements = [ingredient.item for ingredient in self.recipe.consumes]
+            requirement_names = [item.name for item in requirements]
             ing_items = [ingredient.item for ingredient in self.ingredients]
+            ing_names = [item.name for item in ing_items]
+
             for ingredient in requirements:
-                if ingredient not in ing_items:
+                if ingredient.name not in ing_names:
                     self.add_error(ComponentError(
                         ComponentErrorLevel.WARNING,
                         f'Recipe ingredient {ingredient.name} is not available'
                     ))
                     success = False
 
-            for ingredient in ing_items:
-                if ingredient not in requirements:
+            for ingredient in ing_names:
+                if ingredient not in requirement_names:
                     self.add_error(ComponentError(
                         ComponentErrorLevel.WARNING,
-                        f'Ingredient {ingredient.name} is not required for the recipe'
+                        f'Ingredient {ingredient} is not required for the recipe'
                     ))
 
         # Some recipes don't consume; those can be processed without additional checks
@@ -1068,7 +1074,7 @@ class Building(Component):
         if self.recipe and self.recipe.consumes:
             for recipe_ingredient in self.recipe.consumes:
                 for input_ingredient in self.ingredients:
-                    if recipe_ingredient.item == input_ingredient.item:
+                    if recipe_ingredient.item.name == input_ingredient.item.name:
                         if input_ingredient.rate < recipe_ingredient.rate * self.clock_rate:
                             self.add_error(ComponentError(
                                 ComponentErrorLevel.WARNING,

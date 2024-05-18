@@ -13,8 +13,9 @@ from satisfactor_py.base import (
     BuildingCategory,
     BuildingType,
     Conveyance,
+    InfiniteSupplyNode,
     ResourceNode,
-    InfiniteSupplyNode
+    Storage,
 )
 from satisfactor_py.buildings import get_all as get_all_buildings
 from satisfactor_py.conveyances import get_all as get_all_conveyances
@@ -243,6 +244,41 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.chkComponentStandby.set_visible(True)
             else:
                 self.chkComponentStandby.set_visible(False)
+
+            # Update available and selected recipes
+            if isinstance(c, Building) \
+                and not isinstance(c, Conveyance) \
+                and not isinstance(c, Storage):
+                    # Always filter compatible recipes by building type
+                    compatible_recipes = [ (recipe_name, recipe) for recipe_name, recipe in get_all_recipes()
+                        if recipe.building_type == c.building_type]
+                    # If the user has availability filtering enabled, filter by that as well
+                    if self.chkAvailability.get_active():
+                        compatible_recipes = [ (recipe_name, recipe) for recipe_name, recipe in compatible_recipes
+                            if recipe.availability.tier <= self.blueprint.factory.availability.tier
+                            and recipe.availability.upgrade <= self.blueprint.factory.availability.upgrade]
+
+                    compatible_recipes.sort(key=lambda x: x[0])
+
+                    # Recreate the contents of the recipe selector
+                    self.cboComponentSelectedRecipe.remove_all()
+                    for recipe_name, recipe in compatible_recipes:
+                        self.cboComponentSelectedRecipe.append(recipe_name, recipe.name)
+                    current_recipe = f'{c.recipe.name.title().replace(" ", "")}'
+
+                    # Determine index of current recipe
+                    current_recipe_id = None
+                    for i in range(len(compatible_recipes)):
+                        if compatible_recipes[i][0] == current_recipe:
+                            current_recipe_id = i
+                            break
+                    if current_recipe is not None:
+                        self.cboComponentSelectedRecipe.set_active(current_recipe_id)
+
+                    self.boxComponentSelectedRecipe.set_visible(True)
+            else:
+                self.boxComponentSelectedRecipe.set_visible(False)
+
 
     def update_component_context_readonly(self):
         '''
@@ -588,6 +624,16 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentBooleans.append(self.chkComponentStandby)
         self.boxComponentDetails.append(self.boxComponentBooleans)
 
+        # Processing recipe
+        self.boxComponentSelectedRecipe = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentSelectedRecipe.set_spacing(5)
+        self.boxComponentSelectedRecipe.set_halign(Gtk.Align.CENTER)
+        self.lblComponentSelectedRecipe = Gtk.Label(label='Recipe:')
+        self.cboComponentSelectedRecipe = Gtk.ComboBoxText()
+        self.boxComponentSelectedRecipe.append(self.lblComponentSelectedRecipe)
+        self.boxComponentSelectedRecipe.append(self.cboComponentSelectedRecipe)
+        self.boxComponentDetails.append(self.boxComponentSelectedRecipe)
+
         # Box to contain the build cost recipe for the component
         self.boxComponentRecipe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.lblComponentRecipe = Gtk.Label()
@@ -598,7 +644,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentRecipe.append(self.lblComponentRecipe)
         self.boxComponentRecipe.append(self.icovwComponentRecipe)
 
-        self.boxComponentDetails.append(self.boxComponentRecipe)
+        self.boxComponentDetails.append(self.boxComponentSelectedRecipe)
 
         # Connections
         self.boxComponentConnections = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -652,7 +698,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __build_context_panel(self):
         '''
-        Builds the bottom panel showing context about the factory and selected component.
+        Builds the right-hand panel showing context about the factory and selected component. This
+        is made of two stacked panels showing factory and component details.
         '''
 
         self.paneContext = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
@@ -879,6 +926,11 @@ class MainWindow(Gtk.ApplicationWindow):
             self.chkComponentStandby,
             self.chkComponentStandby.connect_after('toggled',
                 self.__chkComponentStandby_toggled)))
+        self.windowSignals.append((
+            self.cboComponentSelectedRecipe,
+            self.cboComponentSelectedRecipe.connect_after(
+                'changed',
+                self.__cboComponentSelectedRecipe_changed)))
 
     def __load_images(self):
         '''
@@ -1031,6 +1083,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     # + Simulate/Purge button signal handlers
     def __btnSimulate_clicked(self, btn):
+        self.blueprint.factory.purge()
         self.blueprint.factory.simulate()
         self.blueprint.invalidate_geometry()
         self.unsaved_changes = True
@@ -1075,7 +1128,7 @@ class MainWindow(Gtk.ApplicationWindow):
     # + Building option filters signal handlers
     def __chkAvailability_toggled(self, chk):
         self.filters['availability'] = chk.get_active()
-        self.update_buildings_list()
+        self.update_window()
 
     def __chkBuildingCategory_toggled(self, chk):
         self.filters['building_category'] = chk.get_active()
@@ -1141,3 +1194,15 @@ class MainWindow(Gtk.ApplicationWindow):
                 geo._ComponentGeometry__calculate_badges()
             self.unsaved_changes = True
             self.update_window()
+
+    def __cboComponentSelectedRecipe_changed(self, cbo):
+        recipe_name = cbo.get_active_text().title().replace(' ', '')
+        if self.blueprint and self.blueprint.selected \
+            and isinstance(self.blueprint.selected, Building):
+                try:
+                    recipe = [ recipe for name, recipe in get_all_recipes() \
+                        if name == recipe_name ][0]
+                    self.blueprint.selected.recipe = recipe
+                    self.unsaved_changes = True
+                except IndexError:
+                    logging.debug(f'No recipe called {recipe_name} was found')
