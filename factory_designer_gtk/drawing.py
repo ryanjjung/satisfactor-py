@@ -35,6 +35,7 @@ COLORS = {
     'conn_label': None,
 }
 
+
 class Blueprint(object):
     '''
     A Blueprint is a mapping of factory components to a physical pixel grid. Orientation values here
@@ -48,14 +49,14 @@ class Blueprint(object):
 
     def __init__(self,
         factory: Factory = Factory(),
-        background_color: str = '#383875',
+        background_color: str = '#7171ad',
         component_bg_color: str = '#14132d',
         component_border_color: str = '#a3a8fa',
         connection_bg_color: str = '#403d7a',
-        conveyance_label_color: str = '#383875',
+        conveyance_label_color: str = '#000000',
         conveyance_font_family: str = 'Sans',
         conveyance_font_size: float = 8.0,
-        label_color: str = '#a3a8fa',
+        label_color: str = '#000000',
         label_font_family: str = 'Sans',
         label_font_size: float = 10.0,
         line_color: str = '#a3a8fa',
@@ -455,7 +456,6 @@ class Blueprint(object):
             self.conveyance_font_family,
             self.conveyance_font_size,
             widget,
-            font_weight=Pango.Weight.MEDIUM,
             scale=self.viewport.scale)
         geometry._ConveyanceGeometry__calculate_label(
             *label.layout.get_pixel_size(),
@@ -541,7 +541,7 @@ class Blueprint(object):
             if isinstance(conveyance, Conveyance):
                 # Only worry about drawing a conveyance if it's attached to something visible
                 if geometry.source_comp and geometry.target_comp:
-                    label_text = conveyance.__class__.__name__
+                    label_text = conveyance.name
                     label = PangoTextLabel(
                         label_text,
                         self.conveyance_font_family,
@@ -564,6 +564,7 @@ class Blueprint(object):
         for component in visible_conveyances:
             if isinstance(component, Conveyance):
                 geometry = self.geometry.get(component.id)
+                label_text = component.name
                 self.draw_conveyance(widget, snapshot, component, geometry, label_text)
 
         # Clear out these flags since we've just generated all this geometry
