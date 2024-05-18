@@ -63,7 +63,7 @@ class Availability(object):
     def get_tier_strings():
         '''
         Returns a list of tier numbers in stringified form; that is, "1" instead of 1. This is
-        primarily used by satisfactor_ui to populate widgets.
+        primarily used by factory_designer_gtk to populate widgets.
         '''
 
         return [str(i) for i in range(len(TIERS))]
@@ -72,7 +72,7 @@ class Availability(object):
     def get_upgrade_strings(tier: int):
         '''
         Returns strigified versions of upgrade levels for the given tier; that is "1" instead of 1.
-        This is primarily used by satisfactor_ui to populate widgets.
+        This is primarily used by factory_designer_gtk to populate widgets.
         '''
 
         return [str(i + 1) for i in range(TIERS[tier])]
