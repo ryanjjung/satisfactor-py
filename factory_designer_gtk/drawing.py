@@ -9,7 +9,12 @@ gi.require_version('Pango', '1.0')
 
 import pickle
 from gi.repository import Gdk, Graphene, Gsk, Gtk, Pango
-from satisfactory.base import Building, Component, Conveyance
+from satisfactory.base import (
+    Building,
+    Component,
+    Conveyance,
+    InfiniteSupplyNode,
+)
 from satisfactory.factories import Factory
 from factory_designer_gtk.geometry import (
     sizes,
@@ -269,7 +274,11 @@ class Blueprint(object):
         '''
 
         # Load up the component icon texture
-        icon_key = component.__class__.__name__
+        icon_key = None
+        if isinstance(component, InfiniteSupplyNode):
+            icon_key = component.item.programmatic_name
+        else:
+            icon_key = component.__class__.__name__
         icon_texture = widget.get_texture('components', icon_key)
         if not icon_texture:
             filename = f'{BASE_IMAGE_FILE_PATH}/components/{icon_key}.png'

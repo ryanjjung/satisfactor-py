@@ -30,6 +30,7 @@ def build_test_blueprint():
     # Build and connect the factory components
     oreSupply = base.InfiniteSupplyNode(
         item=items.IronOre,
+        rate=60.0,
         conveyance_type=base.ConveyanceType.BELT,
         name='Infinite Iron Ore Supply',
     )
