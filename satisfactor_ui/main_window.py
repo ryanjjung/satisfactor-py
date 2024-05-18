@@ -454,23 +454,8 @@ class MainWindow(Gtk.ApplicationWindow):
         Builds the right-side panel containing info about the selected component.
         '''
 
-        # editable
-        #   - name
-        #   - tags
-        #   - constructed
-        #   - processing recipe
-        #   - clock_rate
-        #   - standby
-        #   - dimensions
-        #   - base power usage
-
-        # Build a panel sorting contents on read-only or editable traits
-        self.paneComponentDetails = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
-        self.paneComponentDetails.set_position(400)
-
         # Wrap everything in a scrollable view
-        self.scrollComponentReadOnlyDetails = Gtk.ScrolledWindow()
-        self.scrollComponentEditableDetails = Gtk.ScrolledWindow()
+        self.scrollComponentDetails = Gtk.ScrolledWindow()
 
         # Set up read-only details in a box
         self.boxComponentReadOnlyDetails = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -557,13 +542,18 @@ class MainWindow(Gtk.ApplicationWindow):
         self.lblComponentEditableDetails = Gtk.Label(label='Component Editable Details')
         self.boxComponentEditableDetails.append(self.lblComponentEditableDetails)
 
-        # Add it all to the scrollwindow
-        self.scrollComponentReadOnlyDetails.set_child(self.boxComponentReadOnlyDetails)
-        self.scrollComponentEditableDetails.set_child(self.boxComponentEditableDetails)
+        # editable
+        #   - name
+        #   - tags
+        #   - constructed
+        #   - processing recipe
+        #   - clock_rate
+        #   - standby
+        #   - dimensions
+        #   - base power usage
 
-        # Fill the panes
-        self.paneComponentDetails.set_start_child(self.scrollComponentReadOnlyDetails)
-        self.paneComponentDetails.set_end_child(self.scrollComponentEditableDetails)
+        # Add it all to the scrollwindow
+        self.scrollComponentDetails.set_child(self.boxComponentReadOnlyDetails)
 
     def __build_context_panel(self):
         '''
@@ -575,7 +565,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneContext.set_start_child(self.scrollFactoryFunctions)
 
         self.__build_component_context_panel()
-        self.paneContext.set_end_child(self.paneComponentDetails)
+        self.paneContext.set_end_child(self.scrollComponentDetails)
         self.paneContext.set_position(100)
 
     def __build_factory_context_panel(self):
