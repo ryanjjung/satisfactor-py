@@ -12,6 +12,7 @@ from satisfactor_py.base import (
     Building,
     BuildingCategory,
     BuildingType,
+    Conveyance,
     ResourceNode,
     InfiniteSupplyNode
 )
@@ -225,13 +226,11 @@ class MainWindow(Gtk.ApplicationWindow):
             if self.entryComponentName not in skip:
                 self.entryComponentName.get_buffer().set_text(c.name, -1)
 
+            self.chkComponentConstructed.set_active(c.constructed)
             if isinstance(c, Building):
-                self.chkComponentConstructed.set_active(c.constructed)
                 self.chkComponentStandby.set_active(c.standby)
-                self.chkComponentConstructed.set_visible(True)
                 self.chkComponentStandby.set_visible(True)
             else:
-                self.chkComponentConstructed.set_visible(False)
                 self.chkComponentStandby.set_visible(False)
 
     def update_component_context_readonly(self):
@@ -1064,15 +1063,17 @@ class MainWindow(Gtk.ApplicationWindow):
     def __chkComponentConstructed_toggled(self, chk):
         if self.blueprint and self.blueprint.selected:
             self.blueprint.selected.constructed = chk.get_active()
-            geo = self.blueprint.geometry.get(self.blueprint.selected.id)
-            geo._ComponentGeometry__calculate_badges()
+            if not isinstance(self.blueprint.selected, Conveyance):
+                geo = self.blueprint.geometry.get(self.blueprint.selected.id)
+                geo._ComponentGeometry__calculate_badges()
             self.unsaved_changes = True
             self.update_window()
 
     def __chkComponentStandby_toggled(self, chk):
         if self.blueprint and self.blueprint.selected:
             self.blueprint.selected.standby = chk.get_active()
-            geo = self.blueprint.geometry.get(self.blueprint.selected.id)
-            geo._ComponentGeometry__calculate_badges()
+            if not isinstance(self.blueprint.selected, Conveyance):
+                geo = self.blueprint.geometry.get(self.blueprint.selected.id)
+                geo._ComponentGeometry__calculate_badges()
             self.unsaved_changes = True
             self.update_window()
