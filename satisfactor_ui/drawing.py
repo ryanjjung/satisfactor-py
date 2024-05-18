@@ -180,7 +180,7 @@ class Blueprint(object):
         self.draw_component_background(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_icon(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_badges(widget, snapshot, component, geometry, self.viewport.scale)
-        self.draw_component_label(widget, snapshot, component, geometry, label, self.viewport.scale)
+        self.draw_component_label(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_inputs(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_outputs(widget, snapshot, component, geometry, self.viewport.scale)
 
@@ -382,17 +382,15 @@ class Blueprint(object):
         snapshot: Gdk.Snapshot,
         component: Component,
         geometry: ComponentGeometry,
-        label = None, # PangoTextLabel
         scale: float = 1.0
     ):
         # Set up the label and recalculate its geometry
-        if not label:
-            label = PangoTextLabel(
-                component.name,
-                self.label_font_family,
-                self.label_font_size,
-                widget,
-                scale)
+        label = PangoTextLabel(
+            component.name,
+            self.label_font_family,
+            self.label_font_size,
+            widget,
+            scale)
         geometry._ComponentGeometry__calculate_label(
             *label.layout.get_pixel_size(),
             scale,
@@ -535,6 +533,7 @@ class Blueprint(object):
 
         # Draw those components
         for component, geometry in visible_component_geometry:
+            logging.debug(f'Component: {component}, Label: {label.text}')
             self.draw_component(widget, snapshot, component, geometry, label)
 
         # Make sure the conveyances have geometry
@@ -698,6 +697,8 @@ class PangoTextLabel(object):
         font_style: Pango.Style = Pango.Style.NORMAL,
         font_weight: Pango.Weight = Pango.Weight.NORMAL,
     ):
+        self.text = text
+
         # Set up the font
         self.font = Pango.FontDescription.new()
         self.font.set_family(font_family)
