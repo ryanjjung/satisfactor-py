@@ -30,9 +30,12 @@ class ConveyorBeltMk1(Conveyance):
     A first-tier conveyor belt carrying 60 Items per minute.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name: str='Conveyor Belt Mk.1',
+        **kwargs
+    ):
         super().__init__(
-            name='Conveyor Belt Mk.1',
+            name=name,
             availability=Availability(0, 4),
             wiki_path='/Conveyor_Belts#Mk.1-0',
             image_path='/c/c9/Conveyor_Belt_Mk.1.png',
@@ -60,9 +63,12 @@ class ConveyorBeltMk2(Conveyance):
     A second-tier conveyor belt carrying 120 Items per minute.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name='Conveyor Belt Mk.2',
+        **kwargs
+    ):
         super().__init__(
-            name='Conveyor Belt Mk.2',
+            name=name,
             availability=Availability(2, 5),
             wiki_path='/Conveyor_Belts#Mk.2-0',
             image_path='/e/e9/Conveyor_Belt_Mk.2.png',
@@ -86,9 +92,12 @@ class ConveyorBeltMk2(Conveyance):
 
 
 class ConveyorLiftMk1(Conveyance):
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name='Conveyor Lift Mk.1',
+        **kwargs
+    ):
         super().__init__(
-            name='Conveyor Lift Mk.1',
+            name=name,
             availability=Availability(1, 2),
             wiki_path='/Conveyor_Lifts#Mk.1-0',
             image_path='/2/2d/Conveyor_Lift_Mk.1.png',
@@ -112,9 +121,12 @@ class ConveyorLiftMk1(Conveyance):
 
 
 class ConveyorLiftMk2(Conveyance):
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name='Conveyor Lift Mk.2',
+        **kwargs
+    ):
         super().__init__(
-            name='Conveyor Lift Mk.2',
+            name=name,
             availability=Availability(2, 5),
             wiki_path='/Conveyor_Lifts#Mk.2-0',
             image_path='/8/8a/Conveyor_Lift_Mk.2.png',
@@ -142,9 +154,12 @@ class PipelineMk1(Conveyance):
     A first-tier pipeline capable of moving up to 300m³ of fluid per minute.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name='Pipeline Mk. 1',
+        **kwargs
+    ):
         super().__init__(
-            name='Pipeline Mk. 1',
+            name=name,
             availability=Availability(0, 4),
             wiki_path='/Pipelines#Mk.1-0',
             image_path='/5/54/Pipeline_Mk.1.png',
@@ -173,9 +188,12 @@ class PipelinePump(Conveyance):
     about headlift, so it acts here like any other pipeline conveyance.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        name='Pipeline Pump Mk. 1',
+        **kwargs
+    ):
         super().__init__(
-            name='Pipeline Pump Mk. 1',
+            name=name,
             availability=Availability(3, 1),
             wiki_path='/Pipeline_Pump',
             image_path='/2/2d/Pipeline_Pump_Mk.1.png',

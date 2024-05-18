@@ -35,6 +35,7 @@ COLORS = {
     'conn_label': None,
 }
 
+
 class Blueprint(object):
     '''
     A Blueprint is a mapping of factory components to a physical pixel grid. Orientation values here
@@ -541,7 +542,7 @@ class Blueprint(object):
             if isinstance(conveyance, Conveyance):
                 # Only worry about drawing a conveyance if it's attached to something visible
                 if geometry.source_comp and geometry.target_comp:
-                    label_text = conveyance.__class__.__name__
+                    label_text = conveyance.name
                     label = PangoTextLabel(
                         label_text,
                         self.conveyance_font_family,
