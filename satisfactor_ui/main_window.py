@@ -249,6 +249,20 @@ class MainWindow(Gtk.ApplicationWindow):
             else:
                 self.lblComponentBuildingType.set_visible(False)
 
+            if hasattr(c, 'dimensions'):
+                self.lblComponentDimensions.set_text(
+                    f'Dimensions: {c.dimensions.width} x {c.dimensions.length} x {c.dimensions.height}')
+                self.lblComponentDimensions.set_visible(True)
+            else:
+                self.lblComponentDimensions.set_visible(False)
+
+            if hasattr(c, 'base_power_usage'):
+                self.lblComponentBasePowerUsage.set_text(
+                    f'Base Power Usage: {c.base_power_usage}W')
+                self.lblComponentBasePowerUsage.set_visible(True)
+            else:
+                self.lblComponentBasePowerUsage.set_visible(False)
+
             # Recipe displays show an item image and the amount/rate
             recipe_store = Gtk.ListStore(Pixbuf, str)
 
@@ -495,6 +509,13 @@ class MainWindow(Gtk.ApplicationWindow):
         # Label for component availability
         self.lblComponentAvailability = Gtk.Label(label='')
 
+        # readonly
+        #   - dimensions
+        #   - base power usage
+
+        self.lblComponentDimensions = Gtk.Label()
+        self.lblComponentBasePowerUsage = Gtk.Label()
+
         # Box to contain links to wiki and image
         self.boxComponentLinks = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.boxComponentLinks.set_halign(Gtk.Align.CENTER)
@@ -515,6 +536,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.boxComponentDetails.append(self.lblComponentBuildingType)
         self.boxComponentDetails.append(self.lblComponentAvailability)
+        self.boxComponentDetails.append(self.lblComponentDimensions)
+        self.boxComponentDetails.append(self.lblComponentBasePowerUsage)
         self.boxComponentDetails.append(self.boxComponentLinks)
         self.boxComponentDetails.append(self.boxComponentRecipe)
 
@@ -563,14 +586,11 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentDetails.append(self.boxComponentName)
 
         # editable
-        #   - name
-        #   - tags
         #   - constructed
-        #   - processing recipe
-        #   - clock_rate
         #   - standby
-        #   - dimensions
-        #   - base power usage
+        #   - clock_rate
+        #   - processing recipe
+        #   - tags
 
         # Add it all to the scrollwindow
         self.scrollComponentDetails.set_child(self.boxComponentDetails)
