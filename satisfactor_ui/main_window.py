@@ -224,8 +224,9 @@ class MainWindow(Gtk.ApplicationWindow):
             c = self.blueprint.selected
             if self.entryComponentName not in skip:
                 self.entryComponentName.get_buffer().set_text(c.name, -1)
-        else:
-            pass
+
+            self.chkComponentConstructed.set_active(c.constructed)
+            self.chkComponentStandby.set_active(c.standby)
 
     def update_component_context_readonly(self):
         '''
@@ -503,16 +504,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.lblComponentHeader.set_markup('<b>Component Details</b>')
         self.boxComponentDetails.append(self.lblComponentHeader)
 
-        # Label for building type
+        # Labels for basic details
         self.lblComponentBuildingType = Gtk.Label(label=f'Building type:')
-
-        # Label for component availability
         self.lblComponentAvailability = Gtk.Label(label='')
-
-        # readonly
-        #   - dimensions
-        #   - base power usage
-
         self.lblComponentDimensions = Gtk.Label()
         self.lblComponentBasePowerUsage = Gtk.Label()
 
@@ -584,6 +578,15 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentName.append(self.lblComponentName)
         self.boxComponentName.append(self.entryComponentName)
         self.boxComponentDetails.append(self.boxComponentName)
+
+        # Checkboxes for togglables in a box
+        self.boxComponentBooleans = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentBooleans.set_halign(Gtk.Align.CENTER)
+        self.chkComponentConstructed = Gtk.CheckButton(label='Constructed')
+        self.chkComponentStandby = Gtk.CheckButton(label='Standby')
+        self.boxComponentBooleans.append(self.chkComponentConstructed)
+        self.boxComponentBooleans.append(self.chkComponentStandby)
+        self.boxComponentDetails.append(self.boxComponentBooleans)
 
         # editable
         #   - constructed
@@ -793,6 +796,14 @@ class MainWindow(Gtk.ApplicationWindow):
             self.entryComponentName.get_buffer(),
             self.entryComponentName.get_buffer().connect_after('inserted-text',
                 self.__entryComponentName_inserted)))
+        self.windowSignals.append((
+            self.chkComponentConstructed,
+            self.chkComponentConstructed.connect_after('toggled',
+                self.__chkComponentConstructed_toggled)))
+        self.windowSignals.append((
+            self.chkComponentStandby,
+            self.chkComponentStandby.connect_after('toggled',
+                self.__chkComponentStandby_toggled)))
 
 
     def __load_images(self):
@@ -1015,3 +1026,19 @@ class MainWindow(Gtk.ApplicationWindow):
     def __entryComponentName_inserted(self, buffer, position, chars, nchars):
         if self.blueprint and self.blueprint.selected:
             self.__entryComponentName_changed(buffer.get_text())
+
+    def __chkComponentConstructed_toggled(self, chk):
+        if self.blueprint and self.blueprint.selected:
+            self.blueprint.selected.constructed = chk.get_active()
+            geo = self.blueprint.geometry.get(self.blueprint.selected.id)
+            geo._ComponentGeometry__calculate_badges()
+            self.unsaved_changes = True
+            self.update_window()
+
+    def __chkComponentStandby_toggled(self, chk):
+        if self.blueprint and self.blueprint.selected:
+            self.blueprint.selected.standby = chk.get_active()
+            geo = self.blueprint.geometry.get(self.blueprint.selected.id)
+            geo._ComponentGeometry__calculate_badges()
+            self.unsaved_changes = True
+            self.update_window()
