@@ -772,11 +772,13 @@ class ResourceNode(Component):
         Returns a dict representation of this object
         '''
 
-        return super().to_dict().update({
+        base = super().to_dict()
+        base.update({
             'purity': self.purity.name,
             'item': self.item.to_dict(),
             'outputs': [output.id for output in self.outputs]
         })
+        return base
 
     def process(self):
         '''
@@ -847,19 +849,10 @@ class InfiniteSupplyNode(ResourceNode):
         item: Item = None,
         rate: float = None,
         conveyance_type: ConveyanceType = None,
+        wiki_path: str = '/Resource_Node',
+        name: str = 'Infinite Supply Node',
         **kwargs
     ):
-        if item:
-            wiki_path = item.wiki_path
-        else:
-            wiki_path = '/Resource_Node'
-
-        if 'name' in kwargs:
-            name = kwargs['name']
-            del(kwargs['name'])
-        else:
-            name = 'Infinite Supply Node'
-
         super().__init__(
             purity=Purity.NORMAL,
             item=item,
@@ -867,7 +860,6 @@ class InfiniteSupplyNode(ResourceNode):
             name=name,
             **kwargs
         )
-        self.item = item
         self.rate = rate
         self.outputs = [Output(
             conveyance_type=conveyance_type,
@@ -879,9 +871,11 @@ class InfiniteSupplyNode(ResourceNode):
         Returns a dict representation of this object
         '''
 
-        return super().to_dict().update({
+        base = super().to_dict()
+        base.update({
             'rate': self.rate
         })
+        return base
 
     def can_process(self) -> bool:
         '''
@@ -893,6 +887,13 @@ class InfiniteSupplyNode(ResourceNode):
             self.add_error(ComponentError(
                 level=ComponentErrorLevel.IMPOSSIBLE,
                 message='Node doesn\'t supply an item.'
+            ))
+            self.can_process = False
+
+        if not self.rate:
+            self.add_error(ComponentError(
+                level=ComponentErrorLevel.IMPOSSIBLE,
+                message='Node has no rate set.'
             ))
             self.can_process = False
 

@@ -272,24 +272,61 @@ class MainWindow(Gtk.ApplicationWindow):
                     compatible_recipes.sort(key=lambda x: x[0])
 
                     # Recreate the contents of the recipe selector
-                    self.cboComponentSelectedRecipe.remove_all()
-                    for recipe_name, recipe in compatible_recipes:
-                        self.cboComponentSelectedRecipe.append(recipe_name, recipe.name)
-                    current_recipe = c.recipe.programmatic_name
+                    if self.cboComponentSelectedRecipe not in skip:
+                        self.cboComponentSelectedRecipe.remove_all()
+                        for recipe_name, recipe in compatible_recipes:
+                            self.cboComponentSelectedRecipe.append(recipe_name, recipe.name)
+                        current_recipe = c.recipe.programmatic_name
 
-                    # Determine index of current recipe and set the recipe selector to that
-                    current_recipe_id = None
-                    for i in range(len(compatible_recipes)):
-                        if compatible_recipes[i][0] == current_recipe:
-                            current_recipe_id = i
-                            break
-                    if current_recipe is not None:
-                        self.cboComponentSelectedRecipe.set_active(current_recipe_id)
+                        # Determine index of current recipe and set the recipe selector to that
+                        current_recipe_id = None
+                        for i in range(len(compatible_recipes)):
+                            if compatible_recipes[i][0] == current_recipe:
+                                current_recipe_id = i
+                                break
+                        if current_recipe is not None:
+                            self.cboComponentSelectedRecipe.set_active(current_recipe_id)
 
                     # Ensure it's visible
                     self.boxComponentSelectedRecipe.set_visible(True)
+                    self.boxISNRecipe.set_visible(False)
+            elif isinstance(c, InfiniteSupplyNode):
+                # Set the spin button up properly
+                if self.spinISNRecipeRate not in skip:
+                    self.spinISNRecipeRate.set_value(c.rate or 0.0)
+
+                # Filter out items that can't be conveyed
+                items = [(item_name, item) for item_name, item in get_all_items()
+                    if item.conveyance_type is not None]
+                
+                # If the availability filter is on, filter those out, too
+                if self.chkAvailability.get_active():
+                    items = [(item_name, item) for item_name, item in items
+                        if item.availability.tier <= self.blueprint.factory.availability.tier
+                        and item.availability.upgrade <= self.blueprint.factory.availability.upgrade]
+                
+                # Populate the combo box
+                if self.cboISNRecipeItem not in skip:
+                    self.cboISNRecipeItem.remove_all()
+                    for item_name, item in items:
+                        self.cboISNRecipeItem.append(item_name, item.name)
+                    current_item = c.item.programmatic_name
+                    current_item_id = None
+
+                    # Set the current item as active
+                    for i in range(len(items)):
+                        if items[i][0] == current_item:
+                            current_item_id = i
+                            break
+                    if current_item is not None:
+                        self.cboISNRecipeItem.set_active(current_item_id)
+
+                # Make sure the right widgets are presented
+                self.boxISNRecipe.set_visible(True)
+                self.boxComponentSelectedRecipe.set_visible(False)
             else:
-                # Hide controls for invalid component types
+                # Hide all of these widgets
+                self.boxISNRecipe.set_visible(False)
                 self.boxComponentSelectedRecipe.set_visible(False)
 
             # Update tags listing
@@ -700,6 +737,25 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentSelectedRecipe.append(self.cboComponentSelectedRecipe)
         self.boxComponentDetails.append(self.boxComponentSelectedRecipe)
 
+        # Build a set of controls to display when InfiniteSupplyNodes are selected.
+        self.boxISNRecipe = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxISNRecipe.set_spacing(5)
+        self.boxISNRecipe.set_halign(Gtk.Align.CENTER)
+        self.lblISNRecipe = Gtk.Label(label='Recipe:')
+        self.spinISNRecipeRate = Gtk.SpinButton()
+        self.adjISNRecipeRate = Gtk.Adjustment(
+            lower=0,
+            upper=1000,
+            step_increment=1,
+            page_increment=10,
+            page_size=10)
+        self.spinISNRecipeRate.set_adjustment(self.adjISNRecipeRate)
+        self.cboISNRecipeItem = Gtk.ComboBoxText()
+        self.boxISNRecipe.append(self.lblISNRecipe)
+        self.boxISNRecipe.append(self.spinISNRecipeRate)
+        self.boxISNRecipe.append(self.cboISNRecipeItem)
+        self.boxComponentDetails.append(self.boxISNRecipe)
+
         # Box to contain the build cost recipe for the component
         self.boxComponentRecipe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.lblComponentRecipe = Gtk.Label()
@@ -1031,6 +1087,16 @@ class MainWindow(Gtk.ApplicationWindow):
                 'changed',
                 self.__cboComponentSelectedRecipe_changed)))
         self.windowSignals.append((
+            self.spinISNRecipeRate,
+            self.spinISNRecipeRate.connect_after(
+                'value-changed',
+                self.__spinISNRecipeRate_value_changed)))
+        self.windowSignals.append((
+            self.cboISNRecipeItem,
+            self.cboISNRecipeItem.connect_after(
+                'changed',
+                self.__cboISNRecipeItem_changed)))
+        self.windowSignals.append((
             self.btnNewComponentTag,
             self.btnNewComponentTag.connect('clicked', self.__btnNewComponentTag_clicked)))
 
@@ -1298,17 +1364,36 @@ class MainWindow(Gtk.ApplicationWindow):
             self.update_window()
 
     def __cboComponentSelectedRecipe_changed(self, cbo):
-        recipe_name = cbo.get_active_text().title().replace(' ', '')
         if self.blueprint and self.blueprint.selected \
             and isinstance(self.blueprint.selected, Building):
+                recipe_name = cbo.get_active_text().title().replace(' ', '')
                 try:
                     recipe = [ recipe for name, recipe in get_all_recipes() \
                         if name == recipe_name ][0]
                     self.blueprint.selected.recipe = recipe
                     self.unsaved_changes = True
+                    self.update_window(skip=[self.cboComponentSelectedRecipe])
                 except IndexError:
                     logging.debug(f'No recipe called {recipe_name} was found')
 
+    def __spinISNRecipeRate_value_changed(self, spin):
+        if self.blueprint and self.blueprint.selected:
+            self.blueprint.selected.rate = spin.get_value()
+            self.blueprint.unsaved_changes = True
+            self.update_window(skip=[self.spinISNRecipeRate])
+
+    def __cboISNRecipeItem_changed(self, cbo):
+        if self.blueprint and self.blueprint.selected \
+            and isinstance(self.blueprint.selected, InfiniteSupplyNode):
+                item_name = cbo.get_active_text().title().replace(' ', '')
+                try:
+                    item = [ item for name, item in get_all_items() \
+                        if name == item_name ][0]
+                    self.blueprint.selected.item = item
+                    self.unsaved_changes = True
+                    self.update_window(skip=[self.cboISNRecipeItem])
+                except IndexError:
+                    logging.debug(f'No item called {item_name} was found')
 
     # + Component tagging widget signal handlers
 
