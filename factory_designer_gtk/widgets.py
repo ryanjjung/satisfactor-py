@@ -1,6 +1,3 @@
-import logging
-logging.basicConfig(level=logging.DEBUG)
-
 import gi
 gi.require_version('Gdk', '4.0')
 gi.require_version('Gtk', '4.0')
@@ -43,16 +40,13 @@ def build_test_blueprint():
             'foo': 'bar'
         }
     )
-    convOreToSmelter = conveyances.ConveyorBeltMk1(name='Belt-1')
+    convOreToSmelter = conveyances.ConveyorBeltMk1(name='Mk1 Ore to Smlt')
     oreSupply.outputs[0].connect(convOreToSmelter.inputs[0])
     oreSupply.constructed = True
     convOreToSmelter.outputs[0].connect(smelter.inputs[0])
     storage = storages.StorageContainer(name='Iron Ore Storage')
     convIngotsToStorage = smelter.connect(storage, conveyances.ConveyorBeltMk1)
-
-    import json
-    logging.debug(json.dumps(convOreToSmelter.to_dict(), indent=2))
-    logging.debug(json.dumps(convIngotsToStorage.to_dict(), indent=2))
+    convIngotsToStorage.name = 'Mk1 Ing to Stg'
 
     # Add them to a blueprint with coordinates, except for Conveyances, which don't need them
     blueprint = drawing.Blueprint()
