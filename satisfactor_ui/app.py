@@ -18,7 +18,6 @@ class FactoryDesigner(Gtk.Application):
     '''
 
     def __init__(self, **kwargs):
-        logging.debug('Initializing GTK application')
         super().__init__(application_id=GTK_APP_ID, **kwargs)
         self.mainWindow = None
         self.set_flags(Gio.ApplicationFlags.HANDLES_OPEN)

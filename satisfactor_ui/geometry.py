@@ -43,6 +43,8 @@ sizes = {
 }
 
 
+# Basic geometry primitives
+
 class Coordinate2D(object):
     '''
     A simple class used to pass around 2-dimensional coordinates.
@@ -124,9 +126,23 @@ class Region2D(object):
             self.top + round(self.height / 2)
         )
 
+    def contains(self,
+        point: Coordinate2D
+    ) -> bool:
+        '''
+        Returns True if the given Coordinate2D lies within the boundaries of the region, else False.
+        '''
+
+        if ((point.x >= self.left and point.x <= self.right)
+            and (point.y >= self.top and point.y <= self.bottom)):
+                return True
+        return False
+
     def __repr__(self):
         return f'<Region2D({self.location}, {self.size})>'
 
+
+# More complex constructions of the above primitives
 
 class ComponentGeometry(object):
     '''
@@ -148,12 +164,14 @@ class ComponentGeometry(object):
 
     def __init__(self,
         component: Component,
-        location: Coordinate2D,
+        canvas_location: Coordinate2D,
         font_family: str = 'Sans',
-        font_size: int = 10,
+        font_size: float = 10.0,
     ):
+        # The canvas_location tracks placement on an imaginary canvas. All other values (background,
+        # badges, etc.) are pixel values derived from the canvas_location.
         self.component = component
-        self.location = location
+        self.canvas_location = canvas_location
 
         # The things we'll calculate
         self.background = None
@@ -172,15 +190,15 @@ class ComponentGeometry(object):
         outputs.
         '''
 
-        left = round(self.location.x * scale)
-        left += round(offsets['background_x'] * scale)
-        left -= round(translate.x * scale)
+        left = round(self.canvas_location.x * scale)   # Align bg to the component's left side
+        left += round(offsets['background_x'] * scale) # Offset by predetermined amount
+        left -= round(translate.x * scale)             # Subtract viewport x value
 
-        top = round(self.location.y * scale)
-        top += round(offsets['background_y'] * scale)
-        top -= round(translate.y * scale)
+        top = round(self.canvas_location.y * scale)    # Align bg to the component's top side
+        top += round(offsets['background_y'] * scale)  # Offset by predetermined amount
+        top -= round(translate.y * scale)              # Subtract viewport y value
 
-        width = round(sizes['background_x'] * scale)
+        width = round(sizes['background_x'] * scale)   # Scale out the size
         height = round(sizes['background_y'] * scale)
 
         self.background = Region2D(Coordinate2D(left, top), Size2D(width, height))
@@ -215,13 +233,13 @@ class ComponentGeometry(object):
         # Calculate each badge's geometry
         i = 0
         for badge in self.badges.keys():
-            left = round(self.location.x * scale)  # Start at the left edge
+            left = round(self.canvas_location.x * scale)     # Start at the left edge
             left += round(sizes['component_x'] * scale / 2)  # Move right to the centerpoint
             left -= round(total_width / 2)  # Go back left by half the width of the whole row
             left += round(i * (sizes['badges_x'] + paddings['badges_x']) * scale ) # Offset from other badges
             left -= round(translate.x * scale)  # Translate
 
-            top = round(self.location.y * scale) # Start at the top edge of the component
+            top = round(self.canvas_location.y * scale) # Start at the top edge of the component
             top += round(offsets['badges_y'] * scale) # Move down by a hardcoded vertical offset
             top -= round(translate.y * scale) # Translate
 
@@ -239,11 +257,11 @@ class ComponentGeometry(object):
         Calculates the geometry describing the component's icon.
         '''
 
-        left = round(self.location.x * scale)
+        left = round(self.canvas_location.x * scale)
         left += round(offsets['icon_x'] * scale)
         left -= round(translate.x * scale)
 
-        top = round(self.location.y * scale)
+        top = round(self.canvas_location.y * scale)
         top += round(offsets['icon_y'] * scale)
         top -= round(translate.y * scale)
 
@@ -265,7 +283,7 @@ class ComponentGeometry(object):
             + paddings['inputs_y'] * (len(self.component.inputs) - 1)
             * scale), 0)
 
-        left = round(self.location.x * scale)
+        left = round(self.canvas_location.x * scale)
         left += round(offsets['input_x'] * scale)
         left -= round(translate.x * scale)
 
@@ -275,7 +293,7 @@ class ComponentGeometry(object):
         self.inputs = []
         i = 0
         for input in self.component.inputs:
-            top = round(self.location.y * scale)
+            top = round(self.canvas_location.y * scale)
             top += round(offsets['icon_y'] * scale)  # Start at the top of the icon
             top += round(sizes['icon_y'] * scale / 2)  # Move down by half the height of the icon
             top -= round(total_height * scale / 2)  # Move back up by half the height of the full input bar
@@ -286,8 +304,8 @@ class ComponentGeometry(object):
             i += 1
 
     def __calculate_label(self,
-        label_width: int,
-        label_height: int,
+        label_width: int = None,
+        label_height: int = None,
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
@@ -298,17 +316,22 @@ class ComponentGeometry(object):
         label_height parameters to this function.
         '''
 
+        if not label_height:
+            label_height = self.label.height
+        if not label_width:
+            label_width = self.label.width
+
         label_size = Size2D(label_width, label_height)
 
         # Center the text under the icon
-        left = round(self.location.x * scale)  # Start at the canvas location
+        left = round(self.canvas_location.x * scale)  # Start at the canvas location
         left += round(sizes['component_x'] * scale / 2)  # Move right to the center of the component
         left -= round(label_size.width / 2)  # Left by half the width of the label to center it
-        left -= round(translate.x)     # Translate and scale
+        left -= round(translate.x * scale)     # Translate and scale
 
-        top = round(self.location.y * scale)  # Start at the canvas location
+        top = round(self.canvas_location.y * scale)  # Start at the canvas location
         top += round(offsets['label_y'] * scale)  # Move down by a hardcoded offset
-        top -= round(translate.y)  # Translate and scale
+        top -= round(translate.y * scale)  # Translate and scale
 
         self.label = Region2D(Coordinate2D(left, top), label_size)
 
@@ -325,14 +348,14 @@ class ComponentGeometry(object):
             + paddings['outputs_y'] * (len(self.component.outputs) - 1)
             * scale), 0)
 
-        left = round(self.location.x * scale)
+        left = round(self.canvas_location.x * scale)
         left += round(offsets['output_x'] * scale)
         left -= round(translate.x * scale)
 
         self.outputs = []
         i = 0
         for output in self.component.outputs:
-            top = round(self.location.y * scale)
+            top = round(self.canvas_location.y * scale)
             top += round(offsets['icon_y'] * scale)  # Start at the top of the icon
             top += round(sizes['icon_y'] * scale / 2)  # Move down by half the height of the icon
             top -= round(total_height * scale / 2)  # Move back up by half the height of the full output bar
@@ -346,8 +369,8 @@ class ComponentGeometry(object):
             i += 1
 
     def calculate(self,
-        label_width: int,
-        label_height: int,
+        label_width: int = None,
+        label_height: int = None,
         scale: float = 1.0,
         translate: Coordinate2D = Coordinate2D()
     ):
@@ -414,6 +437,7 @@ class ConveyanceGeometry(object):
         target_input: int = None,  # The index of the target component's input this connects to
     ):
         self.conveyance = conveyance
+        self.label = Region2D()
         self.geometry = None
         self.source_comp = source_comp
         self.source_geo = source_geo
@@ -431,22 +455,34 @@ class ConveyanceGeometry(object):
         self.midpoint = Coordinate2D()   # The middle point of the vertical portion of the line
 
     def __calculate_label(self,
-        label_width: int,
-        label_height: int,
+        label_width: int = None,
+        label_height: int = None,
     ):
         '''
         Calculate the geometry for the conveyance's label
         '''
 
-        # import pdb; pdb.set_trace()
+        # Use old measurements if there aren't new ones
+        if not label_width:
+            label_width = self.label.width
+        if not label_height:
+            label_height = self.label.height
+
         # Swap these measurements since the text will be rotated 90 degrees
         width = label_height
         height = label_width
 
+        # Apply some adjustments that are needed due to rotation
         if self.runs_down:
-            left = self.geometry.bounds.middle.x + round(width / 2)
+            if self.geometry.output_region.middle.x < self.geometry.input_region.middle.x:
+                left = self.geometry.bounds.middle.x + round(width / 2)
+            else:
+                left = self.geometry.bounds.middle.x + width
         else:
-            left = self.geometry.bounds.middle.x - round(width / 2)
+            if self.geometry.output_region.middle.x < self.geometry.input_region.middle.x:
+                left = self.geometry.bounds.middle.x - round(width / 2)
+            else:
+                left = self.geometry.bounds.middle.x
 
         if self.runs_down:
             top = self.geometry.bounds.middle.y - round(height / 2)
@@ -483,7 +519,7 @@ class ConveyanceGeometry(object):
             # https://docs.gtk.org/gsk4/type_func.Path.parse.html
 
             # Start at the source point
-            path_str = f'M {self.source_pt.x} {self.source_pt.y} '
+            self.path_str = f'M {self.source_pt.x} {self.source_pt.y} '
 
             # Focus on the first turn
             point1 = self.geometry.turns[0].point1
@@ -491,10 +527,10 @@ class ConveyanceGeometry(object):
             ctrl_pt = self.geometry.turns[0].control_point
 
             # Draw a line to the first turn
-            path_str += f'L {point1.x} {point1.y} '
+            self.path_str += f'L {point1.x} {point1.y} '
 
             # Draw a quadratic bezier curve around the turn radius
-            path_str += f'Q {ctrl_pt.x} {ctrl_pt.y} {point2.x} {point2.y} '
+            self.path_str += f'Q {ctrl_pt.x} {ctrl_pt.y} {point2.x} {point2.y} '
 
             # Focus on the second turn
             point1 = self.geometry.turns[1].point1
@@ -502,17 +538,17 @@ class ConveyanceGeometry(object):
             ctrl_pt = self.geometry.turns[1].control_point
 
             # Draw a line to the second turn
-            path_str += f'L {point1.x} {point1.y} '
+            self.path_str += f'L {point1.x} {point1.y} '
 
             # Draw a bezier curve around the turn radius
-            path_str += f'Q {ctrl_pt.x} {ctrl_pt.y} {point2.x} {point2.y} '
+            self.path_str += f'Q {ctrl_pt.x} {ctrl_pt.y} {point2.x} {point2.y} '
 
             # Draw a line to the target point
-            path_str += f'L {self.target_pt.x} {self.target_pt.y}'   # Line to the target point
+            self.path_str += f'L {self.target_pt.x} {self.target_pt.y}'   # Line to the target point
 
             # Try to parse the path string
-            self.path = Gsk.Path.parse(path_str)
-            success, path_bounds = self.path.get_bounds()
+            path = Gsk.Path.parse(self.path_str)
+            success, path_bounds = path.get_bounds()
             if success:
                 # Determine the rectangle representing the outer boundary of this path when drawn
                 self.bounds = Region2D(
@@ -539,8 +575,8 @@ class ConveyanceGeometry(object):
             self.midpoint = None
 
     def calculate(self,
-        label_width: int,
-        label_height: int,
+        label_width: int = None,
+        label_height: int = None,
         scale: float = 1.0
     ):
         self.__calculate_turns(scale)
@@ -555,6 +591,7 @@ class ConveyanceGeometry(object):
     @property
     def runs_up(self) -> bool:
         return not self.runs_down
+
 
 class ConveyanceTurnDirection(Enum):
     '''

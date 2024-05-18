@@ -24,6 +24,16 @@ from satisfactor_ui.geometry import (
 BASE_IMAGE_FILE_PATH = './static/images'
 FIRST_RUN=True
 
+COLORS = {
+    'comp_bg_deselected': None,
+    'comp_bg_selected': None,
+    'comp_bg_border': None,
+    'comp_label': None,
+    'conn_bg': None,
+    'conn_deselected': None,
+    'conn_selected': None,
+    'conn_label': None,
+}
 
 class Blueprint(object):
     '''
@@ -50,6 +60,7 @@ class Blueprint(object):
         label_font_size: float = 10.0,
         line_color: str = '#a3a8fa',
         selected_component_bg_color: str = '#95d0ff',
+        selected_line_color: str = '#95d0ff',
         viewport_region: Region2D = Region2D()
     ):
         self.factory = factory
@@ -70,10 +81,14 @@ class Blueprint(object):
         self.label_color = label_color
         self.line_color = line_color
         self.selected_component_bg_color = selected_component_bg_color
+        self.selected_line_color = selected_line_color
 
         # Set up fonts
         self.label_font_family = label_font_family
         self.label_font_size = label_font_size
+
+        # Track whether the geometry needs to be recalculated
+        self.__invalid_geo = False
 
     @staticmethod
     def load(filename: str):
@@ -87,7 +102,6 @@ class Blueprint(object):
             blueprint = pickle.load(fh)
         return blueprint
 
-
     def save(self,
         filename: str
     ):
@@ -100,9 +114,12 @@ class Blueprint(object):
         with open(filename, 'wb') as fh:
             pickle.dump(self, fh, pickle.HIGHEST_PROTOCOL)
 
+    def invalidate_geometry(self):
+        self.__invalid_geo = True
+
     def add_component(self,
         component: Component,
-        location: Coordinate2D
+        canvas_location: Coordinate2D
     ):
         '''
         Adds a component to the factory and sets up its coordinate mapping
@@ -127,7 +144,7 @@ class Blueprint(object):
                     target_comp.inputs.index(component.outputs[0].target),
                 )
         else:
-            self.geometry[component.id] = ComponentGeometry(component, location)
+            self.geometry[component.id] = ComponentGeometry(component, canvas_location)
 
     def draw_widget_background(self,
         snapshot: Gdk.Snapshot,
@@ -153,7 +170,8 @@ class Blueprint(object):
         widget: Gtk.Widget,
         snapshot: Gdk.Snapshot,
         component: Component,
-        geometry: ComponentGeometry
+        geometry: ComponentGeometry,
+        label  # PangoTextLabel
     ):
         '''
         Draws a graphical representation of a factory component on the screen.
@@ -173,20 +191,37 @@ class Blueprint(object):
         geometry: ComponentGeometry,
         scale: float
     ):
-        bg_color = Gdk.RGBA()
-        bg_color.parse(self.selected_component_bg_color if self.selected == component
-            else self.component_bg_color)
-        border_color = Gdk.RGBA()
-        border_color.parse(self.component_border_color)
+        # Set up the colors
+        if not COLORS['comp_bg_selected']:
+            COLORS['comp_bg_selected'] = Gdk.RGBA()
+            COLORS['comp_bg_selected'].parse(self.selected_component_bg_color)
+        if not COLORS['comp_bg_deselected']:
+            COLORS['comp_bg_deselected'] = Gdk.RGBA()
+            COLORS['comp_bg_deselected'].parse(self.component_bg_color)
+        if not COLORS['comp_bg_border']:
+            COLORS['comp_bg_border'] = Gdk.RGBA()
+            COLORS['comp_bg_border'].parse(self.component_border_color)
 
+        # Set up the rounded rectangle
         geo = geometry.background
         rect = Graphene.Rect().init(geo.left, geo.top, geo.width, geo.height)
         rounded_rect = Gsk.RoundedRect()
         rounded_rect.init_from_rect(rect, radius=4)
 
-        border_colors = [border_color, border_color, border_color, border_color]
+        # Define the border
+        border_colors = [
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+        ]
         border_sizes = [2.0, 2.0, 2.0, 2.0]
 
+        # Define the background
+        bg_color = COLORS['comp_bg_selected'] if component == self.selected \
+            else COLORS['comp_bg_deselected']
+
+        # Do the drawing
         snapshot.push_rounded_clip(rounded_rect)
         snapshot.append_color(bg_color, rect)
         snapshot.append_border(rounded_rect, border_sizes, border_colors)
@@ -266,11 +301,18 @@ class Blueprint(object):
             input_texture = widget.load_texture(filename, 'badges', 'input')
 
         # Set up colors
-        bg_color = Gdk.RGBA()
-        bg_color.parse(self.connection_bg_color)
-        border_color = Gdk.RGBA()
-        border_color.parse(self.component_border_color)
-        border_colors = [border_color, border_color, border_color, border_color]
+        if not COLORS['conn_bg']:
+            COLORS['conn_bg'] = Gdk.RGBA()
+            COLORS['conn_bg'].parse(self.connection_bg_color)
+        if not COLORS['comp_bg_border']:
+            COLORS['comp_bg_border'] = Gdk.RGBA()
+            COLORS['comp_bg_border'].parse(self.component_border_color)
+        border_colors = [
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+        ]
         border_sizes = [1.0, 0.0, 1.0, 0.0]
 
         for input in geometry.inputs:
@@ -280,7 +322,7 @@ class Blueprint(object):
             bg_rect.init_from_rect(input_rect, radius=0)
 
             snapshot.push_rounded_clip(bg_rect)
-            snapshot.append_color(bg_color, input_rect)
+            snapshot.append_color(COLORS['comp_bg_deselected'], input_rect)
             snapshot.append_border(bg_rect, border_sizes, border_colors)
             snapshot.pop()
 
@@ -306,11 +348,18 @@ class Blueprint(object):
             output_texture = widget.load_texture(filename, 'badges', 'output')
 
         # Set up colors
-        bg_color = Gdk.RGBA()
-        bg_color.parse(self.connection_bg_color)
-        border_color = Gdk.RGBA()
-        border_color.parse(self.component_border_color)
-        border_colors = [border_color, border_color, border_color, border_color]
+        if not COLORS['conn_bg']:
+            COLORS['conn_bg'] = Gdk.RGBA()
+            COLORS['conn_bg'].parse(self.connection_bg_color)
+        if not COLORS['comp_bg_border']:
+            COLORS['comp_bg_border'] = Gdk.RGBA()
+            COLORS['comp_bg_border'].parse(self.component_border_color)
+        border_colors = [
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+            COLORS['comp_bg_border'],
+        ]
         border_sizes = [1.0, 0.0, 1.0, 0.0]
 
         for output in geometry.outputs:
@@ -320,7 +369,7 @@ class Blueprint(object):
             bg_rect.init_from_rect(output_rect, radius=0)
 
             snapshot.push_rounded_clip(bg_rect)
-            snapshot.append_color(bg_color, output_rect)
+            snapshot.append_color(COLORS['conn_bg'], output_rect)
             snapshot.append_border(bg_rect, border_sizes, border_colors)
             snapshot.pop()
 
@@ -333,7 +382,7 @@ class Blueprint(object):
         snapshot: Gdk.Snapshot,
         component: Component,
         geometry: ComponentGeometry,
-        scale: float
+        scale: float = 1.0
     ):
         # Set up the label and recalculate its geometry
         label = PangoTextLabel(
@@ -344,11 +393,13 @@ class Blueprint(object):
             scale)
         geometry._ComponentGeometry__calculate_label(
             *label.layout.get_pixel_size(),
-            scale)
+            scale,
+            self.viewport.region.location)
 
         # Set up color
-        label_color = Gdk.RGBA()
-        label_color.parse(self.label_color)
+        if not COLORS['comp_label']:
+            COLORS['comp_label'] = Gdk.RGBA()
+            COLORS['comp_label'].parse(self.label_color)
 
         # Set up positioning
         point = Graphene.Point()
@@ -358,7 +409,7 @@ class Blueprint(object):
         # Draw the text, translate it, color it
         snapshot.save()
         snapshot.translate(point)
-        snapshot.append_layout(label.layout, label_color)
+        snapshot.append_layout(label.layout, COLORS['comp_label'])
         snapshot.restore()
 
     def draw_conveyance(self,
@@ -366,36 +417,49 @@ class Blueprint(object):
         snapshot: Gtk.Snapshot,
         conveyance: Conveyance,
         geometry: ConveyanceGeometry,
+        label_text: str,
     ):
+        # Set up colors
+        if not COLORS['conn_deselected']:
+            COLORS['conn_deselected'] = Gdk.RGBA()
+            COLORS['conn_deselected'].parse(self.line_color)
+        if not COLORS['conn_selected']:
+            COLORS['conn_selected'] = Gdk.RGBA()
+            COLORS['conn_selected'].parse(self.selected_line_color)
+        if not COLORS['conn_label']:
+            COLORS['conn_label'] = Gdk.RGBA()
+            COLORS['conn_label'].parse(self.conveyance_label_color)
+
+        if self.selected == conveyance:
+            line_color = COLORS['conn_selected']
+        else:
+            line_color = COLORS['conn_deselected']
+
         # Draw the twice-curving line of the conveyance
         stroke = Gsk.Stroke.new(geometry.width)
-        line_color = Gdk.RGBA()
-        line_color.parse(self.line_color)
+
         bounds = Graphene.Rect().init(
             geometry.bounds.left,
             geometry.bounds.top,
             geometry.bounds.width,
             geometry.bounds.height
         )
-        snapshot.push_stroke(geometry.path, stroke)
+        path = Gsk.Path.parse(geometry.path_str)
+        snapshot.push_stroke(path, stroke)
         snapshot.append_color(line_color, bounds)
         snapshot.pop()
 
         # Draw the label
-        text = conveyance.conveyance_type.name.title()
         label = PangoTextLabel(
-            text,
+            label_text,
             self.conveyance_font_family,
             self.conveyance_font_size,
             widget,
-            self.viewport.scale)
+            font_weight=Pango.Weight.MEDIUM,
+            scale=self.viewport.scale)
         geometry._ConveyanceGeometry__calculate_label(
             *label.layout.get_pixel_size(),
         )
-
-        # Set up color
-        label_color = Gdk.RGBA()
-        label_color.parse(self.conveyance_label_color)
 
         # Set up positioning
         point = Graphene.Point()
@@ -412,11 +476,13 @@ class Blueprint(object):
         snapshot.save()
         snapshot.translate(point)
         snapshot.rotate(angle)
-        snapshot.append_layout(label.layout, label_color)
+        snapshot.append_layout(label.layout, COLORS['conn_label'])
         snapshot.restore()
 
-
-    def draw_frame(self, widget, snapshot):
+    def draw_frame(self,
+        widget: Gtk.Widget,
+        snapshot: Gtk.Snapshot
+    ):
         '''
         Draws a single frame of the contents of the viewport.
         '''
@@ -426,6 +492,7 @@ class Blueprint(object):
         # Make sure the components have geometry
         for id, geometry in self.geometry.items():
             component = self.factory.get_component_by_id(id)
+            # Conveyances are special; exclude them here
             if not isinstance(component, Conveyance):
                 label = PangoTextLabel(
                     component.name,
@@ -433,12 +500,13 @@ class Blueprint(object):
                     self.label_font_size,
                     widget,
                     self.viewport.scale)
-                if FIRST_RUN:
-                    logging.debug(f'Forcing geometry calculation for component {id}')
+                # Always generate geometry if we haven't already or if it's been marked as invalid
+                if FIRST_RUN or self.__invalid_geo:
                     geometry.calculate(
                         *label.layout.get_pixel_size(),
                         scale=self.viewport.scale,
                         translate=self.viewport.region.location)
+                # Otherwise, generate geometry if we lack any of these calculations
                 elif not geometry.background \
                     or not geometry.badges \
                     or not geometry.icon \
@@ -450,7 +518,10 @@ class Blueprint(object):
                             scale=self.viewport.scale,
                             translate=self.viewport.region.location)
 
+        # Fill the background first; everything else gets drawn on top
         self.draw_widget_background(snapshot=snapshot)
+
+        # Determine what components are actually visible and must be drawn
         visible_component_geometry = self.get_visible_component_geometry()
         visible_components = [component[0] for component in visible_component_geometry]
 
@@ -462,42 +533,42 @@ class Blueprint(object):
 
         # Draw those components
         for component, geometry in visible_component_geometry:
-            self.draw_component(widget, snapshot, component, geometry)
+            self.draw_component(widget, snapshot, component, geometry, label)
 
         # Make sure the conveyances have geometry
         for id, geometry in self.geometry.items():
             conveyance = self.factory.get_component_by_id(id)
             if isinstance(conveyance, Conveyance):
+                # Only worry about drawing a conveyance if it's attached to something visible
                 if geometry.source_comp and geometry.target_comp:
+                    label_text = conveyance.__class__.__name__
                     label = PangoTextLabel(
-                        conveyance.conveyance_type.name.title(),
+                        label_text,
                         self.conveyance_font_family,
                         self.conveyance_font_size,
                         widget,
                         self.viewport.scale)
-                    if FIRST_RUN:
-                        logging.debug(f'Forcing geometry calculation for conveyance {id}')
+                    # Same as before, always generate geometry on the first run and if anything is
+                    # invalidated. Otherwise, generate it if some piece of data is missing.
+                    if FIRST_RUN or self.__invalid_geo:
                         geometry.calculate(
                             *label.layout.get_pixel_size(),
                             self.viewport.scale)
-                    elif not geometry.source_pt \
-                        or not geometry.target_pt \
-                        or not geometry.midpoint \
-                        or not geometry.source_cp \
-                        or not geometry.target_cp \
-                        or not geometry.path:
-                            geometry.calculate(
-                                *label.layout.get_pixel_size(),
-                                self.viewport.scale)
+                    elif geometry.geometry is None:
+                        geometry.calculate(
+                            *label.layout.get_pixel_size(),
+                            self.viewport.scale)
 
+        # Determine which conveyances are visible and draw them
         visible_conveyances = self.get_conveyances_from_components(visible_components)
-        # Draw the conveyances between the components
         for component in visible_conveyances:
             if isinstance(component, Conveyance):
                 geometry = self.geometry.get(component.id)
-                self.draw_conveyance(widget, snapshot, component, geometry)
+                self.draw_conveyance(widget, snapshot, component, geometry, label_text)
 
+        # Clear out these flags since we've just generated all this geometry
         if FIRST_RUN: FIRST_RUN = False
+        self.__invalid_geo = False
 
     def get_visible_component_geometry(self) -> list[tuple]:
         '''
@@ -508,7 +579,7 @@ class Blueprint(object):
         viewport and must be drawn when updating the widget.
         '''
 
-        # Filter out components without coordinate mappings
+        # Filter out conveyances and components without coordinate mappings
         drawable_components = [ (component, self.geometry[component.id]) \
             for component in self.factory.components
             if component.id in self.geometry.keys()
@@ -518,10 +589,10 @@ class Blueprint(object):
         canvas_region = self.viewport.get_visible_canvas_region()
         visible_components = []
         for component, geometry in drawable_components:
-            if (geometry.location.x + sizes['component_x'] >= canvas_region.left
-                and geometry.location.y + sizes['component_y'] >= canvas_region.top) \
-            and (geometry.location.x <= canvas_region.right
-                and geometry.location.y <= canvas_region.top + canvas_region.height):
+            if (geometry.canvas_location.x + sizes['component_x'] >= canvas_region.left
+                and geometry.canvas_location.y + sizes['component_y'] >= canvas_region.top) \
+            and (geometry.canvas_location.x <= canvas_region.right
+                and geometry.canvas_location.y <= canvas_region.top + canvas_region.height):
                     visible_components.append((component, geometry))
         return visible_components
 
@@ -535,8 +606,13 @@ class Blueprint(object):
         '''
 
         offscreen_components = []
+        # If there are no onscreen components at all, we don't need to draw any offscreen ones
         if len(visible_components) > 0:
             for component in visible_components:
+                # Scan each component's inputs to see if they're connected. If so, are they
+                # connected to a Conveyance? If so, is that Conveyance connected to something on the
+                # other end? Only if all of these things are true should we include the attached
+                # component.
                 for input in component.inputs:
                     if input.source:
                         input_attachment = input.source.attached_to
@@ -546,6 +622,7 @@ class Blueprint(object):
                                 if input_attachment.id in self.geometry.keys():
                                     offscreen_components.append((input_attachment,
                                         self.geometry.get(input_attachment.id)))
+                # Do the same checks but for this component's outputs
                 for output in component.outputs:
                     if output.target:
                         output_attachment = output.target.attached_to
@@ -558,6 +635,10 @@ class Blueprint(object):
         return offscreen_components
 
     def get_conveyances_from_components(self, components) -> list[tuple]:
+        '''
+        Given a list of components, returns a list of conveyances attached to them
+        '''
+
         conveyances = []
         for component in components:
             if isinstance(component, Conveyance):
@@ -587,6 +668,19 @@ class Blueprint(object):
 
         return self.coordinateMap.get(component.id, Coordinate2D())
 
+    def get_components_under_coordinate(self,
+        coordinate: Coordinate2D
+    ) -> list[Component]:
+        '''
+        Returns a list of Components whose geometry contains the given coordinate.
+        '''
+
+        components = []
+        for id, geometry in self.geometry.items():
+            if geometry.bounds.contains(coordinate):
+                components.append(self.factory.get_component_by_id(id))
+        return components
+
 
 class PangoTextLabel(object):
     '''
@@ -599,11 +693,17 @@ class PangoTextLabel(object):
         font_size: float,
         widget: Gtk.Widget,
         scale: float = 1.0,
+        font_style: Pango.Style = Pango.Style.NORMAL,
+        font_weight: Pango.Weight = Pango.Weight.NORMAL,
     ):
+        self.text = text
+
         # Set up the font
         self.font = Pango.FontDescription.new()
         self.font.set_family(font_family)
         self.font.set_size(font_size * scale * Pango.SCALE)
+        self.font.set_style(font_style)
+        self.font.set_weight(font_weight)
 
         # Set up a layout
         self.pango_ctx = widget.get_pango_context()

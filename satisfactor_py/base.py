@@ -2,6 +2,8 @@
 Contains all data required to track in-game items affecting production.
 '''
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 import math
 import random
@@ -212,6 +214,18 @@ class Base(object):
         self.wiki_path = wiki_path
         self.tags = tags
 
+    @property
+    def image_url(self) -> str:
+        return f'{IMAGE_URL_BASE}{self.image_path}'
+
+    @property
+    def programmatic_name(self) -> str:
+        return self.name.title().replace(' ', '')
+
+    @property
+    def wiki_url(self) -> str:
+        return f'{WIKI_URL_BASE}{self.wiki_path}'
+
     def to_dict(self) -> dict:
         '''
         Returns a dict representation of this object
@@ -222,9 +236,9 @@ class Base(object):
             'name': self.name,
             'availability': self.availability.to_dict(),
             'wiki_path': self.wiki_path,
-            'wiki_url': f'{WIKI_URL_BASE}{self.wiki_path}',
+            'wiki_url': self.wiki_url,
             'image_path': self.image_path,
-            'image_url': f'{IMAGE_URL_BASE}{self.image_path}',
+            'image_url': self.image_url,
             'tags': self.tags
         }
 
@@ -396,7 +410,8 @@ class Item(Base):
         base.update({
             'conveyance_type': self.conveyance_type.name if self.conveyance_type else None,
             'stack_size': self.stack_size if self.stack_size else None,
-            'sink_value': self.sink_value if self.sink_value else None
+            'sink_value': self.sink_value if self.sink_value else None,
+            'programmatic_name': self.programmatic_name
         })
         return base
 
@@ -987,6 +1002,7 @@ class Building(Component):
         Determines if the conditions are met for the recipe to be processed.
         '''
 
+        import json
         success = True
         # Can't process if there's no recipe to process
         if self.recipe is None:
@@ -1016,20 +1032,23 @@ class Building(Component):
 
             # Can't process if the inputs don't match the recipe
             requirements = [ingredient.item for ingredient in self.recipe.consumes]
+            requirement_names = [item.name for item in requirements]
             ing_items = [ingredient.item for ingredient in self.ingredients]
+            ing_names = [item.name for item in ing_items]
+
             for ingredient in requirements:
-                if ingredient not in ing_items:
+                if ingredient.name not in ing_names:
                     self.add_error(ComponentError(
                         ComponentErrorLevel.WARNING,
                         f'Recipe ingredient {ingredient.name} is not available'
                     ))
                     success = False
 
-            for ingredient in ing_items:
-                if ingredient not in requirements:
+            for ingredient in ing_names:
+                if ingredient not in requirement_names:
                     self.add_error(ComponentError(
                         ComponentErrorLevel.WARNING,
-                        f'Ingredient {ingredient.name} is not required for the recipe'
+                        f'Ingredient {ingredient} is not required for the recipe'
                     ))
 
         # Some recipes don't consume; those can be processed without additional checks
@@ -1055,7 +1074,7 @@ class Building(Component):
         if self.recipe and self.recipe.consumes:
             for recipe_ingredient in self.recipe.consumes:
                 for input_ingredient in self.ingredients:
-                    if recipe_ingredient.item == input_ingredient.item:
+                    if recipe_ingredient.item.name == input_ingredient.item.name:
                         if input_ingredient.rate < recipe_ingredient.rate * self.clock_rate:
                             self.add_error(ComponentError(
                                 ComponentErrorLevel.WARNING,
