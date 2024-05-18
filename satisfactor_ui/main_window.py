@@ -762,11 +762,20 @@ class MainWindow(Gtk.ApplicationWindow):
         self.btnSaveFactoryAs = Gtk.Button()
         self.btnSaveFactoryAs.set_icon_name('document-save-as')
 
+        # Build the "Simulate" and "Clean" buttons
+        self.btnSimulate = Gtk.Button()
+        self.btnSimulate.set_icon_name('media-playback-start')
+        self.btnSimulate.set_margin_start(20)
+        self.btnPurge = Gtk.Button()
+        self.btnPurge.set_icon_name('edit-clear')
+
         # Add all the buttons to the main hbox
         self.boxTopBar.append(self.btnNewFactory)
         self.boxTopBar.append(self.btnOpenFactory)
         self.boxTopBar.append(self.btnSaveFactory)
         self.boxTopBar.append(self.btnSaveFactoryAs)
+        self.boxTopBar.append(self.btnSimulate)
+        self.boxTopBar.append(self.btnPurge)
 
         return self.boxTopBar
 
@@ -803,19 +812,11 @@ class MainWindow(Gtk.ApplicationWindow):
             self.btnSaveFactoryAs,
             self.btnSaveFactoryAs.connect('clicked', self.__btnSaveFactoryAs_clicked)))
         self.windowSignals.append((
-            self.entryFactoryName.get_buffer(),
-            self.entryFactoryName.get_buffer().connect_after('deleted-text',
-                self.__entryFactoryName_deleted)))
+            self.btnSimulate,
+            self.btnSimulate.connect('clicked', self.__btnSimulate_clicked)))
         self.windowSignals.append((
-            self.entryFactoryName.get_buffer(),
-            self.entryFactoryName.get_buffer().connect('inserted-text',
-                self.__entryFactoryName_inserted)))
-        self.windowSignals.append((
-            self.cboTier,
-            self.cboTier.connect_after('changed', self.__cboTier_changed)))
-        self.windowSignals.append((
-            self.cboUpgrade,
-            self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)))
+            self.btnPurge,
+            self.btnPurge.connect('clicked', self.__btnPurge_clicked)))
 
         # Signals for the building options filter panel
         self.windowSignals.append((
@@ -841,6 +842,20 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # Signals for component detail widgets
         self.windowSignals.append((
+            self.entryFactoryName.get_buffer(),
+            self.entryFactoryName.get_buffer().connect_after('deleted-text',
+                self.__entryFactoryName_deleted)))
+        self.windowSignals.append((
+            self.entryFactoryName.get_buffer(),
+            self.entryFactoryName.get_buffer().connect('inserted-text',
+                self.__entryFactoryName_inserted)))
+        self.windowSignals.append((
+            self.cboTier,
+            self.cboTier.connect_after('changed', self.__cboTier_changed)))
+        self.windowSignals.append((
+            self.cboUpgrade,
+            self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)))
+        self.windowSignals.append((
             self.entryComponentName.get_buffer(),
             self.entryComponentName.get_buffer().connect_after('deleted-text',
                 self.__entryComponentName_deleted)))
@@ -864,7 +879,6 @@ class MainWindow(Gtk.ApplicationWindow):
             self.chkComponentStandby,
             self.chkComponentStandby.connect_after('toggled',
                 self.__chkComponentStandby_toggled)))
-
 
     def __load_images(self):
         '''
@@ -1015,6 +1029,18 @@ class MainWindow(Gtk.ApplicationWindow):
             except Exception as ex:
                 print(f'[DEBUG] Could not save the blueprint: {ex}')
 
+    # + Simulate/Purge button signal handlers
+    def __btnSimulate_clicked(self, btn):
+        self.blueprint.factory.simulate()
+        self.blueprint.invalidate_geometry()
+        self.unsaved_changes = True
+        self.update_window()
+
+    def __btnPurge_clicked(self, btn):
+        self.blueprint.factory.purge()
+        self.blueprint.invalidate_geometry()
+        self.unsaved_changes = True
+        self.update_window()
 
     # + Factory Name Entry signal handlers
 
