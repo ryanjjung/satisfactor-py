@@ -1,4 +1,4 @@
-from satisfactor_py.base import (
+from satisfactory.base import (
     Availability,
     BuildingType,
     ConveyanceType,

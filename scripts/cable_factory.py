@@ -3,7 +3,7 @@
 import json
 import sys
 
-from satisfactor_py.patterns import tier_0_cable_factory
+from satisfactory.patterns import tier_0_cable_factory
 
 
 def main():

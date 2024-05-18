@@ -1,10 +1,10 @@
-from satisfactor_py.base import (
+from satisfactory.base import (
     Availability,
     BuildingType,
     Ingredient,
     Recipe
 )
-from satisfactor_py.items import (
+from satisfactory.items import (
     AlienProtein as iAlienProtein,
     Assembler as iAssembler,
     AwesomeShop as iAwesomeShop,

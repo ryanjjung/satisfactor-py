@@ -2,8 +2,8 @@
 
 import json
 
-from satisfactor_py.base import BuildingType
-from satisfactor_py.patterns import tier_2_biofuel_factory
+from satisfactory.base import BuildingType
+from satisfactory.patterns import tier_2_biofuel_factory
 
 
 def main():

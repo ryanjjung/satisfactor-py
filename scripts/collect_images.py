@@ -6,11 +6,11 @@ This script iterates over every component defined
 
 import inspect
 import requests
-import satisfactor_py.base
-import satisfactor_py.buildings
-import satisfactor_py.conveyances
-import satisfactor_py.items
-import satisfactor_py.storages
+import satisfactory.base
+import satisfactory.buildings
+import satisfactory.conveyances
+import satisfactory.items
+import satisfactory.storages
 
 
 BASE_IMAGE_PATH = './static/images/components/'
@@ -18,18 +18,18 @@ BASE_IMAGE_PATH = './static/images/components/'
 def get_all_classes():
     # Base
     base = [
-        satisfactor_py.base.ResourceNode,
-        satisfactor_py.base.InfiniteSupplyNode
+        satisfactory.base.ResourceNode,
+        satisfactory.base.InfiniteSupplyNode
     ]
 
     # Buildings
-    buildings = satisfactor_py.buildings.get_all()
+    buildings = satisfactory.buildings.get_all()
 
     # Conveyances
-    conveyances = satisfactor_py.conveyances.get_all()
+    conveyances = satisfactory.conveyances.get_all()
 
     # Storages
-    storages = satisfactor_py.storages.get_all()
+    storages = satisfactory.storages.get_all()
 
     all_classes = []
     all_classes.extend(base)
@@ -41,7 +41,7 @@ def get_all_classes():
 
 def get_all_instances():
     # Items
-    items = satisfactor_py.items.get_all()
+    items = satisfactory.items.get_all()
 
     all_instances = []
     all_instances.extend(items)
@@ -50,7 +50,7 @@ def get_all_instances():
 
 def save_image(obj, filename):
     if hasattr(obj, 'image_path') and obj.image_path is not None:
-        url = f'{satisfactor_py.base.IMAGE_URL_BASE}{obj.image_path}'
+        url = f'{satisfactory.base.IMAGE_URL_BASE}{obj.image_path}'
         filename = f'{BASE_IMAGE_PATH}{filename}.png'
         print(f'Downloading {url} to {filename}')
         response = requests.get(url).content
@@ -58,7 +58,7 @@ def save_image(obj, filename):
             fh.write(response)
     else:
         print(f'Objects of type {obj.__class__.__name__} have no image_path set.')
-        print(f'    See the wiki article: {satisfactor_py.base.WIKI_URL_BASE}{obj.wiki_path}')
+        print(f'    See the wiki article: {satisfactory.base.WIKI_URL_BASE}{obj.wiki_path}')
 
 
 def main():

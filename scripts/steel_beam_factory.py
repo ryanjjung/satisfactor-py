@@ -3,7 +3,7 @@
 import json
 import sys
 
-from satisfactor_py.patterns import tier_3_steel_beam_factory
+from satisfactory.patterns import tier_3_steel_beam_factory
 
 
 def main():

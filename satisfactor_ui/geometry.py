@@ -7,7 +7,7 @@ gi.require_version('Gsk', '4.0')
 from copy import copy
 from enum import Enum
 from gi.repository import Gsk
-from satisfactor_py.base import Building, Component, Conveyance
+from satisfactory.base import Building, Component, Conveyance
 
 # Hardcoded layout data
 offsets = {

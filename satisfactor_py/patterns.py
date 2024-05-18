@@ -1,5 +1,5 @@
-from satisfactor_py.base import Ingredient, Purity, ResourceNode
-from satisfactor_py.buildings import (
+from satisfactory.base import Ingredient, Purity, ResourceNode
+from satisfactory.buildings import (
     AwesomeSink,
     CoalGenerator,
     Constructor,
@@ -11,13 +11,13 @@ from satisfactor_py.buildings import (
     Smelter,
     WaterExtractor,
 )
-from satisfactor_py.conveyances import (
+from satisfactory.conveyances import (
     ConveyorBeltMk1,
     ConveyorBeltMk2,
     PipelineMk1
 )
-from satisfactor_py.factories import Factory
-from satisfactor_py.items import (
+from satisfactory.factories import Factory
+from satisfactory.items import (
     Biomass as iBiomass,
     Coal as iCoal,
     CopperOre as iCopperOre,
@@ -28,7 +28,7 @@ from satisfactor_py.items import (
     Water as iWater,
     Wood as iWood
 )
-from satisfactor_py.recipes import (
+from satisfactory.recipes import (
     BiomassLeaves as rBiomassLeaves,
     BiomassMycelia as rBiomassMycelia,
     BiomassWood as rBiomassWood,
@@ -49,7 +49,7 @@ from satisfactor_py.recipes import (
     Water as rWater,
     Wire as rWire,
 )
-from satisfactor_py.storages import StorageContainer
+from satisfactory.storages import StorageContainer
 
 
 def tier_0_screw_factory(

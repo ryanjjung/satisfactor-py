@@ -9,8 +9,8 @@ gi.require_version('Pango', '1.0')
 
 import pickle
 from gi.repository import Gdk, Graphene, Gsk, Gtk, Pango
-from satisfactor_py.base import Building, Component, Conveyance
-from satisfactor_py.factories import Factory
+from satisfactory.base import Building, Component, Conveyance
+from satisfactory.factories import Factory
 from satisfactor_ui.geometry import (
     sizes,
     ComponentGeometry,
@@ -573,7 +573,7 @@ class Blueprint(object):
     def get_visible_component_geometry(self) -> list[tuple]:
         '''
         Returns a list of tuples like so:
-            (satisfactor_py.base.Component, satisfactor_ui.geometry.ComponentGeometry)
+            (satisfactory.base.Component, satisfactor_ui.geometry.ComponentGeometry)
 
         These components are the ones which are partially or fully visible within the frame of the
         viewport and must be drawn when updating the widget.
@@ -599,7 +599,7 @@ class Blueprint(object):
     def get_offscreen_component_geometry(self, visible_components) -> list[tuple]:
         '''
         Returns a list of tuples like so:
-            (satisfactor_py.base.Component, satisfactor_ui.geometry.ComponentGeometry)
+            (satisfactory.base.Component, satisfactor_ui.geometry.ComponentGeometry)
 
         These components are ones which are outside of the viewport, but which are connected to
         components which are within the viewport.

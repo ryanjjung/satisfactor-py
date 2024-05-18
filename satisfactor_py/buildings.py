@@ -1,4 +1,4 @@
-from satisfactor_py.base import (
+from satisfactory.base import (
     Availability,
     Building,
     BuildingCategory,
@@ -15,7 +15,7 @@ from satisfactor_py.base import (
     Recipe,
     ResourceNode
 )
-from satisfactor_py.items import (
+from satisfactory.items import (
     AwesomeSinkPoint,
     Water
 )
