@@ -28,7 +28,7 @@ from satisfactor_ui.drawing import Blueprint
 from satisfactor_ui.widgets import (
     FactoryDesignerWidget,
     TaggableButton,
-    TaggableEntry,
+    TaggableEntryBuffer,
 )
 
 
@@ -121,6 +121,7 @@ class MainWindow(Gtk.ApplicationWindow):
             loadedBlueprint = Blueprint.load(filename)
             self.blueprintFile = filename
             self.blueprint = loadedBlueprint
+            self.blueprint.selected = None
             self.factoryDesigner.blueprint = self.blueprint
             self.unsaved_changes = False
             self.update_window()
@@ -284,49 +285,57 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.boxComponentSelectedRecipe.set_visible(False)
 
             # Update tags listing (easiest way to clear the rows is to recreate the Grid entirely)
-            grid = Gtk.Grid()
-            for i in range(3):
-                grid.insert_column(0)
-            grid.set_baseline_row(0)
-            grid.set_row_homogeneous(True)
-            grid.set_column_spacing(10)
+            if self.gridComponentTags not in skip:
+                grid = Gtk.Grid()
 
-            sorted_keys = sorted(c.tags)
-            # We have to track these indices so we can respond better to user behavior later
-            # That's why we use this awkward counting approach here
-            for i in range(len(sorted_keys)):
-                key = sorted_keys[i]
-                value = c.tags[sorted_keys[i]]
+                # The grid's three columns are (remove button, key, "=", value)
+                for i in range(4):
+                    grid.insert_column(0)
+                grid.set_baseline_row(0)
+                grid.set_row_homogeneous(True)
+                grid.set_column_spacing(10)
 
-                # Create a new row full of widgets
-                grid.insert_row(i)
+                sorted_keys = sorted(c.tags)
+                # We have to track these indices so we can respond better to user behavior later
+                # That's why we use this awkward counting approach here
+                for i in range(len(sorted_keys)):
+                    key = sorted_keys[i]
+                    value = c.tags[sorted_keys[i]]
 
-                # Build a "remove" button for deleting the tag. Each of these is a "taggable" form
-                # of the widget, allowing us to keep the tag context through to the signal handlers.
-                btnRemoveComponentTag = TaggableButton(tags={'tag_key': key})
-                btnRemoveComponentTag.set_icon_name('list-remove')
-                btnRemoveComponentTag.connect('clicked', self.__btnRemoveComponentTag_clicked)
+                    # Create a new row full of widgets
+                    grid.insert_row(i)
 
-                entryComponentTagKey = TaggableEntry(tags={'tag_key_index': i})
-                key_buffer = entryComponentTagKey.get_buffer()
-                key_buffer.set_text(key)
-                key_buffer.connect('deleted-text', self.__entryComponentTagKey_deleted)
-                key_buffer.connect('inserted-text', self.__entryComponentTagKey_inserted)
-                lblComponentTagKey.connect('stop_editing')
-                lblComponentTagValue = TaggableEditableLabel(tags={'tag_key_index': i})
-                lblComponentTagValue.set_text(value)
-                # grid.attach takes (widget, column, row, width, height)
-                grid.attach(btnRemoveComponentTag, 0, i, 1, 1)
-                grid.attach(lblComponentTagKey, 1, i, 1, 1)
-                grid.attach(lblComponentTagValue, 2, i, 1, 1)
+                    # Build a "remove" button for deleting the tag. Each of these is a "taggable" form
+                    # of the widget, allowing us to keep the tag context through to the signal handlers.
+                    btnRemoveComponentTag = TaggableButton(tags={'tag_key': key})
+                    btnRemoveComponentTag.set_icon_name('list-remove')
+                    btnRemoveComponentTag.connect('clicked', self.__btnRemoveComponentTag_clicked)
 
-            self.boxComponentTags.remove(self.gridComponentTags)
-            self.gridComponentTags = grid
-            if len(sorted_keys) > 0:
-                # Force a repack of the replacement grid if there are any tags
-                self.boxComponentTags.append(self.gridComponentTags)
-            else:
-                self.boxComponentTags.append(self.lblNoComponentTags)
+                    # Build a label to display the key
+                    lblComponentTagKey = Gtk.Label(label=key)
+                    lblComponentTagEquals = Gtk.Label(label='=')
+
+                    # Build a taggable text entry for changing tag values
+                    entryComponentTagValue = Gtk.Entry()
+                    value_buffer = TaggableEntryBuffer(tags={'tag_key': key})
+                    value_buffer.set_text(value, -1)
+                    value_buffer.connect_after('deleted-text', self.__entryComponentTagValue_deleted)
+                    value_buffer.connect_after('inserted-text', self.__entryComponentTagValue_inserted)
+                    entryComponentTagValue.set_buffer(value_buffer)
+
+                    # grid.attach takes (widget, column, row, width, height)
+                    grid.attach(btnRemoveComponentTag, 0, i, 1, 1)
+                    grid.attach(lblComponentTagKey, 1, i, 1, 1)
+                    grid.attach(lblComponentTagEquals, 2, i, 1, 1)
+                    grid.attach(entryComponentTagValue, 3, i, 1, 1)
+
+                self.boxComponentTags.remove(self.gridComponentTags)
+                self.gridComponentTags = grid
+                if len(sorted_keys) > 0:
+                    # Force a repack of the replacement grid if there are any tags
+                    self.boxComponentTags.append(self.gridComponentTags)
+                else:
+                    self.boxComponentTags.append(self.lblNoComponentTags)
 
     def update_component_context_readonly(self):
         '''
@@ -737,14 +746,39 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentDetails.append(self.lblComponentErrorsHeader)
         self.boxComponentDetails.append(self.boxComponentErrors)
 
-        # Tags
+        # A grid of tag data and widgets (which mostly gets set up in update_window calls)
         self.boxComponentTags = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.boxComponentTags.set_halign(Gtk.Align.CENTER)
         self.lblComponentTags = Gtk.Label()
         self.lblComponentTags.set_markup('<b>Tags</b>')
+        self.lblComponentTags.set_margin_bottom(5)
         self.gridComponentTags = Gtk.Grid()
         self.boxComponentTags.append(self.lblComponentTags)
         self.boxComponentTags.append(self.gridComponentTags)
         self.boxComponentDetails.append(self.boxComponentTags)
+
+        # Visual separator to distinguish between widget function
+        # self.sepComponentTags = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        # self.boxComponentDetails.append(self.sepComponentTags)
+
+        # Widgets to add new tags
+        self.lblNewComponentTagHeader = Gtk.Label()
+        self.lblNewComponentTagHeader.set_markup('<b>New Tag</b>')
+        self.boxNewComponentTag = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxNewComponentTag.set_halign(Gtk.Align.CENTER)
+        self.boxNewComponentTag.set_spacing(5)
+        self.entryNewComponentTagKey = Gtk.Entry()
+        self.lblNewComponentTagEquals = Gtk.Label(label='=')
+        self.entryNewComponentTagValue = Gtk.Entry()
+        self.btnNewComponentTag = Gtk.Button()
+        self.btnNewComponentTag.set_icon_name('list-add')
+        self.boxNewComponentTag.append(self.entryNewComponentTagKey)
+        self.boxNewComponentTag.append(self.lblNewComponentTagEquals)
+        self.boxNewComponentTag.append(self.entryNewComponentTagValue)
+        self.boxNewComponentTag.append(self.btnNewComponentTag)
+        self.boxComponentDetails.append(self.lblNewComponentTagHeader)
+        self.boxComponentDetails.append(self.boxNewComponentTag)
+
 
         # Label for when there are no tags
         self.lblNoComponentTags = Gtk.Label(label='None')
@@ -987,6 +1021,9 @@ class MainWindow(Gtk.ApplicationWindow):
             self.cboComponentSelectedRecipe.connect_after(
                 'changed',
                 self.__cboComponentSelectedRecipe_changed)))
+        self.windowSignals.append((
+            self.btnNewComponentTag,
+            self.btnNewComponentTag.connect('clicked', self.__btnNewComponentTag_clicked)))
 
     def __load_images(self):
         '''
@@ -1266,5 +1303,40 @@ class MainWindow(Gtk.ApplicationWindow):
 
     # + Component tagging widget signal handlers
 
+    def __btnNewComponentTag_clicked(self, btn):
+        if self.blueprint and self.blueprint.selected:
+            key = self.entryNewComponentTagKey.get_buffer().get_text()
+            value = self.entryNewComponentTagValue.get_buffer().get_text()
+            if key == '':
+                dlgError = Gtk.AlertDialog()
+                dlgError.set_modal(True)
+                dlgError.set_message('The tag name cannot be empty.')
+                dlgError.choose(self)
+                return
+            if key in self.blueprint.selected.tags.keys():
+                dlgError = Gtk.AlertDialog()
+                dlgError.set_modal(True)
+                dlgError.set_message(f'A tag called "{key}" already exists')
+                dlgError.choose(self)
+                return
+            self.blueprint.selected.tags[key] = value
+            self.unsaved_changes = True
+            self.update_window()
+
     def __btnRemoveComponentTag_clicked(self, button):
-        logging.debug(f'Index of clicked button: {button.tags['tag_key_index']}')
+        if self.blueprint and self.blueprint.selected:
+            del(self.blueprint.selected.tags[button.tags['tag_key']])
+            self.unsaved_changes = True
+            self.update_window()
+
+    def __entryComponentTagValue_changed(self, key, value):
+        if self.blueprint and self.blueprint.selected:
+            self.blueprint.selected.tags[key] = value
+            self.unsaved_changes = True
+            self.update_window(skip=[self.gridComponentTags])
+
+    def __entryComponentTagValue_deleted(self, buffer, position, chars):
+        self.__entryComponentTagValue_changed(buffer.tags['tag_key'], buffer.get_text())
+
+    def __entryComponentTagValue_inserted(self, buffer, position, chars, nchars):
+        self.__entryComponentTagValue_changed(buffer.tags['tag_key'], buffer.get_text())
