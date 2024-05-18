@@ -223,9 +223,20 @@ class MainWindow(Gtk.ApplicationWindow):
 
         if self.blueprint and self.blueprint.selected:
             c = self.blueprint.selected
+
+            # Update the component name
             if self.entryComponentName not in skip:
                 self.entryComponentName.get_buffer().set_text(c.name, -1)
 
+            # Update the clock rate, but not everything has one
+            if isinstance(c, Building) and not isinstance(c, Conveyance):
+                if self.entryComponentClockRate not in skip:
+                    self.entryComponentClockRate.get_buffer().set_text(str(c.clock_rate), -1)
+                self.boxComponentClockRate.set_visible(True)
+            else:
+                self.boxComponentClockRate.set_visible(False)
+
+            # Update booleans
             self.chkComponentConstructed.set_active(c.constructed)
             if isinstance(c, Building):
                 self.chkComponentStandby.set_active(c.standby)
@@ -559,6 +570,15 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentName.append(self.entryComponentName)
         self.boxComponentDetails.append(self.boxComponentName)
 
+        # Clock rate controls
+        self.boxComponentClockRate = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.lblComponentClockRate = Gtk.Label(label='Clock rate:')
+        self.entryComponentClockRate = Gtk.Entry()
+        self.entryComponentClockRate.set_hexpand(True)
+        self.boxComponentClockRate.append(self.lblComponentClockRate)
+        self.boxComponentClockRate.append(self.entryComponentClockRate)
+        self.boxComponentDetails.append(self.boxComponentClockRate)
+
         # Checkboxes for togglables in a box
         self.boxComponentBooleans = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.boxComponentBooleans.set_halign(Gtk.Align.CENTER)
@@ -624,7 +644,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentDetails.append(self.boxComponentErrors)
 
         # editable
-        #   - clock_rate
         #   - processing recipe
         #   - tags
 
@@ -829,6 +848,14 @@ class MainWindow(Gtk.ApplicationWindow):
             self.entryComponentName.get_buffer(),
             self.entryComponentName.get_buffer().connect_after('inserted-text',
                 self.__entryComponentName_inserted)))
+        self.windowSignals.append((
+            self.entryComponentClockRate.get_buffer(),
+            self.entryComponentClockRate.get_buffer().connect_after('deleted-text',
+                self.__entryComponentClockRate_deleted)))
+        self.windowSignals.append((
+            self.entryComponentClockRate.get_buffer(),
+            self.entryComponentClockRate.get_buffer().connect_after('inserted-text',
+                self.__entryComponentClockRate_inserted)))
         self.windowSignals.append((
             self.chkComponentConstructed,
             self.chkComponentConstructed.connect_after('toggled',
@@ -1059,6 +1086,17 @@ class MainWindow(Gtk.ApplicationWindow):
     def __entryComponentName_inserted(self, buffer, position, chars, nchars):
         if self.blueprint and self.blueprint.selected:
             self.__entryComponentName_changed(buffer.get_text())
+
+    def __entryComponentClockRate_changed(self, text):
+        self.blueprint.selected.clock_rate = float(text)
+        self.unsaved_changes = True
+        self.update_window(skip=[self.entryComponentClockRate])
+
+    def __entryComponentClockRate_deleted(self, buffer, position, chars):
+        self.__entryComponentClockRate_changed(buffer.get_text())
+
+    def __entryComponentClockRate_inserted(self, buffer, position, chars, nchars):
+        self.__entryComponentClockRate_changed(buffer.get_text())
 
     def __chkComponentConstructed_toggled(self, chk):
         if self.blueprint and self.blueprint.selected:
