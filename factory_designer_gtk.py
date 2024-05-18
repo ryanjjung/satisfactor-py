@@ -2,7 +2,7 @@
 
 import sys
 from argparse import ArgumentParser
-from satisfactor_ui.app import FactoryDesigner
+from factory_designer_gtk.app import FactoryDesigner
 
 
 def main():

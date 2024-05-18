@@ -13,7 +13,7 @@ from satisfactory import (
     recipes,
     storages
 )
-from satisfactor_ui import (
+from factory_designer_gtk import (
     drawing,
     geometry
 )

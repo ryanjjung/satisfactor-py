@@ -23,9 +23,9 @@ from satisfactory.factories import Factory
 from satisfactory.items import get_all as get_all_items
 from satisfactory.recipes import get_all as get_all_recipes
 from satisfactory.storages import get_all as get_all_storages
-from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
-from satisfactor_ui.drawing import Blueprint
-from satisfactor_ui.widgets import (
+from factory_designer_gtk.dialogs import ConfirmDiscardChangesWindow
+from factory_designer_gtk.drawing import Blueprint
+from factory_designer_gtk.widgets import (
     FactoryDesignerWidget,
     TaggableButton,
     TaggableEntryBuffer,

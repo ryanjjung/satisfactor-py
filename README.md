@@ -13,7 +13,7 @@ Some other scripts depend on third party libraries. Install them with:
 pip install -r requirements.txt
 ```
 
-`satisfactor_ui` (the factory designer) requires GTK 4.0. Install it and the Python bindings for GObject. On Fedora, you run:
+`factory_designer_gtk` (the factory designer) requires GTK 4.0. Install it and the Python bindings for GObject. On Fedora, you run:
 
 ```
 dnf install gtk4 python3-gobject
@@ -445,7 +445,7 @@ Because this is a factory that you can build at Tier 0, these inefficiencies are
 
 
 
-### satisfactor_ui Submodules
+### factory_designer_gtk Submodules
 
 Most of this code surrounds how to take a `satisfactory.factory.Factory` and edit it in a GTK application. The code is heavily laden with GTK calls. I have relied heavily on a couple documents to guide this development:
 
