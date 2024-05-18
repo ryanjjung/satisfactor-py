@@ -456,7 +456,6 @@ class Blueprint(object):
             self.conveyance_font_family,
             self.conveyance_font_size,
             widget,
-            #font_weight=Pango.Weight.BOLD,
             scale=self.viewport.scale)
         geometry._ConveyanceGeometry__calculate_label(
             *label.layout.get_pixel_size(),
