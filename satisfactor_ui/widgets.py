@@ -438,13 +438,13 @@ class TaggableButton(Gtk.Button, Taggable):
         Taggable.__init__(self, tags=tags)
 
 
-class TaggableEditableLabel(Gtk.EditableLabel, Taggable):
+class TaggableEntry(Gtk.Entry, Taggable):
     '''
-    An arbitrarily taggable GTK EditableLabel widget
+    An arbitrarily taggable GTK Entry widget
     '''
 
     def __init__(self,
         tags: dict[str: str] = {}
     ):
-        Gtk.EditableLabel.__init__(self)
+        Gtk.Entry.__init__(self)
         Taggable.__init__(self, tags=tags)

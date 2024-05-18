@@ -28,7 +28,7 @@ from satisfactor_ui.drawing import Blueprint
 from satisfactor_ui.widgets import (
     FactoryDesignerWidget,
     TaggableButton,
-    TaggableEditableLabel,
+    TaggableEntry,
 )
 
 
@@ -300,11 +300,19 @@ class MainWindow(Gtk.ApplicationWindow):
 
                 # Create a new row full of widgets
                 grid.insert_row(i)
-                btnRemoveComponentTag = TaggableButton(tags={'tag_key_index': i})
+
+                # Build a "remove" button for deleting the tag. Each of these is a "taggable" form
+                # of the widget, allowing us to keep the tag context through to the signal handlers.
+                btnRemoveComponentTag = TaggableButton(tags={'tag_key': key})
                 btnRemoveComponentTag.set_icon_name('list-remove')
                 btnRemoveComponentTag.connect('clicked', self.__btnRemoveComponentTag_clicked)
-                lblComponentTagKey = TaggableEditableLabel(tags={'tag_key_index': i})
-                lblComponentTagKey.set_text(key)
+
+                entryComponentTagKey = TaggableEntry(tags={'tag_key_index': i})
+                key_buffer = entryComponentTagKey.get_buffer()
+                key_buffer.set_text(key)
+                key_buffer.connect('deleted-text', self.__entryComponentTagKey_deleted)
+                key_buffer.connect('inserted-text', self.__entryComponentTagKey_inserted)
+                lblComponentTagKey.connect('stop_editing')
                 lblComponentTagValue = TaggableEditableLabel(tags={'tag_key_index': i})
                 lblComponentTagValue.set_text(value)
                 # grid.attach takes (widget, column, row, width, height)
