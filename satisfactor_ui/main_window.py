@@ -225,8 +225,14 @@ class MainWindow(Gtk.ApplicationWindow):
             if self.entryComponentName not in skip:
                 self.entryComponentName.get_buffer().set_text(c.name, -1)
 
-            self.chkComponentConstructed.set_active(c.constructed)
-            self.chkComponentStandby.set_active(c.standby)
+            if isinstance(c, Building):
+                self.chkComponentConstructed.set_active(c.constructed)
+                self.chkComponentStandby.set_active(c.standby)
+                self.chkComponentConstructed.set_visible(True)
+                self.chkComponentStandby.set_visible(True)
+            else:
+                self.chkComponentConstructed.set_visible(False)
+                self.chkComponentStandby.set_visible(False)
 
     def update_component_context_readonly(self):
         '''
@@ -343,8 +349,27 @@ class MainWindow(Gtk.ApplicationWindow):
             for icovw in self.icovwOutputs:
                 self.boxComponentOutputs.append(icovw)
 
+            # Update component errors listing
+            for lbl in self.lblComponentErrors:
+                self.boxComponentErrors.remove(lbl)
+            self.lblComponentErrors = []
+            if len(c.errors) > 0:
+                for err in c.errors:
+                    lbl = Gtk.Label()
+                    lbl.set_markup(f'<b>· {err.level.name.title()}:</b> {err.message}')
+                    lbl.set_wrap(True)
+                    self.lblComponentErrors.append(lbl)
+            else:
+                self.lblComponentErrors.append(Gtk.Label(label='None'))
+
+            for lbl in self.lblComponentErrors:
+                self.boxComponentErrors.append(lbl)
+
+
+            # Make sure everything is visible
             self.boxComponentDetails.set_visible(True)
         else:
+            # If nothing is selected, just hide all these controls
             self.boxComponentDetails.set_visible(False)
 
     def update_window(self,
@@ -518,6 +543,32 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentLinks.append(self.linkWiki)
         self.boxComponentLinks.append(self.linkImage)
 
+        # Pack the outer details box with all of these labels and such
+        self.boxComponentDetails.append(self.lblComponentBuildingType)
+        self.boxComponentDetails.append(self.lblComponentAvailability)
+        self.boxComponentDetails.append(self.lblComponentDimensions)
+        self.boxComponentDetails.append(self.lblComponentBasePowerUsage)
+        self.boxComponentDetails.append(self.boxComponentLinks)
+
+        # Name controls
+        self.boxComponentName = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentName.set_spacing(5)
+        self.lblComponentName = Gtk.Label(label='Name:')
+        self.entryComponentName = Gtk.Entry()
+        self.entryComponentName.set_hexpand(True)
+        self.boxComponentName.append(self.lblComponentName)
+        self.boxComponentName.append(self.entryComponentName)
+        self.boxComponentDetails.append(self.boxComponentName)
+
+        # Checkboxes for togglables in a box
+        self.boxComponentBooleans = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentBooleans.set_halign(Gtk.Align.CENTER)
+        self.chkComponentConstructed = Gtk.CheckButton(label='Constructed')
+        self.chkComponentStandby = Gtk.CheckButton(label='Standby')
+        self.boxComponentBooleans.append(self.chkComponentConstructed)
+        self.boxComponentBooleans.append(self.chkComponentStandby)
+        self.boxComponentDetails.append(self.boxComponentBooleans)
+
         # Box to contain the build cost recipe for the component
         self.boxComponentRecipe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.lblComponentRecipe = Gtk.Label()
@@ -528,11 +579,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentRecipe.append(self.lblComponentRecipe)
         self.boxComponentRecipe.append(self.icovwComponentRecipe)
 
-        self.boxComponentDetails.append(self.lblComponentBuildingType)
-        self.boxComponentDetails.append(self.lblComponentAvailability)
-        self.boxComponentDetails.append(self.lblComponentDimensions)
-        self.boxComponentDetails.append(self.lblComponentBasePowerUsage)
-        self.boxComponentDetails.append(self.boxComponentLinks)
         self.boxComponentDetails.append(self.boxComponentRecipe)
 
         # Connections
@@ -569,28 +615,16 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentConnections.append(self.boxComponentOutputs)
         self.boxComponentDetails.append(self.boxComponentConnections)
 
-        # Name controls
-        self.boxComponentName = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.boxComponentName.set_spacing(5)
-        self.lblComponentName = Gtk.Label(label='Name:')
-        self.entryComponentName = Gtk.Entry()
-        self.entryComponentName.set_hexpand(True)
-        self.boxComponentName.append(self.lblComponentName)
-        self.boxComponentName.append(self.entryComponentName)
-        self.boxComponentDetails.append(self.boxComponentName)
-
-        # Checkboxes for togglables in a box
-        self.boxComponentBooleans = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.boxComponentBooleans.set_halign(Gtk.Align.CENTER)
-        self.chkComponentConstructed = Gtk.CheckButton(label='Constructed')
-        self.chkComponentStandby = Gtk.CheckButton(label='Standby')
-        self.boxComponentBooleans.append(self.chkComponentConstructed)
-        self.boxComponentBooleans.append(self.chkComponentStandby)
-        self.boxComponentDetails.append(self.boxComponentBooleans)
+        # Component errors
+        self.boxComponentErrors = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.boxComponentErrors.set_spacing(5)
+        self.lblComponentErrorsHeader = Gtk.Label()
+        self.lblComponentErrorsHeader.set_markup('<b>Simulation Errors</b>')
+        self.lblComponentErrors = []
+        self.boxComponentDetails.append(self.lblComponentErrorsHeader)
+        self.boxComponentDetails.append(self.boxComponentErrors)
 
         # editable
-        #   - constructed
-        #   - standby
         #   - clock_rate
         #   - processing recipe
         #   - tags
