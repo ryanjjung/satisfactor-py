@@ -20,7 +20,10 @@ from satisfactor_ui import (
     drawing,
     geometry
 )
+from typing import Any
 
+
+# These functions provide support for testing and the widgets in this file
 
 def build_test_blueprint():
     '''
@@ -35,7 +38,10 @@ def build_test_blueprint():
     )
     smelter = buildings.Smelter(
         name='Iron Ore Smelter',
-        recipe=recipes.IronIngot
+        recipe=recipes.IronIngot,
+        tags={
+            'foo': 'bar'
+        }
     )
     convOreToSmelter = conveyances.ConveyorBeltMk1()
     oreSupply.outputs[0].connect(convOreToSmelter.inputs[0])
@@ -66,6 +72,8 @@ def get_texture_from_file(filename: str) -> Gdk.Texture:
 
     return None
 
+
+# These classes provide support to the widgets in this file
 
 class ComponentGrabEvent(object):
     '''
@@ -110,6 +118,8 @@ class PointerState(Enum):
     UP   = 0
     DOWN = 1
 
+
+# Actual widgets follow here
 
 class FactoryDesignerWidget(Gtk.Widget):
     '''
@@ -382,3 +392,59 @@ class FactoryDesignerWidget(Gtk.Widget):
         # Force all geometry to be recalculated, then draw a new frame
         self.blueprint.invalidate_geometry()
         self.queue_draw()
+
+
+class Taggable(object):
+    '''
+    Because GObject bindings for Python do not allow access to the data layer and the get/set_data()
+    functions in the underlying C library, we must implement that ourselves. This class is intended
+    to be used as a mixin to create arbitrarily taggable widgets.
+    '''
+
+    def __init__(self,
+        tags: dict[str: str] = {}
+    ):
+        self.tags = tags
+
+    def set_tag(self,
+        key: str,
+        value: Any,
+        value_type: type
+    ):
+        try:
+            val = value_type(value)
+            self.tags[key] = value
+        except:
+            raise ValueError(f'Value {value} is not of type {value_type}')
+
+    def get_tag(self,
+        key: str
+    ) -> Any:
+        if key in self.tags.keys():
+            return self.tags[key]
+        else:
+            raise KeyError(f'Taggable object has no such key {key}')
+
+
+class TaggableButton(Gtk.Button, Taggable):
+    '''
+    An arbitrarily taggable GTK Button widget
+    '''
+
+    def __init__(self,
+        tags: dict[str: str] = {}
+    ):
+        Gtk.Button.__init__(self)
+        Taggable.__init__(self, tags=tags)
+
+
+class TaggableEditableLabel(Gtk.EditableLabel, Taggable):
+    '''
+    An arbitrarily taggable GTK EditableLabel widget
+    '''
+
+    def __init__(self,
+        tags: dict[str: str] = {}
+    ):
+        Gtk.EditableLabel.__init__(self)
+        Taggable.__init__(self, tags=tags)

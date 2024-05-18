@@ -25,7 +25,11 @@ from satisfactor_py.recipes import get_all as get_all_recipes
 from satisfactor_py.storages import get_all as get_all_storages
 from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
 from satisfactor_ui.drawing import Blueprint
-from satisfactor_ui.widgets import FactoryDesignerWidget
+from satisfactor_ui.widgets import (
+    FactoryDesignerWidget,
+    TaggableButton,
+    TaggableEditableLabel,
+)
 
 
 ALL_BUILDINGS = None
@@ -279,6 +283,42 @@ class MainWindow(Gtk.ApplicationWindow):
             else:
                 self.boxComponentSelectedRecipe.set_visible(False)
 
+            # Update tags listing (easiest way to clear the rows is to recreate the Grid entirely)
+            grid = Gtk.Grid()
+            for i in range(3):
+                grid.insert_column(0)
+            grid.set_baseline_row(0)
+            grid.set_row_homogeneous(True)
+            grid.set_column_spacing(10)
+
+            sorted_keys = sorted(c.tags)
+            # We have to track these indices so we can respond better to user behavior later
+            # That's why we use this awkward counting approach here
+            for i in range(len(sorted_keys)):
+                key = sorted_keys[i]
+                value = c.tags[sorted_keys[i]]
+
+                # Create a new row full of widgets
+                grid.insert_row(i)
+                btnRemoveComponentTag = TaggableButton(tags={'tag_key_index': i})
+                btnRemoveComponentTag.set_icon_name('list-remove')
+                btnRemoveComponentTag.connect('clicked', self.__btnRemoveComponentTag_clicked)
+                lblComponentTagKey = TaggableEditableLabel(tags={'tag_key_index': i})
+                lblComponentTagKey.set_text(key)
+                lblComponentTagValue = TaggableEditableLabel(tags={'tag_key_index': i})
+                lblComponentTagValue.set_text(value)
+                # grid.attach takes (widget, column, row, width, height)
+                grid.attach(btnRemoveComponentTag, 0, i, 1, 1)
+                grid.attach(lblComponentTagKey, 1, i, 1, 1)
+                grid.attach(lblComponentTagValue, 2, i, 1, 1)
+
+            self.boxComponentTags.remove(self.gridComponentTags)
+            self.gridComponentTags = grid
+            if len(sorted_keys) > 0:
+                # Force a repack of the replacement grid if there are any tags
+                self.boxComponentTags.append(self.gridComponentTags)
+            else:
+                self.boxComponentTags.append(self.lblNoComponentTags)
 
     def update_component_context_readonly(self):
         '''
@@ -689,9 +729,17 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentDetails.append(self.lblComponentErrorsHeader)
         self.boxComponentDetails.append(self.boxComponentErrors)
 
-        # editable
-        #   - processing recipe
-        #   - tags
+        # Tags
+        self.boxComponentTags = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.lblComponentTags = Gtk.Label()
+        self.lblComponentTags.set_markup('<b>Tags</b>')
+        self.gridComponentTags = Gtk.Grid()
+        self.boxComponentTags.append(self.lblComponentTags)
+        self.boxComponentTags.append(self.gridComponentTags)
+        self.boxComponentDetails.append(self.boxComponentTags)
+
+        # Label for when there are no tags
+        self.lblNoComponentTags = Gtk.Label(label='None')
 
         # Add it all to the scrollwindow
         self.scrollComponentDetails.set_child(self.boxComponentDetails)
@@ -1206,3 +1254,9 @@ class MainWindow(Gtk.ApplicationWindow):
                     self.unsaved_changes = True
                 except IndexError:
                     logging.debug(f'No recipe called {recipe_name} was found')
+
+
+    # + Component tagging widget signal handlers
+
+    def __btnRemoveComponentTag_clicked(self, button):
+        logging.debug(f'Index of clicked button: {button.tags['tag_key_index']}')
