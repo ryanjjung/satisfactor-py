@@ -1,26 +1,26 @@
 #!/bin/env python3
 
 import json
-from satisfactor_py.base import (
+from satisfactory.base import (
     ConveyanceType,
     InfiniteSupplyNode
 )
-from satisfactor_py.buildings import (
+from satisfactory.buildings import (
     Assembler
 )
-from satisfactor_py.conveyances import (
+from satisfactory.conveyances import (
     ConveyorBeltMk2
 )
-from satisfactor_py.items import (
+from satisfactory.items import (
     IronPlate as iIronPlate,
     ReinforcedIronPlate as iReinforcedIronPlate,
     Screw as iScrew
 )
-from satisfactor_py.factories import Factory
-from satisfactor_py.recipes import (
+from satisfactory.factories import Factory
+from satisfactory.recipes import (
     ReinforcedIronPlate as rReinforcedIronPlate
 )
-from satisfactor_py.storages import (
+from satisfactory.storages import (
     StorageContainer
 )
 

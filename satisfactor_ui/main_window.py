@@ -7,7 +7,7 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, Gio, GObject
 from gi.repository.GdkPixbuf import Pixbuf
 from pathlib import Path
-from satisfactor_py.base import (
+from satisfactory.base import (
     Availability,
     Building,
     BuildingCategory,
@@ -17,12 +17,12 @@ from satisfactor_py.base import (
     ResourceNode,
     Storage,
 )
-from satisfactor_py.buildings import get_all as get_all_buildings
-from satisfactor_py.conveyances import get_all as get_all_conveyances
-from satisfactor_py.factories import Factory
-from satisfactor_py.items import get_all as get_all_items
-from satisfactor_py.recipes import get_all as get_all_recipes
-from satisfactor_py.storages import get_all as get_all_storages
+from satisfactory.buildings import get_all as get_all_buildings
+from satisfactory.conveyances import get_all as get_all_conveyances
+from satisfactory.factories import Factory
+from satisfactory.items import get_all as get_all_items
+from satisfactory.recipes import get_all as get_all_recipes
+from satisfactory.storages import get_all as get_all_storages
 from satisfactor_ui.dialogs import ConfirmDiscardChangesWindow
 from satisfactor_ui.drawing import Blueprint
 from satisfactor_ui.widgets import (
@@ -42,7 +42,7 @@ class MainWindow(Gtk.ApplicationWindow):
     '''
     The main factory designer window.
 
-      - filename: A file created by satisfactor_py.factories.Factory.save which the window is to be
+      - filename: A file created by satisfactory.factories.Factory.save which the window is to be
             initialized with.
     '''
 
@@ -851,7 +851,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.lblTierUpgrade.set_margin_start(5)
         self.boxTierUpgrade.append(self.lblTierUpgrade)
 
-        # The "Tier" combo box is populated from the satisfactor_py.base.Availability class
+        # The "Tier" combo box is populated from the satisfactory.base.Availability class
         self.cboTier = Gtk.ComboBoxText()
         for tier in Availability.get_tier_strings():
             self.cboTier.append(tier, tier)

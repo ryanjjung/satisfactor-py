@@ -9,7 +9,7 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, Gio
 from satisfactor_ui.main_window import MainWindow
 
-GTK_APP_ID="com.github.ryanjjung.satisfactor_py.FactoryDesigner"
+GTK_APP_ID="com.github.ryanjjung.satisfactory.FactoryDesigner"
 
 
 class FactoryDesigner(Gtk.Application):

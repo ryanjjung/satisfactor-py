@@ -5,7 +5,7 @@ A Python utility for planning factories in the video game [Satisfactory](https:/
 
 ## Setup
 
-The `satisfactor_py` library has no dependencies and may be used as described in this Readme.
+The `satisfactory` library has no dependencies and may be used as described in this Readme.
 
 Some other scripts depend on third party libraries. Install them with:
 
@@ -54,10 +54,10 @@ PYTHONPATH=. ./factory_designer.py
 
 This library is intended to be used in a similar fashion to the way you play the game itself. You construct buildings, fit them with recipes, and connect them with conveyances. You add these components to a `Factory` object. When you are ready to see if your factory has any problems or inefficiencies, you run that factory's `simulate` function. Any such errors will get attached to the components they apply to, and you can collect and review those afterward.
 
-The `satisfactor_py` module has a number of organizational submodules which contain the various factory components' code representations. The `scripts` directory here contains a number of test scripts that you can review and tinker with.
+The `satisfactory` module has a number of organizational submodules which contain the various factory components' code representations. The `scripts` directory here contains a number of test scripts that you can review and tinker with.
 
 
-### satisfactor_py Submodules
+### satisfactory Submodules
 
 Here's a listing of each submodule and a summary of what you can find in each.
 
@@ -257,9 +257,9 @@ This submodule contains specific `Recipe` implementations. Generally, these clas
 `Recipe`s, `Item`s, and `Building`s often have the same name. When importing these, you may find they conflict with each other. Try using prefixed import names to work around this:
 
 ```
-from satisfactor_py.buildings import Constructor as bConstructor
-from satisfactor_py.items import Constructor as iConstructor
-from satisfactor_py.recipes import Constructor as rConstructor
+from satisfactory.buildings import Constructor as bConstructor
+from satisfactory.items import Constructor as iConstructor
+from satisfactory.recipes import Constructor as rConstructor
 
 rConstructor  # The recipe which produces a constructor
 iConstructor  # The item the recipe produces
@@ -354,8 +354,8 @@ This submodule contains functions which produce factories following certain esta
 For instance, if you run this...
 
 ```
-from satisfactor_py.base import Purity
-from satisfactor_py.patterns import tier_0_screw_factory
+from satisfactory.base import Purity
+from satisfactory.patterns import tier_0_screw_factory
 
 factory = tier_0_screw_factory(Purity.NORMAL)
 ```
@@ -447,7 +447,7 @@ Because this is a factory that you can build at Tier 0, these inefficiencies are
 
 ### satisfactor_ui Submodules
 
-Most of this code surrounds how to take a `satisfactor_py.factory.Factory` and edit it in a GTK application. The code is heavily laden with GTK calls. I have relied heavily on a couple documents to guide this development:
+Most of this code surrounds how to take a `satisfactory.factory.Factory` and edit it in a GTK application. The code is heavily laden with GTK calls. I have relied heavily on a couple documents to guide this development:
 
 - [Official GTK documentation](https://docs.gtk.org/gtk4/), which is written for the original C library, but which explains what the Python library is doing under the hood.
 - [Gnome Python API documentation](https://amolenaar.pages.gitlab.gnome.org/pygobject-docs/#), which shows how the C library is mapped into a Python library.

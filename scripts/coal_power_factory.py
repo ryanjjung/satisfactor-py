@@ -3,7 +3,7 @@
 import json
 import sys
 
-from satisfactor_py.patterns import tier_3_coal_power_factory
+from satisfactory.patterns import tier_3_coal_power_factory
 
 
 def main():

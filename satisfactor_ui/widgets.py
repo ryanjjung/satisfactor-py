@@ -5,7 +5,7 @@ gi.require_version('Gtk', '4.0')
 from enum import Enum
 from gi.repository import Gdk, Gtk, Gio, GObject
 from pathlib import Path
-from satisfactor_py import (
+from satisfactory import (
     base,
     buildings,
     conveyances,

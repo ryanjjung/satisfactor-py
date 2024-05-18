@@ -3,7 +3,7 @@
 import json
 import sys
 
-from satisfactor_py.patterns import tier_0_concrete_factory
+from satisfactory.patterns import tier_0_concrete_factory
 
 
 def main():
