@@ -80,7 +80,8 @@ class MainWindow(Gtk.ApplicationWindow):
     def block_all_signals(self):
         '''
         Places a block on all signal handlers, preventing them from emitting events until you run
-        unblock_all_signals.
+        unblock_all_signals. For this to work, any signals you need to block need to be registered
+        to `self.windowSignals`.
         '''
 
         for handler in self.windowSignals:
@@ -126,8 +127,11 @@ class MainWindow(Gtk.ApplicationWindow):
             self.unsaved_changes = False
             self.update_window()
         except IOError as ex:
-            logging.error(f'An error occurred when loading a blueprint from file {filename}\n  {ex}')
-            # TODO: Replace with an actual ErrorDialog
+            dlgError = Gtk.AlertDialog()
+            dlgError.set_modal(True)
+            dlgError.set_message(
+                f'An error occurred when loading a blueprint from file {filename}\n  {ex}')
+            dlgError.show(self)
 
     def set_tier_and_upgrade(self,
         tier: int = None,
@@ -170,7 +174,8 @@ class MainWindow(Gtk.ApplicationWindow):
     def unblock_all_signals(self):
         '''
         Removes a block from all signal handlers, restoring their ability to emit signals. These
-        signals were likely placed by block_all_signals.
+        signals were likely placed by block_all_signals. For this to work, any signal you wish to
+        unblock must be registered with `self.windowSignals`.
         '''
 
         for handler in self.windowSignals:
@@ -223,10 +228,11 @@ class MainWindow(Gtk.ApplicationWindow):
         skip: list = []
     ):
         '''
-        Populates the widgets in the lower part of the component context panel which allow editing
-        of certain values about the selected component.
+        Populates the widgets in the component context panel which allow editing of certain values
+        about the selected component.
         '''
 
+        # None of this is applicable if there isn't a blueprint loaded and a component selected
         if self.blueprint and self.blueprint.selected:
             c = self.blueprint.selected
 
@@ -269,9 +275,9 @@ class MainWindow(Gtk.ApplicationWindow):
                     self.cboComponentSelectedRecipe.remove_all()
                     for recipe_name, recipe in compatible_recipes:
                         self.cboComponentSelectedRecipe.append(recipe_name, recipe.name)
-                    current_recipe = f'{c.recipe.name.title().replace(" ", "")}'
+                    current_recipe = c.recipe.programmatic_name
 
-                    # Determine index of current recipe
+                    # Determine index of current recipe and set the recipe selector to that
                     current_recipe_id = None
                     for i in range(len(compatible_recipes)):
                         if compatible_recipes[i][0] == current_recipe:
@@ -280,15 +286,18 @@ class MainWindow(Gtk.ApplicationWindow):
                     if current_recipe is not None:
                         self.cboComponentSelectedRecipe.set_active(current_recipe_id)
 
+                    # Ensure it's visible
                     self.boxComponentSelectedRecipe.set_visible(True)
             else:
+                # Hide controls for invalid component types
                 self.boxComponentSelectedRecipe.set_visible(False)
 
-            # Update tags listing (easiest way to clear the rows is to recreate the Grid entirely)
+            # Update tags listing
+            # It's not easy to clear out the rows iteratively, so we just recreate the entire grid
             if self.gridComponentTags not in skip:
                 grid = Gtk.Grid()
 
-                # The grid's three columns are (remove button, key, "=", value)
+                # The grid's four columns are (remove button, key, "=", value)
                 for i in range(4):
                     grid.insert_column(0)
                 grid.set_baseline_row(0)
@@ -339,8 +348,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def update_component_context_readonly(self):
         '''
-        Populates the widgets in the upper part of the component context panel which displays
-        read-only information about the state of the selected component.
+        Populates the widgets in the component context panel which display read-only information
+        about the state of the selected component.
         '''
 
         if self.blueprint and self.blueprint.selected:
@@ -1321,6 +1330,9 @@ class MainWindow(Gtk.ApplicationWindow):
                 return
             self.blueprint.selected.tags[key] = value
             self.unsaved_changes = True
+            self.entryNewComponentTagKey.get_buffer().set_text('', -1)
+            self.entryNewComponentTagValue.get_buffer().set_text('', -1)
+            self.set_focus(self.entryNewComponentTagKey)
             self.update_window()
 
     def __btnRemoveComponentTag_clicked(self, button):

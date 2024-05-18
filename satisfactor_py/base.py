@@ -219,6 +219,10 @@ class Base(object):
         return f'{IMAGE_URL_BASE}{self.image_path}'
 
     @property
+    def programmatic_name(self) -> str:
+        return self.name.title().replace(' ', '')
+
+    @property
     def wiki_url(self) -> str:
         return f'{WIKI_URL_BASE}{self.wiki_path}'
 
@@ -396,10 +400,6 @@ class Item(Base):
         self.conveyance_type = conveyance_type
         self.stack_size = stack_size
         self.sink_value = sink_value
-
-    @property
-    def programmatic_name(self) -> str:
-        return self.name.title().replace(' ', '')
 
     def to_dict(self) -> dict:
         '''
