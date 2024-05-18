@@ -212,9 +212,25 @@ class MainWindow(Gtk.ApplicationWindow):
             self.icovwBuildings.set_pixbuf_column(0)
             self.icovwBuildings.set_text_column(1)
 
-    def update_component_context(self):
+    def update_component_context_editable(self,
+        skip: list = []
+    ):
         '''
-        Populates the widgets in the component context panels.
+        Populates the widgets in the lower part of the component context panel which allow editing
+        of certain values about the selected component.
+        '''
+
+        if self.blueprint and self.blueprint.selected:
+            c = self.blueprint.selected
+            if self.entryComponentName not in skip:
+                self.entryComponentName.get_buffer().set_text(c.name, -1)
+        else:
+            pass
+
+    def update_component_context_readonly(self):
+        '''
+        Populates the widgets in the upper part of the component context panel which displays
+        read-only information about the state of the selected component.
         '''
 
         if self.blueprint and self.blueprint.selected:
@@ -312,12 +328,12 @@ class MainWindow(Gtk.ApplicationWindow):
             for icovw in self.icovwOutputs:
                 self.boxComponentOutputs.append(icovw)
 
-            self.boxComponentReadOnlyDetails.set_visible(True)
+            self.boxComponentDetails.set_visible(True)
         else:
-            self.boxComponentReadOnlyDetails.set_visible(False)
+            self.boxComponentDetails.set_visible(False)
 
     def update_window(self,
-        skip_entryFactoryName: bool = False
+        skip: list = [],
     ):
         '''
         When the factory context of the MainWindow changes, call this function to update all of the
@@ -326,14 +342,15 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.block_all_signals()
         self.set_window_title()
-        self.update_component_context()
+        self.update_component_context_readonly()
+        self.update_component_context_editable(skip)
 
         # Set availability of various widgets
         if self.blueprint:
             self.boxFactoryFunctions.set_sensitive(True)
             self.btnSaveFactory.set_sensitive(self.unsaved_changes)
             self.boxFilters.set_sensitive(True)
-            if not skip_entryFactoryName:
+            if self.entryFactoryName not in skip:
                 self.entryFactoryName.get_buffer().set_text(self.blueprint.factory.name, -1)
             self.set_tier_and_upgrade()
             self.update_buildings_list()
@@ -460,16 +477,17 @@ class MainWindow(Gtk.ApplicationWindow):
         self.scrollComponentDetails = Gtk.ScrolledWindow()
 
         # Set up read-only details in a box
-        self.boxComponentReadOnlyDetails = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.boxComponentReadOnlyDetails.set_margin_start(5)
-        self.boxComponentReadOnlyDetails.set_margin_end(5)
-        self.boxComponentReadOnlyDetails.set_margin_bottom(5)
-        self.boxComponentReadOnlyDetails.set_margin_top(5)
+        self.boxComponentDetails = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.boxComponentDetails.set_margin_start(5)
+        self.boxComponentDetails.set_margin_end(5)
+        self.boxComponentDetails.set_margin_bottom(5)
+        self.boxComponentDetails.set_margin_top(5)
+        self.boxComponentDetails.set_spacing(5)
 
         # Place a bold header for the section
         self.lblComponentHeader = Gtk.Label()
         self.lblComponentHeader.set_markup('<b>Component Details</b>')
-        self.boxComponentReadOnlyDetails.append(self.lblComponentHeader)
+        self.boxComponentDetails.append(self.lblComponentHeader)
 
         # Label for building type
         self.lblComponentBuildingType = Gtk.Label(label=f'Building type:')
@@ -495,10 +513,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentRecipe.append(self.lblComponentRecipe)
         self.boxComponentRecipe.append(self.icovwComponentRecipe)
 
-        self.boxComponentReadOnlyDetails.append(self.lblComponentBuildingType)
-        self.boxComponentReadOnlyDetails.append(self.lblComponentAvailability)
-        self.boxComponentReadOnlyDetails.append(self.boxComponentLinks)
-        self.boxComponentReadOnlyDetails.append(self.boxComponentRecipe)
+        self.boxComponentDetails.append(self.lblComponentBuildingType)
+        self.boxComponentDetails.append(self.lblComponentAvailability)
+        self.boxComponentDetails.append(self.boxComponentLinks)
+        self.boxComponentDetails.append(self.boxComponentRecipe)
 
         # Connections
         self.boxComponentConnections = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -532,17 +550,17 @@ class MainWindow(Gtk.ApplicationWindow):
         # Pack the outer box
         self.boxComponentConnections.append(self.boxComponentInputs)
         self.boxComponentConnections.append(self.boxComponentOutputs)
+        self.boxComponentDetails.append(self.boxComponentConnections)
 
-        self.boxComponentReadOnlyDetails.append(self.boxComponentConnections)
-
-        # Set up editable details
-        self.boxComponentEditableDetails = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.boxComponentEditableDetails.set_margin_start(5)
-        self.boxComponentEditableDetails.set_margin_end(5)
-        self.boxComponentEditableDetails.set_margin_bottom(5)
-        self.boxComponentEditableDetails.set_margin_top(5)
-        self.lblComponentEditableDetails = Gtk.Label(label='Component Editable Details')
-        self.boxComponentEditableDetails.append(self.lblComponentEditableDetails)
+        # Name controls
+        self.boxComponentName = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentName.set_spacing(5)
+        self.lblComponentName = Gtk.Label(label='Name:')
+        self.entryComponentName = Gtk.Entry()
+        self.entryComponentName.set_hexpand(True)
+        self.boxComponentName.append(self.lblComponentName)
+        self.boxComponentName.append(self.entryComponentName)
+        self.boxComponentDetails.append(self.boxComponentName)
 
         # editable
         #   - name
@@ -555,7 +573,7 @@ class MainWindow(Gtk.ApplicationWindow):
         #   - base power usage
 
         # Add it all to the scrollwindow
-        self.scrollComponentDetails.set_child(self.boxComponentReadOnlyDetails)
+        self.scrollComponentDetails.set_child(self.boxComponentDetails)
 
     def __build_context_panel(self):
         '''
@@ -727,30 +745,35 @@ class MainWindow(Gtk.ApplicationWindow):
         # Signals for the building options filter panel
         self.windowSignals.append((
             self.chkAvailability,
-            self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)
-        ))
+            self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)))
         self.windowSignals.append((
             self.chkBuildingCategory,
-            self.chkBuildingCategory.connect_after('toggled', self.__chkBuildingCategory_toggled)
-        ))
+            self.chkBuildingCategory.connect_after('toggled', self.__chkBuildingCategory_toggled)))
         self.windowSignals.append((
             self.cboBuildingCategory,
-            self.cboBuildingCategory.connect_after('changed', self.__cboBuildingCategory_changed)
-        ))
+            self.cboBuildingCategory.connect_after('changed', self.__cboBuildingCategory_changed)))
         self.windowSignals.append((
             self.chkNameFilter,
-            self.chkNameFilter.connect_after('toggled', self.__chkNameFilter_toggled)
-        ))
+            self.chkNameFilter.connect_after('toggled', self.__chkNameFilter_toggled)))
         self.windowSignals.append((
             self.entryNameFilter.get_buffer(),
             self.entryNameFilter.get_buffer().connect_after('deleted-text',
-                self.__entryNameFilter_deleted)
-        ))
+                self.__entryNameFilter_deleted)))
         self.windowSignals.append((
             self.entryNameFilter.get_buffer(),
             self.entryNameFilter.get_buffer().connect_after('inserted-text',
-                self.__entryNameFilter_inserted)
-        ))
+                self.__entryNameFilter_inserted)))
+
+        # Signals for component detail widgets
+        self.windowSignals.append((
+            self.entryComponentName.get_buffer(),
+            self.entryComponentName.get_buffer().connect_after('deleted-text',
+                self.__entryComponentName_deleted)))
+        self.windowSignals.append((
+            self.entryComponentName.get_buffer(),
+            self.entryComponentName.get_buffer().connect_after('inserted-text',
+                self.__entryComponentName_inserted)))
+
 
     def __load_images(self):
         '''
@@ -904,19 +927,17 @@ class MainWindow(Gtk.ApplicationWindow):
 
     # + Factory Name Entry signal handlers
 
-    def __entryFactoryName_deleted(self, buffer, position, chars):
-        newName = self.entryFactoryName.get_buffer().get_text()
-        if newName != self.blueprint.factory.name:
-            self.blueprint.factory.name = buffer.get_text()
+    def __entryFactoryName_changed(self, text):
+        if text != self.blueprint.factory.name:
+            self.blueprint.factory.name = text
             self.unsaved_changes = True
-            self.update_window(skip_entryFactoryName=True)
+            self.update_window(skip=[self.entryFactoryName])
+
+    def __entryFactoryName_deleted(self, buffer, position, chars):
+        self.__entryFactoryName_changed(buffer.get_text())
 
     def __entryFactoryName_inserted(self, buffer, position, chars, nchars):
-        newName = self.entryFactoryName.get_buffer().get_text()
-        if newName != self.blueprint.factory.name and newName != '':
-            self.blueprint.factory.name = buffer.get_text()
-            self.unsaved_changes = True
-            self.update_window(skip_entryFactoryName=True)
+        self.__entryFactoryName_changed(buffer.get_text())
 
     # + "Tier" combo box signal handlers
     def __cboTier_changed(self, cbo):
@@ -959,3 +980,18 @@ class MainWindow(Gtk.ApplicationWindow):
         if self.filters['name']:
             self.update_buildings_list()
 
+
+    # + Component detail widget signal handlers
+
+    def __entryComponentName_changed(self, text):
+        self.blueprint.selected.name = text
+        self.unsaved_changes = True
+        self.update_window(skip=[self.entryComponentName])
+
+    def __entryComponentName_deleted(self, buffer, position, chars):
+        if self.blueprint and self.blueprint.selected:
+            self.__entryComponentName_changed(buffer.get_text())
+
+    def __entryComponentName_inserted(self, buffer, position, chars, nchars):
+        if self.blueprint and self.blueprint.selected:
+            self.__entryComponentName_changed(buffer.get_text())

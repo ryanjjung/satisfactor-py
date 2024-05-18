@@ -533,7 +533,6 @@ class Blueprint(object):
 
         # Draw those components
         for component, geometry in visible_component_geometry:
-            logging.debug(f'Component: {component}, Label: {label.text}')
             self.draw_component(widget, snapshot, component, geometry, label)
 
         # Make sure the conveyances have geometry
