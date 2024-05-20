@@ -224,17 +224,49 @@ class MainWindow(Gtk.ApplicationWindow):
             self.icovwBuildings.set_pixbuf_column(0)
             self.icovwBuildings.set_text_column(1)
 
-    def update_component_context_editable(self,
+    def update_component_context(self,
         skip: list = []
     ):
         '''
-        Populates the widgets in the component context panel which allow editing of certain values
-        about the selected component.
+        Populates the widgets in the component context panel which display read-only information
+        about the state of the selected component.
         '''
 
-        # None of this is applicable if there isn't a blueprint loaded and a component selected
         if self.blueprint and self.blueprint.selected:
+            # This makes the rest of this code read better
             c = self.blueprint.selected
+
+            # Update the building type
+            if isinstance(c, Building):
+                self.lblComponentBuildingType.set_text(
+                    f'Building type: {c.building_type.name.title()}')
+                self.lblComponentBuildingType.set_visible(True)
+            else:
+                self.lblComponentBuildingType.set_visible(False)
+
+            # Update the availability display
+            self.lblComponentAvailability.set_text(
+                f'Available at Tier {c.availability.tier}, Upgrade {c.availability.upgrade}')
+
+            # Update the dimensions
+            if hasattr(c, 'dimensions'):
+                self.lblComponentDimensions.set_text(
+                    f'Dimensions: {c.dimensions.width} x {c.dimensions.length} x {c.dimensions.height}')
+                self.lblComponentDimensions.set_visible(True)
+            else:
+                self.lblComponentDimensions.set_visible(False)
+
+            # Update the base power usage
+            if hasattr(c, 'base_power_usage'):
+                self.lblComponentBasePowerUsage.set_text(
+                    f'Base Power Usage: {c.base_power_usage}W')
+                self.lblComponentBasePowerUsage.set_visible(True)
+            else:
+                self.lblComponentBasePowerUsage.set_visible(False)
+
+            # Update the links
+            self.linkWiki.set_uri(c.wiki_url)
+            self.linkImage.set_uri(c.image_url)
 
             # Update the component name
             if self.entryComponentName not in skip:
@@ -287,6 +319,27 @@ class MainWindow(Gtk.ApplicationWindow):
                         if current_recipe is not None:
                             self.cboComponentSelectedRecipe.set_active(current_recipe_id)
 
+                    if c.recipe:
+                        consumes_store = Gtk.ListStore(Pixbuf, str)
+                        produces_store = Gtk.ListStore(Pixbuf, str)
+                        for ingredient in c.recipe.consumes:
+                            consumes_store.append((
+                                self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                                f'{ingredient.rate}x {ingredient.item.name} /m'))
+                        for ingredient in c.recipe.produces:
+                            produces_store.append((
+                                self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                                f'{ingredient.rate}x {ingredient.item.name} /m'))
+                        self.icovwConsumes.set_model(consumes_store)
+                        self.icovwConsumes.set_pixbuf_column(0)
+                        self.icovwConsumes.set_text_column(1)
+                        self.icovwProduces.set_model(produces_store)
+                        self.icovwProduces.set_pixbuf_column(0)
+                        self.icovwProduces.set_text_column(1)
+                        self.boxSelectedRecipe.set_visible(True)
+                    else:
+                        self.boxSelectedRecipe.set_visible(False)
+
                     # Ensure it's visible
                     self.boxComponentSelectedRecipe.set_visible(True)
                     self.boxISNRecipe.set_visible(False)
@@ -298,13 +351,13 @@ class MainWindow(Gtk.ApplicationWindow):
                 # Filter out items that can't be conveyed
                 items = [(item_name, item) for item_name, item in get_all_items()
                     if item.conveyance_type is not None]
-                
+
                 # If the availability filter is on, filter those out, too
                 if self.chkAvailability.get_active():
                     items = [(item_name, item) for item_name, item in items
                         if item.availability.tier <= self.blueprint.factory.availability.tier
                         and item.availability.upgrade <= self.blueprint.factory.availability.upgrade]
-                
+
                 # Populate the combo box
                 if self.cboISNRecipeItem not in skip:
                     self.cboISNRecipeItem.remove_all()
@@ -324,10 +377,106 @@ class MainWindow(Gtk.ApplicationWindow):
                 # Make sure the right widgets are presented
                 self.boxISNRecipe.set_visible(True)
                 self.boxComponentSelectedRecipe.set_visible(False)
+                self.boxSelectedRecipe.set_visible(False)
             else:
                 # Hide all of these widgets
                 self.boxISNRecipe.set_visible(False)
                 self.boxComponentSelectedRecipe.set_visible(False)
+                self.boxSelectedRecipe.set_visible(False)
+
+            # TODO: Update recipe consumes/produces
+
+            # Update the build cost of the component
+            recipe_store = Gtk.ListStore(Pixbuf, str)
+
+            # Prepare to set up current connection data by clearing out the old data
+            for icovw in self.icovwInputs:
+                self.boxComponentInputs.remove(icovw)
+            for icovw in self.icovwOutputs:
+                self.boxComponentOutputs.remove(icovw)
+
+            # Update inputs
+            self.boxComponentInputs.remove(self.lblNoInputs)
+            self.icovwInputs = []  # Clear out the list of IconViews showing the inputs
+            for conn in c.inputs:  # Create one IconView per input and populate them with recipes
+                icovw = Gtk.IconView()
+                store = Gtk.ListStore(Pixbuf, str)
+                for ingredient in conn.ingredients:
+                    store.append((
+                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                        f'{ingredient.rate}x {ingredient.item.name} /m'
+                    ))
+                icovw.set_model(store)
+                icovw.set_pixbuf_column(0)
+                icovw.set_text_column(1)
+                self.icovwInputs.append(icovw)
+
+            # Show either the IconView or a "None" label
+            if len(self.icovwInputs) == 0:
+                self.boxComponentInputs.append(self.lblNoInputs)
+            for icovw in self.icovwInputs:
+                self.boxComponentInputs.append(icovw)
+
+            # Update the outputs in the same way
+            self.boxComponentOutputs.remove(self.lblOutputs)
+            self.icovwOutputs = []
+            for conn in c.outputs:
+                icovw = Gtk.IconView()
+                store = Gtk.ListStore(Pixbuf, str)
+                for ingredient in conn.ingredients:
+                    store.append((
+                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                        f'{ingredient.rate}x {ingredient.item.name} /m'
+                    ))
+                icovw.set_model(store)
+                icovw.set_pixbuf_column(0)
+                icovw.set_text_column(1)
+                self.icovwOutputs.append(icovw)
+
+            # Show either the IconView or a "None" label
+            if len(self.icovwOutputs) > 0:
+                self.boxComponentOutputs.append(self.lblOutputs)
+            for icovw in self.icovwOutputs:
+                self.boxComponentOutputs.append(icovw)
+
+            # Get the recipe to build the component so we can update the build cost
+            try:
+                comp_recipe_name, comp_recipe = [ (name, recipe) for name, recipe
+                    in get_all_recipes()
+                    if name == c.__class__.__name__ ][0]
+            except IndexError:
+                logging.debug('Failed to get the component recipe')
+                comp_recipe = None
+
+            # If there is a recipe, display it
+            self.boxComponentRecipe.remove(self.lblComponentRecipe)
+            self.boxComponentRecipe.remove(self.icovwComponentRecipe)
+            if comp_recipe:
+                for ingredient in comp_recipe.consumes:
+                    recipe_store.append((
+                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                        f'{ingredient.amount}x {ingredient.item.name}'))
+                self.icovwComponentRecipe.set_model(recipe_store)
+                self.icovwComponentRecipe.set_pixbuf_column(0)
+                self.icovwComponentRecipe.set_text_column(1)
+                self.boxComponentRecipe.append(self.lblComponentRecipe)
+                self.boxComponentRecipe.append(self.icovwComponentRecipe)
+
+            # Update component errors listing
+            for lbl in self.lblComponentErrors:
+                self.boxComponentErrors.remove(lbl)
+            self.lblComponentErrors = []
+            if len(c.errors) > 0:
+                for err in c.errors:
+                    lbl = Gtk.Label()
+                    lbl.set_markup(f'<b>· {err.level.name.title()}:</b> {err.message}')
+                    lbl.set_wrap(True)
+                    self.lblComponentErrors.append(lbl)
+            else:
+                self.lblComponentErrors.append(Gtk.Label(label='None'))
+
+            for lbl in self.lblComponentErrors:
+                self.boxComponentErrors.append(lbl)
 
             # Update tags listing
             # It's not easy to clear out the rows iteratively, so we just recreate the entire grid
@@ -383,138 +532,6 @@ class MainWindow(Gtk.ApplicationWindow):
                 else:
                     self.boxComponentTags.append(self.lblNoComponentTags)
 
-    def update_component_context_readonly(self):
-        '''
-        Populates the widgets in the component context panel which display read-only information
-        about the state of the selected component.
-        '''
-
-        if self.blueprint and self.blueprint.selected:
-            # This makes the rest of this code read better
-            c = self.blueprint.selected
-
-            # Update the availability display
-            self.lblComponentAvailability.set_text(
-                f'Available at Tier {c.availability.tier}, Upgrade {c.availability.upgrade}')
-
-            # Update the building type
-            if isinstance(c, Building):
-                self.lblComponentBuildingType.set_text(
-                    f'Building type: {c.building_type.name.title()}')
-                self.lblComponentBuildingType.set_visible(True)
-            else:
-                self.lblComponentBuildingType.set_visible(False)
-
-            if hasattr(c, 'dimensions'):
-                self.lblComponentDimensions.set_text(
-                    f'Dimensions: {c.dimensions.width} x {c.dimensions.length} x {c.dimensions.height}')
-                self.lblComponentDimensions.set_visible(True)
-            else:
-                self.lblComponentDimensions.set_visible(False)
-
-            if hasattr(c, 'base_power_usage'):
-                self.lblComponentBasePowerUsage.set_text(
-                    f'Base Power Usage: {c.base_power_usage}W')
-                self.lblComponentBasePowerUsage.set_visible(True)
-            else:
-                self.lblComponentBasePowerUsage.set_visible(False)
-
-            # Recipe displays show an item image and the amount/rate
-            recipe_store = Gtk.ListStore(Pixbuf, str)
-
-            # Get the recipe to build the component
-            try:
-                comp_recipe_name, comp_recipe = [ (name, recipe) for name, recipe
-                    in get_all_recipes()
-                    if name == c.__class__.__name__ ][0]
-            except IndexError:
-                logging.debug('Failed to get the component recipe')
-                comp_recipe = None
-
-            # If there is a recipe, display it
-            self.boxComponentRecipe.remove(self.lblComponentRecipe)
-            self.boxComponentRecipe.remove(self.icovwComponentRecipe)
-            if comp_recipe:
-                for ingredient in comp_recipe.consumes:
-                    recipe_store.append((
-                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
-                        f'{ingredient.amount}x {ingredient.item.name}'))
-                self.icovwComponentRecipe.set_model(recipe_store)
-                self.icovwComponentRecipe.set_pixbuf_column(0)
-                self.icovwComponentRecipe.set_text_column(1)
-                self.boxComponentRecipe.append(self.lblComponentRecipe)
-                self.boxComponentRecipe.append(self.icovwComponentRecipe)
-
-            # Update the links
-            self.linkWiki.set_uri(c.wiki_url)
-            self.linkImage.set_uri(c.image_url)
-
-            # Clear out the old connection data
-            for icovw in self.icovwInputs:
-                self.boxComponentInputs.remove(icovw)
-            for icovw in self.icovwOutputs:
-                self.boxComponentOutputs.remove(icovw)
-
-            # Update inputs
-            self.boxComponentInputs.remove(self.lblNoInputs)
-            self.icovwInputs = []  # Clear out the list of IconViews showing the inputs
-            for conn in c.inputs:  # Create one IconView per input and populate them with recipes
-                icovw = Gtk.IconView()
-                store = Gtk.ListStore(Pixbuf, str)
-                for ingredient in conn.ingredients:
-                    store.append((
-                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
-                        f'{ingredient.rate}x {ingredient.item.name} /m'
-                    ))
-                icovw.set_model(store)
-                icovw.set_pixbuf_column(0)
-                icovw.set_text_column(1)
-                self.icovwInputs.append(icovw)
-
-            # Show either the IconView or a "None" label
-            if len(self.icovwInputs) == 0:
-                self.boxComponentInputs.append(self.lblNoInputs)
-            for icovw in self.icovwInputs:
-                self.boxComponentInputs.append(icovw)
-
-            # Update the outputs in the same way
-            self.boxComponentOutputs.remove(self.lblOutputs)
-            self.icovwOutputs = []
-            for conn in c.outputs:
-                icovw = Gtk.IconView()
-                store = Gtk.ListStore(Pixbuf, str)
-                for ingredient in conn.ingredients:
-                    store.append((
-                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
-                        f'{ingredient.rate}x {ingredient.item.name} /m'
-                    ))
-                icovw.set_model(store)
-                icovw.set_pixbuf_column(0)
-                icovw.set_text_column(1)
-                self.icovwOutputs.append(icovw)
-
-            if len(self.icovwOutputs) > 0:
-                self.boxComponentOutputs.append(self.lblOutputs)
-            for icovw in self.icovwOutputs:
-                self.boxComponentOutputs.append(icovw)
-
-            # Update component errors listing
-            for lbl in self.lblComponentErrors:
-                self.boxComponentErrors.remove(lbl)
-            self.lblComponentErrors = []
-            if len(c.errors) > 0:
-                for err in c.errors:
-                    lbl = Gtk.Label()
-                    lbl.set_markup(f'<b>· {err.level.name.title()}:</b> {err.message}')
-                    lbl.set_wrap(True)
-                    self.lblComponentErrors.append(lbl)
-            else:
-                self.lblComponentErrors.append(Gtk.Label(label='None'))
-
-            for lbl in self.lblComponentErrors:
-                self.boxComponentErrors.append(lbl)
-
-
             # Make sure everything is visible
             self.boxComponentDetails.set_visible(True)
         else:
@@ -531,8 +548,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.block_all_signals()
         self.set_window_title()
-        self.update_component_context_readonly()
-        self.update_component_context_editable(skip)
+        self.update_component_context(skip=skip)
 
         # Set availability of various widgets
         if self.blueprint:
@@ -756,17 +772,39 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxISNRecipe.append(self.cboISNRecipeItem)
         self.boxComponentDetails.append(self.boxISNRecipe)
 
-        # Box to contain the build cost recipe for the component
-        self.boxComponentRecipe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.lblComponentRecipe = Gtk.Label()
-        self.lblComponentRecipe.set_markup('<b>Component Build Cost</b>')
-        self.lblComponentRecipe.set_margin_top(10) # Put a little visual space here
-        self.icovwComponentRecipe = Gtk.IconView()
-        self.icovwComponentRecipe.set_item_orientation(Gtk.Orientation.HORIZONTAL)
-        self.boxComponentRecipe.append(self.lblComponentRecipe)
-        self.boxComponentRecipe.append(self.icovwComponentRecipe)
+        # Selected recipe consumes/produces details
+        self.boxSelectedRecipe = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxSelectedRecipe.set_halign(Gtk.Align.FILL)
+        self.boxSelectedRecipe.set_hexpand(True)
+        self.boxSelectedRecipe.set_spacing(5)
 
-        self.boxComponentDetails.append(self.boxComponentSelectedRecipe)
+        self.boxConsumes = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.boxConsumes.set_halign(Gtk.Align.FILL)
+        self.boxConsumes.set_hexpand(True)
+        self.lblConsumes = Gtk.Label()
+        self.lblConsumes.set_markup('<b>Consumes</b>')
+        self.icovwConsumes = Gtk.IconView()
+        self.boxConsumes.append(self.lblConsumes)
+        self.boxConsumes.append(self.icovwConsumes)
+
+        self.boxProduces = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.boxProduces.set_halign(Gtk.Align.FILL)
+        self.boxProduces.set_hexpand(True)
+        self.lblProduces = Gtk.Label()
+        self.lblProduces.set_markup('<b>Produces</b>')
+        self.icovwProduces = Gtk.IconView()
+        self.boxProduces.append(self.lblProduces)
+        self.boxProduces.append(self.icovwProduces)
+
+        # Labels for when there is no input or output
+        self.lblNoInputs = Gtk.Label(label='None')
+        self.lblNoOutputs = Gtk.Label(label='None')
+        self.lblNoInputs.set_margin_top(10)
+
+        # Pack the outer box
+        self.boxSelectedRecipe.append(self.boxConsumes)
+        self.boxSelectedRecipe.append(self.boxProduces)
+        self.boxComponentDetails.append(self.boxSelectedRecipe)
 
         # Connections
         self.boxComponentConnections = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -786,7 +824,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentOutputs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.boxComponentOutputs.set_halign(Gtk.Align.FILL)
         self.boxComponentOutputs.set_hexpand(True)
-        self.lblOutputs = Gtk.Label(label='Outputs')
+        self.lblOutputs = Gtk.Label()
         self.lblOutputs.set_markup('<b>Outputs</b>')
         self.icovwOutputs = [Gtk.IconView()]
         self.boxComponentOutputs.append(self.lblOutputs)
@@ -811,6 +849,17 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentDetails.append(self.lblComponentErrorsHeader)
         self.boxComponentDetails.append(self.boxComponentErrors)
 
+        # Box to contain the build cost recipe for the component
+        self.boxComponentRecipe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.lblComponentRecipe = Gtk.Label()
+        self.lblComponentRecipe.set_markup('<b>Component Build Cost</b>')
+        self.lblComponentRecipe.set_margin_top(10) # Put a little visual space here
+        self.icovwComponentRecipe = Gtk.IconView()
+        self.icovwComponentRecipe.set_item_orientation(Gtk.Orientation.HORIZONTAL)
+        self.boxComponentRecipe.append(self.lblComponentRecipe)
+        self.boxComponentRecipe.append(self.icovwComponentRecipe)
+        self.boxComponentDetails.append(self.boxComponentRecipe)
+
         # A grid of tag data and widgets (which mostly gets set up in update_window calls)
         self.boxComponentTags = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.boxComponentTags.set_halign(Gtk.Align.CENTER)
@@ -821,10 +870,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentTags.append(self.lblComponentTags)
         self.boxComponentTags.append(self.gridComponentTags)
         self.boxComponentDetails.append(self.boxComponentTags)
-
-        # Visual separator to distinguish between widget function
-        # self.sepComponentTags = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        # self.boxComponentDetails.append(self.sepComponentTags)
 
         # Widgets to add new tags
         self.lblNewComponentTagHeader = Gtk.Label()
