@@ -27,6 +27,7 @@ from factory_designer_gtk.dialogs import ConfirmDiscardChangesWindow
 from factory_designer_gtk.drawing import Blueprint
 from factory_designer_gtk.widgets import (
     FactoryDesignerWidget,
+    InteractionMode,
     TaggableButton,
     TaggableEntryBuffer,
 )
@@ -57,6 +58,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.blueprint = None
         self.blueprintFile = filename
+        self.buildings = []
         self.unsaved_changes = False
 
         self.filters = {
@@ -213,16 +215,25 @@ class MainWindow(Gtk.ApplicationWindow):
             # Sort the list alphabetically
             avail_buildings = sorted(avail_buildings, key=lambda x: x.name)
 
-            # Convert the list to a ListStore, pulling in images where possible
+            # Convert the list to a ListStore, pulling in images where possible. At the same time,
+            # update the window's list of buildings to make this data accessible later.
+            self.buildings = []
             listStore = Gtk.ListStore(Pixbuf, str)
             for building in avail_buildings:
                 listStore.append((
                     self.pixelBuffers['building_options'][building.__class__.__name__],
                     building.name))
+                self.buildings.append(building.__class__)
             self.lstBuildings = listStore
             self.icovwBuildings.set_model(self.lstBuildings)
             self.icovwBuildings.set_pixbuf_column(0)
             self.icovwBuildings.set_text_column(1)
+
+            # Make sure the Build button says the right thing
+            if self.factoryDesigner.mode == InteractionMode.BUILD_MODE:
+                self.btnBuild.set_label('Cancel')
+            else:
+                self.btnBuild.set_label('Build')
 
     def update_component_context(self,
         skip: list = []
@@ -662,16 +673,27 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxNameFilter.append(self.entryNameFilter)
         self.boxFilters.append(self.boxNameFilter)
 
+        # Bottom pane: Box to organize things
+        self.boxBuildings = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
         # Bottom pane: list of buildings
         self.scrollBuildings = Gtk.ScrolledWindow()
         self.icovwBuildings = Gtk.IconView()
         self.icovwBuildings.set_spacing(5)
+        self.icovwBuildings.set_vexpand(True)
         self.scrollBuildings.set_child(self.icovwBuildings)
         self.scrollBuildings.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
+        # Bottom pane: Build button
+        self.btnBuild = Gtk.Button(label='Build')
+
+        # Pack the box
+        self.boxBuildings.append(self.scrollBuildings)
+        self.boxBuildings.append(self.btnBuild)
+
         # Compile panel contents
         self.paneBuildingsOptions.set_start_child(self.scrollBuildingFilters)
-        self.paneBuildingsOptions.set_end_child(self.scrollBuildings)
+        self.paneBuildingsOptions.set_end_child(self.boxBuildings)
 
     def __build_component_context_panel(self):
         '''
@@ -1065,7 +1087,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.btnPurge,
             self.btnPurge.connect('clicked', self.__btnPurge_clicked)))
 
-        # Signals for the building options filter panel
+        # Signals for the buildings panel
         self.windowSignals.append((
             self.chkAvailability,
             self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)))
@@ -1086,6 +1108,9 @@ class MainWindow(Gtk.ApplicationWindow):
             self.entryNameFilter.get_buffer(),
             self.entryNameFilter.get_buffer().connect_after('inserted-text',
                 self.__entryNameFilter_inserted)))
+        self.windowSignals.append((
+            self.btnBuild,
+            self.btnBuild.connect('clicked', self.__btnBuild_clicked)))
 
         # Signals for component detail widgets
         self.windowSignals.append((
@@ -1363,6 +1388,18 @@ class MainWindow(Gtk.ApplicationWindow):
         if self.filters['name']:
             self.update_buildings_list()
 
+    def __btnBuild_clicked(self, btn):
+        if self.factoryDesigner.mode == InteractionMode.BUILD_MODE:
+            self.factoryDesigner.mode = InteractionMode.NORMAL
+        else:
+            selected = self.icovwBuildings.get_selected_items()
+            if len(selected) > 0:
+                selected = selected[0].get_indices()[0]
+                # Create a default instance of that kind of component and set it to be added to the
+                # blueprint when the user clicks somewhere there.
+                self.factoryDesigner.blueprint.new_component = self.buildings[selected]()
+                self.factoryDesigner.mode = InteractionMode.BUILD_MODE
+        self.update_window()
 
     # + Component detail widget signal handlers
 

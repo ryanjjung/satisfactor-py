@@ -82,11 +82,11 @@ class ComponentGrabEvent(object):
     def __init__(self,
         component: base.Component,              # What component is being dragged?
         geometry: geometry.ComponentGeometry,   # What does it look like when drawn?
-        mouse_position: geometry.Coordinate2D,  # How far away is the pointer from the origin?
+        pointer_position: geometry.Coordinate2D,  # How far away is the pointer from the origin?
     ):
         self.component = component
         self.geometry = geometry
-        self.mouse_position = mouse_position
+        self.pointer_position = pointer_position
 
 
 class InteractionMode(Enum):
@@ -94,18 +94,18 @@ class InteractionMode(Enum):
     Discrete set of states the widget can be in with regards to user interaction.
 
         - NORMAL: The "default" state of the app, as though it has just launched.
-        - NEW_COMPONENT_SELECTED: A component has been selected in the building list. Next, either
-            the component will be placed on the blueprint, or the action will be canceled.
+        - BUILD_MODE: A building has been selected from the buildings list, and the "Build" button
+            has been clicked. The user is ready to construct a new component.
         - EXISTING_COMPONENT_SELECTED: A component already placed in the blueprint has been
             selected. Details of the component have been displayed.
         - EXISTING_COMPONENT_GRABBED: A component in the blueprint has had a mouse-down event, then
             a mouse-move event without a mouse-up, indicating we want to move the component.
     '''
 
-    NORMAL = 0
-    NEW_COMPONENT_SELECTED = 1
-    EXISTING_COMPONENT_SELECTED  = 1
-    EXISTING_COMPONENT_GRABBED = 2
+    NORMAL                      = 0
+    BUILD_MODE                  = 1
+    EXISTING_COMPONENT_SELECTED = 2
+    EXISTING_COMPONENT_GRABBED  = 3
 
 
 class PointerState(Enum):
@@ -131,16 +131,22 @@ class FactoryDesignerWidget(Gtk.Widget):
         blueprint: drawing.Blueprint = None
     ):
         super().__init__()
-        self.textures = {}
+
+        self.textures = {}  # Texture cache, to be populated as textures become necessary
         self.blueprint = blueprint if blueprint else drawing.Blueprint()
-        self.mode = InteractionMode.NORMAL
+        self.mode = InteractionMode.NORMAL  # Always start in the "normal" state of user interaction
+        self.window = window  # Reference to the GTK Window containing this widget, allowing us to
+                              # make calls back to its update_window function
+
+        # Mouse pointer state tracking
         self.pointer_down_at = None
         self.pointer_state = PointerState.UP
-        self.window = window
-
-        self.mouse_position = geometry.Coordinate2D()
+        self.pointer_position = geometry.Coordinate2D()
+        
+        # How far we zoom with each scroll event
         self.zoom_factor = 0.05
 
+        # We must set up special controllers to capture various pointer events
         click_controller = Gtk.GestureClick()
         click_controller.connect('pressed', self.on_button_press)
         click_controller.connect('released', self.on_button_release)
@@ -148,6 +154,7 @@ class FactoryDesignerWidget(Gtk.Widget):
 
         motion_controller = Gtk.EventControllerMotion()
         motion_controller.connect('motion', self.on_motion)
+        motion_controller.connect('leave', self.on_leave)
         self.add_controller(motion_controller)
 
         scroll_controller = Gtk.EventControllerScroll()
@@ -155,7 +162,11 @@ class FactoryDesignerWidget(Gtk.Widget):
         scroll_controller.connect('scroll', self.on_scroll)
         self.add_controller(scroll_controller)
 
+        # Data structure used during click-n-drag operations, tracking the state of the motion
         self.component_grab_event = None
+
+        # A component created when user clicks "Build" and should be placed in the blueprint next
+        self.new_component = None
 
     def load_texture(self,
         filename: str,
@@ -192,7 +203,9 @@ class FactoryDesignerWidget(Gtk.Widget):
         '''
 
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
-        self.blueprint.draw_frame(self, snapshot)
+        self.blueprint.draw_frame(self,
+            snapshot,
+            draw_overlay=True if self.mode == InteractionMode.BUILD_MODE else False)
 
     def __update_selection(self,
         x: float,
@@ -229,21 +242,34 @@ class FactoryDesignerWidget(Gtk.Widget):
         if self.blueprint.selected:
             geo = self.blueprint.geometry.get(self.blueprint.selected.id)
 
+    def on_leave(self, motion_controller):
+        self.blueprint.pointer_position = None
+
     def on_button_press(self,
         gesture_click: Gtk.GestureClick,
         n_press: int,
         x: float,
         y: float,
     ):
-        self.__update_selection(x, y)
-        if self.blueprint.selected:
-            self.mode = InteractionMode.EXISTING_COMPONENT_SELECTED
-        else:
+        # In build mode, build a component when the user clicks
+        if self.mode == InteractionMode.BUILD_MODE:
+            placement_point = geometry.Coordinate2D(
+                x - (geometry.sizes['background_x'] / 2),
+                y - (geometry.sizes['background_y'] / 2)
+            )
+            self.blueprint.add_component(self.blueprint.new_component, placement_point)
             self.mode = InteractionMode.NORMAL
-        self.pointer_state = PointerState.DOWN
-        self.pointer_down_at = geometry.Coordinate2D(x, y)
-        self.queue_draw()
-        self.window.update_window()
+        # In other modes, figure out what just got clicked and act accordingly
+        else:
+            self.__update_selection(x, y)
+            if self.blueprint.selected:
+                self.mode = InteractionMode.EXISTING_COMPONENT_SELECTED
+            else:
+                self.mode = InteractionMode.NORMAL
+            self.pointer_state = PointerState.DOWN
+            self.pointer_down_at = geometry.Coordinate2D(x, y)
+            self.queue_draw()
+            self.window.update_window()
 
     def on_button_release(self,
         gesture_click: Gtk.GestureClick,
@@ -269,7 +295,7 @@ class FactoryDesignerWidget(Gtk.Widget):
     ):
         redraw = False
 
-        self.mouse_position = geometry.Coordinate2D(x, y)
+        self.pointer_position = geometry.Coordinate2D(x, y)
 
         # If the mouse is moving and we've already got a component selected and the mouse button is
         # down, then we have to move a component. Set the current grab event to start tracking it.
@@ -283,10 +309,6 @@ class FactoryDesignerWidget(Gtk.Widget):
                         geo,                         # Geometry for the selected component
                         geometry.Coordinate2D(x, y)  # Pixel location of the mouse event
                     )
-                        #geometry.Coordinate2D(
-                        #    x / self.blueprint.viewport.scale - geo.location.x + self.blueprint.viewport.region.left,
-                        #    y / self.blueprint.viewport.scale - geo.location.y + self.blueprint.viewport.region.top
-                        #)
                     self.mode = InteractionMode.EXISTING_COMPONENT_GRABBED
                     redraw = True
 
@@ -298,8 +320,8 @@ class FactoryDesignerWidget(Gtk.Widget):
             comp_y = self.component_grab_event.geometry.canvas_location.y
 
             # Get the location of the original mousedown event
-            mousedown_x = self.component_grab_event.mouse_position.x
-            mousedown_y = self.component_grab_event.mouse_position.y
+            mousedown_x = self.component_grab_event.pointer_position.x
+            mousedown_y = self.component_grab_event.pointer_position.y
 
             # Get the difference between the mousedown event and the current mouse position
             offset_x = x - mousedown_x
@@ -322,7 +344,7 @@ class FactoryDesignerWidget(Gtk.Widget):
                 translate=self.blueprint.viewport.region.location)
 
             # Update the grab event's coordinates
-            self.component_grab_event.mouse_position = geometry.Coordinate2D(x, y)
+            self.component_grab_event.pointer_position = geometry.Coordinate2D(x, y)
 
             # When the component moves, we have to redraw any conveyances attached to it
             for input in self.component_grab_event.component.inputs:
@@ -359,7 +381,11 @@ class FactoryDesignerWidget(Gtk.Widget):
             # Force all geometry to be recalculated, then redraw the widget
             self.blueprint.invalidate_geometry()
             redraw = True
-
+        
+        elif self.mode == InteractionMode.BUILD_MODE:
+            self.blueprint.pointer_position = geometry.Coordinate2D(x, y)
+            redraw = True
+        
         if redraw: self.queue_draw()
 
     def on_scroll(self,
@@ -381,8 +407,8 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.blueprint.viewport.scale += zoom_factor
 
         # Center the viewport
-        shift_x = self.mouse_position.x * zoom_factor
-        shift_y = self.mouse_position.y * zoom_factor
+        shift_x = self.pointer_position.x * zoom_factor
+        shift_y = self.pointer_position.y * zoom_factor
         self.blueprint.viewport.region.location = geometry.Coordinate2D(
             self.blueprint.viewport.region.left + shift_x,
             self.blueprint.viewport.region.top + shift_y,
