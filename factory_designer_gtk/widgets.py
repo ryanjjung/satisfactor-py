@@ -1,3 +1,6 @@
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 import gi
 gi.require_version('Gdk', '4.0')
 gi.require_version('Gtk', '4.0')
@@ -27,12 +30,15 @@ def build_test_blueprint():
     Builds a simple blueprint that we can test with
     '''
 
-    # Build and connect the factory components
-    oreSupply = base.InfiniteSupplyNode(
-        item=items.IronOre,
-        rate=60.0,
-        conveyance_type=base.ConveyanceType.BELT,
-        name='Infinite Iron Ore Supply',
+    # Build the factory components
+    oreSupply = base.ResourceNode(
+        purity=base.Purity.NORMAL,
+        name='Iron Ore Resource',
+        item=items.IronOre
+    )
+    miner = buildings.MinerMk1(
+        name='Iron Miner',
+        recipe=recipes.IronOreMk1,
     )
     smelter = buildings.Smelter(
         name='Iron Ore Smelter',
@@ -41,23 +47,30 @@ def build_test_blueprint():
             'foo': 'bar'
         }
     )
-    convOreToSmelter = conveyances.ConveyorBeltMk1(name='Mk1 Ore to Smlt')
-    oreSupply.outputs[0].connect(convOreToSmelter.inputs[0])
-    oreSupply.constructed = True
-    convOreToSmelter.outputs[0].connect(smelter.inputs[0])
-    storage = storages.StorageContainer(name='Iron Ore Storage')
-    convIngotsToStorage = smelter.connect(storage, conveyances.ConveyorBeltMk1)
-    convIngotsToStorage.name = 'Mk1 Ing to Stg'
+    constructor = buildings.Constructor(
+        name='Iron Plate Constructor',
+        recipe=recipes.IronPlate
+    )
+    storage = storages.StorageContainer(name='Plate Storage')
+
+    # Connect them up
+    oreSupply.outputs[0].connect(miner.inputs[0])
+    convMinerToSmelter = miner.connect(smelter, conveyances.ConveyorBeltMk1)
+    convSmelterToConstructor = smelter.connect(constructor, conveyances.ConveyorBeltMk1)
+    convConstructorToStorage = constructor.connect(storage, conveyances.ConveyorBeltMk1)
 
     # Add them to a blueprint with coordinates, except for Conveyances, which don't need them
     blueprint = drawing.Blueprint()
     blueprint.factory.name = 'Test Blueprint'
     blueprint.factory.availability = base.Availability(0, 5)
     blueprint.add_component(oreSupply, geometry.Coordinate2D(50, 20))
-    blueprint.add_component(smelter, geometry.Coordinate2D(225, 150))
-    blueprint.add_component(convOreToSmelter, geometry.Coordinate2D())
-    blueprint.add_component(storage, geometry.Coordinate2D(380, 20))
-    blueprint.add_component(convIngotsToStorage, geometry.Coordinate2D())
+    blueprint.add_component(miner, geometry.Coordinate2D(225, 150))
+    blueprint.add_component(smelter, geometry.Coordinate2D(380, 100))
+    blueprint.add_component(convMinerToSmelter, geometry.Coordinate2D())
+    blueprint.add_component(constructor, geometry.Coordinate2D(500, 20))
+    blueprint.add_component(convSmelterToConstructor, geometry.Coordinate2D())
+    blueprint.add_component(storage, geometry.Coordinate2D(630, 20))
+    blueprint.add_component(convConstructorToStorage, geometry.Coordinate2D())
     blueprint.factory.simulate()
     return blueprint
 
@@ -142,7 +155,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.pointer_down_at = None
         self.pointer_state = PointerState.UP
         self.pointer_position = geometry.Coordinate2D()
-        
+
         # How far we zoom with each scroll event
         self.zoom_factor = 0.05
 
@@ -381,11 +394,11 @@ class FactoryDesignerWidget(Gtk.Widget):
             # Force all geometry to be recalculated, then redraw the widget
             self.blueprint.invalidate_geometry()
             redraw = True
-        
+
         elif self.mode == InteractionMode.BUILD_MODE:
             self.blueprint.pointer_position = geometry.Coordinate2D(x, y)
             redraw = True
-        
+
         if redraw: self.queue_draw()
 
     def on_scroll(self,

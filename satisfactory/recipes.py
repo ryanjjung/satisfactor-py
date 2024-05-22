@@ -336,7 +336,7 @@ CopperIngot = Recipe(
 )
 
 CopperOreMk1 = Recipe(
-    name='Copper Ore',
+    name='Copper Ore Mk1',
     availability=Availability(0, 2),
     wiki_path='/Copper_Ore',
     building_type=BuildingType.MINER,
@@ -551,7 +551,7 @@ IronIngot = Recipe(
 )
 
 IronOreMk1 = Recipe(
-    name='Iron Ore',
+    name='Iron Ore Mk1',
     wiki_path='/Iron_Ore',
     building_type=BuildingType.MINER,
     consumes=None,
@@ -588,7 +588,7 @@ JumpPad = Recipe(
 )
 
 LimestoneMk1 = Recipe(
-    name='Limestone',
+    name='Limestone Mk1',
     availability=Availability(0, 3),
     wiki_path='/Limestone',
     building_type=BuildingType.MINER,
@@ -620,7 +620,7 @@ MAM = Recipe(
 )
 
 MinerMk1 = Recipe(
-    name='Miner Mk. 1',
+    name='Miner Mk1',
     availability=Availability(0, 1),
     wiki_path='/Miner',
     building_type=BuildingType.BUILD_GUN,
@@ -688,7 +688,7 @@ PetroleumCokePower = Recipe(
 )
 
 PipelineMk1 = Recipe(
-    name='Pipeline Mk.1',
+    name='Pipeline Mk1',
     availability=Availability(3, 1),
     wiki_path='/Pipelines#Mk.1-0',
     building_type=BuildingType.BUILD_GUN,
@@ -752,7 +752,7 @@ PowerLine = Recipe(
 )
 
 PowerPoleMk1 = Recipe(
-    name='Power Pole Mk.1',
+    name='Power Pole Mk1',
     availability=Availability(0, 3),
     wiki_path='Power_Pole#Ground_Poles',
     building_type=BuildingType.BUILD_GUN,
@@ -999,7 +999,7 @@ VersatileFramework = Recipe(
 )
 
 WallOutletMk1 = Recipe(
-    name='Wall Outlet Mk.1',
+    name='Wall Outlet Mk1',
     availability=Availability(0, 3),
     wiki_path='/Power_Pole#Wall_Outlets',
     building_type=BuildingType.BUILD_GUN,

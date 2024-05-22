@@ -311,8 +311,10 @@ class MainWindow(Gtk.ApplicationWindow):
                     # If the user has availability filtering enabled, filter by that as well
                     if self.chkAvailability.get_active():
                         compatible_recipes = [ (recipe_name, recipe) for recipe_name, recipe in compatible_recipes
-                            if recipe.availability.tier <= self.blueprint.factory.availability.tier
-                            and recipe.availability.upgrade <= self.blueprint.factory.availability.upgrade]
+                            if (recipe.availability.tier is None
+                                or recipe.availability.tier <= self.blueprint.factory.availability.tier)
+                            and (recipe.availability.upgrade is None
+                                or recipe.availability.upgrade <= self.blueprint.factory.availability.upgrade)]
 
                     compatible_recipes.sort(key=lambda x: x[0])
 
@@ -335,14 +337,16 @@ class MainWindow(Gtk.ApplicationWindow):
                     if c.recipe:
                         consumes_store = Gtk.ListStore(Pixbuf, str)
                         produces_store = Gtk.ListStore(Pixbuf, str)
-                        for ingredient in c.recipe.consumes:
-                            consumes_store.append((
-                                self.pixelBuffers['items'][ingredient.item.programmatic_name],
-                                f'{ingredient.rate}x {ingredient.item.name} /m'))
-                        for ingredient in c.recipe.produces:
-                            produces_store.append((
-                                self.pixelBuffers['items'][ingredient.item.programmatic_name],
-                                f'{ingredient.rate}x {ingredient.item.name} /m'))
+                        if c.recipe.consumes:
+                            for ingredient in c.recipe.consumes:
+                                consumes_store.append((
+                                    self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                                    f'{ingredient.rate}x {ingredient.item.name} /m'))
+                        if c.recipe.produces:
+                            for ingredient in c.recipe.produces:
+                                produces_store.append((
+                                    self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                                    f'{ingredient.rate}x {ingredient.item.name} /m'))
                         self.icovwConsumes.set_model(consumes_store)
                         self.icovwConsumes.set_pixbuf_column(0)
                         self.icovwConsumes.set_text_column(1)
@@ -1177,7 +1181,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.windowSignals.append((
             self.btnNewComponentTag,
             self.btnNewComponentTag.connect('clicked', self.__btnNewComponentTag_clicked)))
-        
+
         # Widgets in the "danger zone"
         self.windowSignals.append((
             self.btnDeleteComponent,
@@ -1542,11 +1546,11 @@ class MainWindow(Gtk.ApplicationWindow):
                 'Delete Component?',
                 f'Delete {self.blueprint.selected.name}?',
                 self.__dlgConfirmComponentDelete_responded)
-    
+
     def __dlgConfirmComponentDelete_responded(self, confirmed: bool):
         if confirmed and self.blueprint and self.blueprint.selected:
             comp = self.blueprint.selected
-            
+
             # Delete any conveyances connecting the components' connections
             for conn in comp.inputs:
                 source_output = conn.source
@@ -1565,7 +1569,7 @@ class MainWindow(Gtk.ApplicationWindow):
                         target_building = attached_to.outputs[0].target.attached_to
                         target_building.inputs[0].source = None
                         self.blueprint.remove_component(attached_to.id)
-            
+
             # Delete the component itself, deselect everything, update the window
             self.blueprint.remove_component(comp.id)
             self.blueprint.selected = None

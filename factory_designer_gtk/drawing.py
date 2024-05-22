@@ -166,7 +166,7 @@ class Blueprint(object):
     ):
         if component_id in self.geometry:
             del self.geometry[component_id]
-        
+
         self.factory.remove(component_id=component_id)
         self.invalidate_geometry()
 
@@ -197,7 +197,7 @@ class Blueprint(object):
         if COLORS['overlay_color'] is None:
             COLORS['overlay_color'] = Gdk.RGBA()
             COLORS['overlay_color'].parse(self.overlay_color)
-        
+
         rect = Graphene.Rect().init(0, 0, self.viewport.region.width, self.viewport.region.height)
         snapshot.push_clip(rect)
         snapshot.append_color(COLORS['overlay_color'], rect)
@@ -720,14 +720,12 @@ class Blueprint(object):
             if len(component.inputs) > 0:
                 for input in component.inputs:
                     if input.source:
-                        logging.debug(f'Component {component} source is {input.source.attached_to}')
                         if isinstance(input.source.attached_to, Conveyance):
                             if not input.source.attached_to in conveyances:
                                 conveyances.append(input.source.attached_to)
             if len(component.outputs) > 0:
                 for output in component.outputs:
                     if output.target:
-                        logging.debug(f'Component {component} target is {output.target.attached_to}')
                         if isinstance(output.target.attached_to, Conveyance):
                             if not output.target.attached_to in conveyances:
                                 conveyances.append(output.target.attached_to)
