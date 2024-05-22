@@ -85,6 +85,19 @@ class Factory(Base):
                 for comp in component:
                     comp.factory = self
                     self._components.append(comp)
+    
+    def remove(self,
+        component_id: str
+    ):
+        '''
+        Removes the component with the given unique ID from the factory.
+        '''
+        
+        component = None
+        for component in self.components:
+            if component.id == component_id:
+                self.components.remove(component)
+                break
 
     def add_error(self,
         error: ComponentError

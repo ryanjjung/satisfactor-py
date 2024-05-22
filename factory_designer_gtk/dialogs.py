@@ -5,8 +5,7 @@ from gi.repository import Gtk
 from typing import Callable
 
 
-#class ConfirmDiscardChangesWindow(Gtk.Window):
-class ConfirmDiscardChangesWindow(Gtk.MessageDialog):
+class ConfirmOrCancelWindow(Gtk.MessageDialog):
     '''
     Creates a dialog window to show when a user is about to take a destructive action, confirming
     that they want to proceed.
@@ -14,10 +13,13 @@ class ConfirmDiscardChangesWindow(Gtk.MessageDialog):
 
     def __init__(self,
         parent: Gtk.ApplicationWindow,
+        title: str,
+        message: str,
         callback: Callable
     ):
-        super().__init__(title='Discard Unsaved Changes', transient_for=parent)
+        super().__init__(title=title, transient_for=parent)
         self.set_modal(True)
+        self.message = message
         self.callback = callback
         self.__build_layout()
         self.show()
@@ -34,7 +36,7 @@ class ConfirmDiscardChangesWindow(Gtk.MessageDialog):
         self.boxButtons.set_hexpand(True)
         self.boxButtons.set_halign(Gtk.Align.CENTER)
 
-        self.lblMessage = Gtk.Label(label='You have unsaved changes. Proceed?')
+        self.lblMessage = Gtk.Label(label=self.message)
         self.btnCancel = Gtk.Button(label='Cancel')
         self.btnCancel.connect('clicked', self.__btnCancel_clicked)
         self.btnOK = Gtk.Button(label='OK')

@@ -23,7 +23,7 @@ from satisfactory.factories import Factory
 from satisfactory.items import get_all as get_all_items
 from satisfactory.recipes import get_all as get_all_recipes
 from satisfactory.storages import get_all as get_all_storages
-from factory_designer_gtk.dialogs import ConfirmDiscardChangesWindow
+from factory_designer_gtk.dialogs import ConfirmOrCancelWindow
 from factory_designer_gtk.drawing import Blueprint
 from factory_designer_gtk.widgets import (
     FactoryDesignerWidget,
@@ -94,7 +94,10 @@ class MainWindow(Gtk.ApplicationWindow):
         Presents a GTKDialog asking the user if it's okay to discard unsaved changes.
         '''
 
-        dlgDiscardChanges = ConfirmDiscardChangesWindow(self, callback)
+        dlgDiscardChanges = ConfirmOrCancelWindow(self,
+            'Discare Unsaved Changes?',
+            'You have unsaved changes. Proceed?',
+            callback)
         dlgDiscardChanges.present()
 
     @staticmethod
@@ -915,6 +918,12 @@ class MainWindow(Gtk.ApplicationWindow):
         # Label for when there are no tags
         self.lblNoComponentTags = Gtk.Label(label='None')
 
+        # Button to delete the component
+        self.sepDangerZone = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        self.btnDeleteComponent = Gtk.Button(label='Delete Component')
+        self.boxComponentDetails.append(self.sepDangerZone)
+        self.boxComponentDetails.append(self.btnDeleteComponent)
+
         # Add it all to the scrollwindow
         self.scrollComponentDetails.set_child(self.boxComponentDetails)
 
@@ -1169,6 +1178,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.windowSignals.append((
             self.btnNewComponentTag,
             self.btnNewComponentTag.connect('clicked', self.__btnNewComponentTag_clicked)))
+        
+        # Widgets in the "danger zone"
+        self.windowSignals.append((
+            self.btnDeleteComponent,
+            self.btnDeleteComponent.connect('clicked', self.__btnDeleteComponent_clicked)))
+
 
     def __load_images(self):
         '''
@@ -1519,3 +1534,40 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __entryComponentTagValue_inserted(self, buffer, position, chars, nchars):
         self.__entryComponentTagValue_changed(buffer.tags['tag_key'], buffer.get_text())
+
+    # + Component danger zone signal handlers
+    def __btnDeleteComponent_clicked(self, btn):
+        if self.blueprint and self.blueprint.selected:
+            dlgConfirmComponentDelete = ConfirmOrCancelWindow(
+                self,
+                'Delete Component?',
+                f'Delete {self.blueprint.selected.name}?',
+                self.__dlgConfirmComponentDelete_responded)
+    
+    def __dlgConfirmComponentDelete_responded(self, confirmed: bool):
+        if confirmed and self.blueprint and self.blueprint.selected:
+            comp = self.blueprint.selected
+            
+            # Delete any conveyances connecting the components' connections
+            for conn in comp.inputs:
+                source_output = conn.source
+                if source_output:
+                    attached_to = source_output.attached_to
+                    # attached_to should be a conveyance. We need to find what that's connected to
+                    if attached_to:
+                        source_building = attached_to.inputs[0].source.attached_to
+                        source_building.outputs[0].target = None
+                        self.blueprint.remove_component(attached_to.id)
+            for conn in comp.outputs:
+                target_input = conn.target
+                if target_input:
+                    attached_to = conn.target.attached_to
+                    if attached_to:
+                        target_building = attached_to.outputs[0].target.attached_to
+                        target_building.inputs[0].source = None
+                        self.blueprint.remove_component(attached_to.id)
+            
+            # Delete the component itself, deselect everything, update the window
+            self.blueprint.remove_component(comp.id)
+            self.blueprint.selected = None
+            self.update_window()

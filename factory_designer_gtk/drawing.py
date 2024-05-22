@@ -161,6 +161,15 @@ class Blueprint(object):
         else:
             self.geometry[component.id] = ComponentGeometry(component, canvas_location)
 
+    def remove_component(self,
+        component_id: str
+    ):
+        if component_id in self.geometry:
+            del self.geometry[component_id]
+        
+        self.factory.remove(component_id=component_id)
+        self.invalidate_geometry()
+
     def draw_widget_background(self,
         snapshot: Gdk.Snapshot,
         background_color: Gdk.RGBA = None
@@ -682,21 +691,23 @@ class Blueprint(object):
                     if input.source:
                         input_attachment = input.source.attached_to
                         if isinstance(input_attachment, Conveyance):
-                            input_attachment = input_attachment.inputs[0].source.attached_to
-                            if input_attachment not in visible_components:
-                                if input_attachment.id in self.geometry.keys():
-                                    offscreen_components.append((input_attachment,
-                                        self.geometry.get(input_attachment.id)))
+                            if input_attachment.inputs[0].source:
+                                input_attachment = input_attachment.inputs[0].source.attached_to
+                                if input_attachment not in visible_components:
+                                    if input_attachment.id in self.geometry.keys():
+                                        offscreen_components.append((input_attachment,
+                                            self.geometry.get(input_attachment.id)))
                 # Do the same checks but for this component's outputs
                 for output in component.outputs:
                     if output.target:
                         output_attachment = output.target.attached_to
                         if isinstance(output_attachment, Conveyance):
-                            output_attachment = output_attachment.outputs[0].target.attached_to
-                            if output_attachment not in visible_components:
-                                if output_attachment.id in self.geometry.keys():
-                                    offscreen_components.append((output_attachment,
-                                        self.geometry.get(output_attachment.id)))
+                            if output_attachment.outputs[0].target:
+                                output_attachment = output_attachment.outputs[0].target.attached_to
+                                if output_attachment not in visible_components:
+                                    if output_attachment.id in self.geometry.keys():
+                                        offscreen_components.append((output_attachment,
+                                            self.geometry.get(output_attachment.id)))
         return offscreen_components
 
     def get_conveyances_from_components(self, components) -> list[tuple]:
@@ -711,12 +722,14 @@ class Blueprint(object):
             if len(component.inputs) > 0:
                 for input in component.inputs:
                     if input.source:
+                        logging.debug(f'Component {component} source is {input.source.attached_to}')
                         if isinstance(input.source.attached_to, Conveyance):
                             if not input.source.attached_to in conveyances:
                                 conveyances.append(input.source.attached_to)
             if len(component.outputs) > 0:
                 for output in component.outputs:
                     if output.target:
+                        logging.debug(f'Component {component} target is {output.target.attached_to}')
                         if isinstance(output.target.attached_to, Conveyance):
                             if not output.target.attached_to in conveyances:
                                 conveyances.append(output.target.attached_to)
