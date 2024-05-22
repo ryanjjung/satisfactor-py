@@ -95,7 +95,7 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         dlgDiscardChanges = ConfirmOrCancelWindow(self,
-            'Discare Unsaved Changes?',
+            'Discard Unsaved Changes?',
             'You have unsaved changes. Proceed?',
             callback)
         dlgDiscardChanges.present()

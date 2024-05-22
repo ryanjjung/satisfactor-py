@@ -214,8 +214,6 @@ class Blueprint(object):
         Draws a graphical representation of a factory component on the screen.
         '''
 
-        # if component == self.new_component:
-        #     import pdb; pdb.set_trace()
         self.draw_component_background(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_icon(widget, snapshot, component, geometry, self.viewport.scale)
         self.draw_component_badges(widget, snapshot, component, geometry, self.viewport.scale)
