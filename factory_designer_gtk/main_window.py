@@ -110,7 +110,6 @@ class MainWindow(Gtk.ApplicationWindow):
         if ALL_BUILDINGS is None:
             ALL_BUILDINGS = [ ResourceNode(), InfiniteSupplyNode() ]
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_buildings()])
-            ALL_BUILDINGS.extend([ bldg() for bldg in get_all_conveyances()])
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_storages()])
         return ALL_BUILDINGS
 
