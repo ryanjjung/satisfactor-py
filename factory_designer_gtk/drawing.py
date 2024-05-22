@@ -38,6 +38,7 @@ COLORS = {
     'conn_deselected': None,
     'conn_selected': None,
     'conn_label': None,
+    'overlay_color': None,
 }
 
 
@@ -65,6 +66,7 @@ class Blueprint(object):
         label_font_family: str = 'Sans',
         label_font_size: float = 10.0,
         line_color: str = '#a3a8fa',
+        overlay_color: str = '#00000055',
         selected_component_bg_color: str = '#95d0ff',
         selected_line_color: str = '#95d0ff',
         viewport_region: Region2D = Region2D()
@@ -86,6 +88,7 @@ class Blueprint(object):
         self.conveyance_font_size = conveyance_font_size
         self.label_color = label_color
         self.line_color = line_color
+        self.overlay_color = overlay_color
         self.selected_component_bg_color = selected_component_bg_color
         self.selected_line_color = selected_line_color
 
@@ -95,6 +98,12 @@ class Blueprint(object):
 
         # Track whether the geometry needs to be recalculated
         self.__invalid_geo = False
+
+        # Track mouse position when the parent window tells us about it
+        self.pointer_position = None
+
+        # In build mode, this is the component to be built
+        self.new_component = None
 
     @staticmethod
     def load(filename: str):
@@ -152,6 +161,15 @@ class Blueprint(object):
         else:
             self.geometry[component.id] = ComponentGeometry(component, canvas_location)
 
+    def remove_component(self,
+        component_id: str
+    ):
+        if component_id in self.geometry:
+            del self.geometry[component_id]
+        
+        self.factory.remove(component_id=component_id)
+        self.invalidate_geometry()
+
     def draw_widget_background(self,
         snapshot: Gdk.Snapshot,
         background_color: Gdk.RGBA = None
@@ -170,6 +188,19 @@ class Blueprint(object):
         rect = Graphene.Rect().init(0, 0, self.viewport.region.width, self.viewport.region.height)
         snapshot.push_clip(rect)
         snapshot.append_color(background_color, rect)
+        snapshot.pop()
+
+    def draw_build_overlay(self,
+        widget: Gtk.Widget,
+        snapshot: Gdk.Snapshot,
+    ):
+        if COLORS['overlay_color'] is None:
+            COLORS['overlay_color'] = Gdk.RGBA()
+            COLORS['overlay_color'].parse(self.overlay_color)
+        
+        rect = Graphene.Rect().init(0, 0, self.viewport.region.width, self.viewport.region.height)
+        snapshot.push_clip(rect)
+        snapshot.append_color(COLORS['overlay_color'], rect)
         snapshot.pop()
 
     def draw_component(self,
@@ -490,7 +521,8 @@ class Blueprint(object):
 
     def draw_frame(self,
         widget: Gtk.Widget,
-        snapshot: Gtk.Snapshot
+        snapshot: Gtk.Snapshot,
+        draw_overlay: bool = False,
     ):
         '''
         Draws a single frame of the contents of the viewport.
@@ -576,6 +608,36 @@ class Blueprint(object):
                 label_text = component.name
                 self.draw_conveyance(widget, snapshot, component, geometry, label_text)
 
+        # If we're in build mode, draw a transparent overlay. If the mouse is over the widget, draw
+        # that component wherever the mouse is.
+        if draw_overlay:
+            self.draw_build_overlay(widget, snapshot)
+            if self.pointer_position:
+                new_component_position = Coordinate2D(
+                    self.pointer_position.x - (sizes['background_x'] / 2),
+                    self.pointer_position.y - (sizes['background_y'] / 2)
+                )
+                new_component_geo = ComponentGeometry(
+                    self.new_component,
+                    new_component_position
+                )
+                new_component_label = PangoTextLabel(
+                    self.new_component.name,
+                    self.label_font_family,
+                    self.label_font_size,
+                    widget,
+                    self.viewport.scale)
+                new_component_geo.calculate(
+                    *new_component_label.layout.get_pixel_size(),
+                    scale=self.viewport.scale,
+                )
+                self.draw_component(
+                    widget,
+                    snapshot,
+                    self.new_component,
+                    new_component_geo,
+                    new_component_label)
+
         # Clear out these flags since we've just generated all this geometry
         if FIRST_RUN: FIRST_RUN = False
         self.__invalid_geo = False
@@ -627,21 +689,23 @@ class Blueprint(object):
                     if input.source:
                         input_attachment = input.source.attached_to
                         if isinstance(input_attachment, Conveyance):
-                            input_attachment = input_attachment.inputs[0].source.attached_to
-                            if input_attachment not in visible_components:
-                                if input_attachment.id in self.geometry.keys():
-                                    offscreen_components.append((input_attachment,
-                                        self.geometry.get(input_attachment.id)))
+                            if input_attachment.inputs[0].source:
+                                input_attachment = input_attachment.inputs[0].source.attached_to
+                                if input_attachment not in visible_components:
+                                    if input_attachment.id in self.geometry.keys():
+                                        offscreen_components.append((input_attachment,
+                                            self.geometry.get(input_attachment.id)))
                 # Do the same checks but for this component's outputs
                 for output in component.outputs:
                     if output.target:
                         output_attachment = output.target.attached_to
                         if isinstance(output_attachment, Conveyance):
-                            output_attachment = output_attachment.outputs[0].target.attached_to
-                            if output_attachment not in visible_components:
-                                if output_attachment.id in self.geometry.keys():
-                                    offscreen_components.append((output_attachment,
-                                        self.geometry.get(output_attachment.id)))
+                            if output_attachment.outputs[0].target:
+                                output_attachment = output_attachment.outputs[0].target.attached_to
+                                if output_attachment not in visible_components:
+                                    if output_attachment.id in self.geometry.keys():
+                                        offscreen_components.append((output_attachment,
+                                            self.geometry.get(output_attachment.id)))
         return offscreen_components
 
     def get_conveyances_from_components(self, components) -> list[tuple]:
@@ -656,12 +720,14 @@ class Blueprint(object):
             if len(component.inputs) > 0:
                 for input in component.inputs:
                     if input.source:
+                        logging.debug(f'Component {component} source is {input.source.attached_to}')
                         if isinstance(input.source.attached_to, Conveyance):
                             if not input.source.attached_to in conveyances:
                                 conveyances.append(input.source.attached_to)
             if len(component.outputs) > 0:
                 for output in component.outputs:
                     if output.target:
+                        logging.debug(f'Component {component} target is {output.target.attached_to}')
                         if isinstance(output.target.attached_to, Conveyance):
                             if not output.target.attached_to in conveyances:
                                 conveyances.append(output.target.attached_to)

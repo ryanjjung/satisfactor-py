@@ -23,10 +23,11 @@ from satisfactory.factories import Factory
 from satisfactory.items import get_all as get_all_items
 from satisfactory.recipes import get_all as get_all_recipes
 from satisfactory.storages import get_all as get_all_storages
-from factory_designer_gtk.dialogs import ConfirmDiscardChangesWindow
+from factory_designer_gtk.dialogs import ConfirmOrCancelWindow
 from factory_designer_gtk.drawing import Blueprint
 from factory_designer_gtk.widgets import (
     FactoryDesignerWidget,
+    InteractionMode,
     TaggableButton,
     TaggableEntryBuffer,
 )
@@ -57,6 +58,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.blueprint = None
         self.blueprintFile = filename
+        self.buildings = []
         self.unsaved_changes = False
 
         self.filters = {
@@ -92,7 +94,10 @@ class MainWindow(Gtk.ApplicationWindow):
         Presents a GTKDialog asking the user if it's okay to discard unsaved changes.
         '''
 
-        dlgDiscardChanges = ConfirmDiscardChangesWindow(self, callback)
+        dlgDiscardChanges = ConfirmOrCancelWindow(self,
+            'Discard Unsaved Changes?',
+            'You have unsaved changes. Proceed?',
+            callback)
         dlgDiscardChanges.present()
 
     @staticmethod
@@ -105,7 +110,6 @@ class MainWindow(Gtk.ApplicationWindow):
         if ALL_BUILDINGS is None:
             ALL_BUILDINGS = [ ResourceNode(), InfiniteSupplyNode() ]
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_buildings()])
-            ALL_BUILDINGS.extend([ bldg() for bldg in get_all_conveyances()])
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_storages()])
         return ALL_BUILDINGS
 
@@ -213,16 +217,25 @@ class MainWindow(Gtk.ApplicationWindow):
             # Sort the list alphabetically
             avail_buildings = sorted(avail_buildings, key=lambda x: x.name)
 
-            # Convert the list to a ListStore, pulling in images where possible
+            # Convert the list to a ListStore, pulling in images where possible. At the same time,
+            # update the window's list of buildings to make this data accessible later.
+            self.buildings = []
             listStore = Gtk.ListStore(Pixbuf, str)
             for building in avail_buildings:
                 listStore.append((
                     self.pixelBuffers['building_options'][building.__class__.__name__],
                     building.name))
+                self.buildings.append(building.__class__)
             self.lstBuildings = listStore
             self.icovwBuildings.set_model(self.lstBuildings)
             self.icovwBuildings.set_pixbuf_column(0)
             self.icovwBuildings.set_text_column(1)
+
+            # Make sure the Build button says the right thing
+            if self.factoryDesigner.mode == InteractionMode.BUILD_MODE:
+                self.btnBuild.set_label('Cancel')
+            else:
+                self.btnBuild.set_label('Build')
 
     def update_component_context(self,
         skip: list = []
@@ -662,16 +675,27 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxNameFilter.append(self.entryNameFilter)
         self.boxFilters.append(self.boxNameFilter)
 
+        # Bottom pane: Box to organize things
+        self.boxBuildings = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
         # Bottom pane: list of buildings
         self.scrollBuildings = Gtk.ScrolledWindow()
         self.icovwBuildings = Gtk.IconView()
         self.icovwBuildings.set_spacing(5)
+        self.icovwBuildings.set_vexpand(True)
         self.scrollBuildings.set_child(self.icovwBuildings)
         self.scrollBuildings.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
+        # Bottom pane: Build button
+        self.btnBuild = Gtk.Button(label='Build')
+
+        # Pack the box
+        self.boxBuildings.append(self.scrollBuildings)
+        self.boxBuildings.append(self.btnBuild)
+
         # Compile panel contents
         self.paneBuildingsOptions.set_start_child(self.scrollBuildingFilters)
-        self.paneBuildingsOptions.set_end_child(self.scrollBuildings)
+        self.paneBuildingsOptions.set_end_child(self.boxBuildings)
 
     def __build_component_context_panel(self):
         '''
@@ -893,6 +917,12 @@ class MainWindow(Gtk.ApplicationWindow):
         # Label for when there are no tags
         self.lblNoComponentTags = Gtk.Label(label='None')
 
+        # Button to delete the component
+        self.sepDangerZone = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        self.btnDeleteComponent = Gtk.Button(label='Delete Component')
+        self.boxComponentDetails.append(self.sepDangerZone)
+        self.boxComponentDetails.append(self.btnDeleteComponent)
+
         # Add it all to the scrollwindow
         self.scrollComponentDetails.set_child(self.boxComponentDetails)
 
@@ -1065,7 +1095,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.btnPurge,
             self.btnPurge.connect('clicked', self.__btnPurge_clicked)))
 
-        # Signals for the building options filter panel
+        # Signals for the buildings panel
         self.windowSignals.append((
             self.chkAvailability,
             self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)))
@@ -1086,6 +1116,9 @@ class MainWindow(Gtk.ApplicationWindow):
             self.entryNameFilter.get_buffer(),
             self.entryNameFilter.get_buffer().connect_after('inserted-text',
                 self.__entryNameFilter_inserted)))
+        self.windowSignals.append((
+            self.btnBuild,
+            self.btnBuild.connect('clicked', self.__btnBuild_clicked)))
 
         # Signals for component detail widgets
         self.windowSignals.append((
@@ -1144,6 +1177,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.windowSignals.append((
             self.btnNewComponentTag,
             self.btnNewComponentTag.connect('clicked', self.__btnNewComponentTag_clicked)))
+        
+        # Widgets in the "danger zone"
+        self.windowSignals.append((
+            self.btnDeleteComponent,
+            self.btnDeleteComponent.connect('clicked', self.__btnDeleteComponent_clicked)))
+
 
     def __load_images(self):
         '''
@@ -1363,6 +1402,18 @@ class MainWindow(Gtk.ApplicationWindow):
         if self.filters['name']:
             self.update_buildings_list()
 
+    def __btnBuild_clicked(self, btn):
+        if self.factoryDesigner.mode == InteractionMode.BUILD_MODE:
+            self.factoryDesigner.mode = InteractionMode.NORMAL
+        else:
+            selected = self.icovwBuildings.get_selected_items()
+            if len(selected) > 0:
+                selected = selected[0].get_indices()[0]
+                # Create a default instance of that kind of component and set it to be added to the
+                # blueprint when the user clicks somewhere there.
+                self.factoryDesigner.blueprint.new_component = self.buildings[selected]()
+                self.factoryDesigner.mode = InteractionMode.BUILD_MODE
+        self.update_window()
 
     # + Component detail widget signal handlers
 
@@ -1482,3 +1533,40 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __entryComponentTagValue_inserted(self, buffer, position, chars, nchars):
         self.__entryComponentTagValue_changed(buffer.tags['tag_key'], buffer.get_text())
+
+    # + Component danger zone signal handlers
+    def __btnDeleteComponent_clicked(self, btn):
+        if self.blueprint and self.blueprint.selected:
+            dlgConfirmComponentDelete = ConfirmOrCancelWindow(
+                self,
+                'Delete Component?',
+                f'Delete {self.blueprint.selected.name}?',
+                self.__dlgConfirmComponentDelete_responded)
+    
+    def __dlgConfirmComponentDelete_responded(self, confirmed: bool):
+        if confirmed and self.blueprint and self.blueprint.selected:
+            comp = self.blueprint.selected
+            
+            # Delete any conveyances connecting the components' connections
+            for conn in comp.inputs:
+                source_output = conn.source
+                if source_output:
+                    attached_to = source_output.attached_to
+                    # attached_to should be a conveyance. We need to find what that's connected to
+                    if attached_to:
+                        source_building = attached_to.inputs[0].source.attached_to
+                        source_building.outputs[0].target = None
+                        self.blueprint.remove_component(attached_to.id)
+            for conn in comp.outputs:
+                target_input = conn.target
+                if target_input:
+                    attached_to = conn.target.attached_to
+                    if attached_to:
+                        target_building = attached_to.outputs[0].target.attached_to
+                        target_building.inputs[0].source = None
+                        self.blueprint.remove_component(attached_to.id)
+            
+            # Delete the component itself, deselect everything, update the window
+            self.blueprint.remove_component(comp.id)
+            self.blueprint.selected = None
+            self.update_window()
