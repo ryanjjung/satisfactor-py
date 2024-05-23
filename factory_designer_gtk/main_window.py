@@ -14,6 +14,7 @@ from satisfactory.base import (
     BuildingType,
     Conveyance,
     InfiniteSupplyNode,
+    Purity,
     ResourceNode,
     Storage,
 )
@@ -358,6 +359,7 @@ class MainWindow(Gtk.ApplicationWindow):
                         self.boxSelectedRecipe.set_visible(False)
 
                     # Ensure it's visible
+                    self.boxResourceNodeRecipe.set_visible(False)
                     self.boxComponentSelectedRecipe.set_visible(True)
                     self.boxISNRecipe.set_visible(False)
             elif isinstance(c, InfiniteSupplyNode):
@@ -394,11 +396,23 @@ class MainWindow(Gtk.ApplicationWindow):
                 # Make sure the right widgets are presented
                 self.boxISNRecipe.set_visible(True)
                 self.boxComponentSelectedRecipe.set_visible(False)
+                self.boxResourceNodeRecipe.set_visible(False)
+                self.boxSelectedRecipe.set_visible(False)
+            elif isinstance(c, ResourceNode):
+                logging.debug(f'Item {c.item}; Node items: {self.node_items}')
+                node_item_index = self.node_items.index(c.item.programmatic_name)
+                self.cboResourceNodeItem.set_active(node_item_index)
+                purity_index = self.purities.index(c.purity)
+                self.cboResourceNodePurity.set_active(purity_index)
+                self.boxResourceNodeRecipe.set_visible(True)
+                self.boxISNRecipe.set_visible(False)
+                self.boxComponentSelectedRecipe.set_visible(False)
                 self.boxSelectedRecipe.set_visible(False)
             else:
                 # Hide all of these widgets
                 self.boxISNRecipe.set_visible(False)
                 self.boxComponentSelectedRecipe.set_visible(False)
+                self.boxResourceNodeRecipe.set_visible(False)
                 self.boxSelectedRecipe.set_visible(False)
 
             # TODO: Update recipe consumes/produces
@@ -781,7 +795,32 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentSelectedRecipe.append(self.cboComponentSelectedRecipe)
         self.boxComponentDetails.append(self.boxComponentSelectedRecipe)
 
-        # Build a set of controls to display when InfiniteSupplyNodes are selected.
+        # Build a set of controls to display when ResourceNodes are selected
+        self.boxResourceNodeRecipe = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxResourceNodeRecipe.set_spacing(5)
+        self.boxResourceNodeRecipe.set_halign(Gtk.Align.CENTER)
+        self.lblResourceNodeItem = Gtk.Label(label='Item:')
+        self.cboResourceNodeItem = Gtk.ComboBoxText()
+
+        for item in self.node_items:
+            self.cboResourceNodeItem.append(item, item)
+
+        # Pack the item widgets
+        self.boxResourceNodeRecipe.append(self.lblResourceNodeItem)
+        self.boxResourceNodeRecipe.append(self.cboResourceNodeItem)
+
+        # Populate a combo box with node purity levels
+        self.lblResourceNodePurity = Gtk.Label(label='Purity:')
+        self.cboResourceNodePurity = Gtk.ComboBoxText()
+        for purity in Purity.__members__:
+            self.cboResourceNodePurity.append(purity, purity.title())
+
+        # Pack the resource node widgets
+        self.boxResourceNodeRecipe.append(self.lblResourceNodePurity)
+        self.boxResourceNodeRecipe.append(self.cboResourceNodePurity)
+        self.boxComponentDetails.append(self.boxResourceNodeRecipe)
+
+        # Build a set of controls to display when InfiniteSupplyNodes are selected
         self.boxISNRecipe = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.boxISNRecipe.set_spacing(5)
         self.boxISNRecipe.set_halign(Gtk.Align.CENTER)
@@ -833,6 +872,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxSelectedRecipe.append(self.boxConsumes)
         self.boxSelectedRecipe.append(self.boxProduces)
         self.boxComponentDetails.append(self.boxSelectedRecipe)
+
+        # Add a visual separator
+        self.sepBeforeConnections = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentDetails.append(self.sepBeforeConnections)
 
         # Connections
         self.boxComponentConnections = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -1064,6 +1107,18 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
         Builds reusable items which are unique to this application
         '''
+
+        # Populate the special resource node settings widgets and show them.
+        # Those items should be ones that can be produced by miner recipes.
+        miner_recipes = [ (recipe_name, recipe) for recipe_name, recipe in get_all_recipes()
+            if recipe.building_type == BuildingType.MINER ]
+        node_items = []
+        for _, recipe in miner_recipes:
+            node_items.extend([ ingredient.item.programmatic_name \
+                for ingredient in recipe.produces])
+        self.node_items = sorted(set(node_items))
+
+        self.purities = [ purity[1] for purity in Purity.__members__.items() ]
 
         self.satFileFilter = Gtk.FileFilter()
         self.satFileFilter.set_name('Satisfactory Blueprints (*.sat)')
