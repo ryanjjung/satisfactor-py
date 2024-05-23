@@ -13,8 +13,11 @@ from satisfactory.base import (
     Building,
     Component,
     Conveyance,
+    ConveyanceType,
     InfiniteSupplyNode,
+    ResourceNode,
 )
+from satisfactory.buildings import Miner
 from satisfactory.factories import Factory
 from factory_designer_gtk.geometry import (
     sizes,
@@ -471,7 +474,7 @@ class Blueprint(object):
             COLORS['conn_label'] = Gdk.RGBA()
             COLORS['conn_label'].parse(self.conveyance_label_color)
 
-        if self.selected == conveyance:
+        if self.selected == conveyance and self.selected is not None:
             line_color = COLORS['conn_selected']
         else:
             line_color = COLORS['conn_deselected']
@@ -607,6 +610,27 @@ class Blueprint(object):
                 geometry = self.geometry.get(component.id)
                 label_text = component.name
                 self.draw_conveyance(widget, snapshot, component, geometry, label_text)
+        
+        # Resource nodes can only connect to miners, but they don't use conveyances to do so. To
+        # keep the blueprint visually consistent, we draw a line between a node and its miner the
+        # same way we draw conveyances. Here we create a fake conveyance for each resource-node-to-
+        # miner connection in the frame.
+        for node in [ component for component in visible_components \
+            if isinstance(component, ResourceNode) ]:
+                if node.outputs[0].target and node.outputs[0].target.attached_to:
+                    target = node.outputs[0].target.attached_to
+                    if isinstance(target, Miner):
+                        node_conveyance = Conveyance(ConveyanceType.RESOURCE_NODE)
+                        node_conv_geo = ConveyanceGeometry(
+                            conveyance=node_conveyance,
+                            source_comp=node,
+                            source_geo=self.geometry[node.id],
+                            source_output=0,
+                            target_comp=target,
+                            target_geo=self.geometry[target.id],
+                            target_input=0)
+                        node_conv_geo.calculate()
+                        self.draw_conveyance(widget, snapshot, None, node_conv_geo, '')
 
         # If we're in build mode, draw a transparent overlay. If the mouse is over the widget, draw
         # that component wherever the mouse is.
