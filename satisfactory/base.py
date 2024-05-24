@@ -824,9 +824,9 @@ class ResourceNode(Component):
                             'The connected Miner has no recipe'
                         ))
                     else:
-                        if self.item not in [
-                            ingredient.item for ingredient in target_bldg.recipe.produces
-                        ]:
+                        target_production = [ ingredient.item.programmatic_name \
+                            for ingredient in target_bldg.recipe.produces ]
+                        if self.item.programmatic_name not in target_production:
                             self.add_error(ComponentError(
                                 ComponentErrorLevel.IMPOSSIBLE,
                                 f'The connected Miner must produce {self.item.name}, but it does not.'

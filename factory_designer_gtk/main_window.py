@@ -461,6 +461,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 icovw = Gtk.IconView()
                 store = Gtk.ListStore(Pixbuf, str)
                 for ingredient in conn.ingredients:
+                    logging.debug(f'Changing output rate to {ingredient.rate}')
                     store.append((
                         self.pixelBuffers['items'][ingredient.item.programmatic_name],
                         f'{ingredient.rate}x {ingredient.item.name} /m'
@@ -1583,9 +1584,9 @@ class MainWindow(Gtk.ApplicationWindow):
             and isinstance(self.blueprint.selected, ResourceNode):
                 purity_name = cbo.get_active_id()
                 try:
-                    purity = [ purity for purity_name, purity in Purity.__members__.items() 
-                        if purity_name == purity_name ][0]
-                    logging.debug(f'Changing purity to {purity}')
+                    purity = [ purity for name, purity in Purity.__members__.items() 
+                        if name == purity_name ][0]
+                    logging.debug(f'Setting purity to {purity}')
                     self.blueprint.selected.purity = purity
                     self.unsaved_changes = True
                     self.update_window(skip=[self.cboResourceNodePurity])
