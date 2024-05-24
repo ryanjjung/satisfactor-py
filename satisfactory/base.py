@@ -1263,12 +1263,14 @@ class Conveyance(Building):
 
         # If the conveyance's rate is lower than the combined ingredient rates, we have to slow it
         # all down proportionately.
+        total_input = sum([ingredient.rate for ingredient in self.inputs[0].ingredients])
         recipe = ConveyanceRecipe(self.rate, self.ingredients)
         total_rate = sum([product.rate for product in recipe.produces])
-        if total_rate > self.rate:
+
+        if total_input > total_rate:
             self.add_error(ComponentError(
                 ComponentErrorLevel.WARNING,
-                'The conveyance is too slow to carry all of the items on it.'
+                f'The conveyance receives {total_input} items/min, but can only carry {self.rate}.'
             ))
             ratio = total_rate / self.rate
             for ingredient in recipe.produces:

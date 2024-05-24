@@ -18,7 +18,10 @@ from satisfactory.base import (
     ResourceNode,
     Storage,
 )
-from satisfactory.buildings import get_all as get_all_buildings
+from satisfactory.buildings import (
+    get_all as get_all_buildings,
+    Miner
+)
 from satisfactory.conveyances import get_all as get_all_conveyances
 from satisfactory.factories import Factory
 from satisfactory.items import get_all as get_all_items
@@ -345,9 +348,13 @@ class MainWindow(Gtk.ApplicationWindow):
                                     f'{ingredient.rate}x {ingredient.item.name} /m'))
                         if c.recipe.produces:
                             for ingredient in c.recipe.produces:
+                                if isinstance(c, Miner):
+                                    ing_rate = ingredient.rate * c.inputs[0].source.attached_to.purity.value
+                                else:
+                                    ing_rate = ingredient.rate
                                 produces_store.append((
                                     self.pixelBuffers['items'][ingredient.item.programmatic_name],
-                                    f'{ingredient.rate}x {ingredient.item.name} /m'))
+                                    f'{ing_rate}x {ingredient.item.name} /m'))
                         self.icovwConsumes.set_model(consumes_store)
                         self.icovwConsumes.set_pixbuf_column(0)
                         self.icovwConsumes.set_text_column(1)
@@ -408,7 +415,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 if self.cboResourceNodePurity not in skip:
                     purity_index = self.purities.index(c.purity)
                     self.cboResourceNodePurity.set_active(purity_index)
-                
+
                 # Set what we can see
                 self.boxResourceNodeRecipe.set_visible(True)
                 self.boxISNRecipe.set_visible(False)
@@ -461,7 +468,6 @@ class MainWindow(Gtk.ApplicationWindow):
                 icovw = Gtk.IconView()
                 store = Gtk.ListStore(Pixbuf, str)
                 for ingredient in conn.ingredients:
-                    logging.debug(f'Changing output rate to {ingredient.rate}')
                     store.append((
                         self.pixelBuffers['items'][ingredient.item.programmatic_name],
                         f'{ingredient.rate}x {ingredient.item.name} /m'
@@ -1584,7 +1590,7 @@ class MainWindow(Gtk.ApplicationWindow):
             and isinstance(self.blueprint.selected, ResourceNode):
                 purity_name = cbo.get_active_id()
                 try:
-                    purity = [ purity for name, purity in Purity.__members__.items() 
+                    purity = [ purity for name, purity in Purity.__members__.items()
                         if name == purity_name ][0]
                     logging.debug(f'Setting purity to {purity}')
                     self.blueprint.selected.purity = purity
