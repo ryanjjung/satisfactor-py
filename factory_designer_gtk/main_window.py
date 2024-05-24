@@ -24,7 +24,10 @@ from satisfactory.buildings import (
 )
 from satisfactory.conveyances import get_all as get_all_conveyances
 from satisfactory.factories import Factory
-from satisfactory.items import get_all as get_all_items
+from satisfactory.items import (
+    get_all as get_all_items,
+    IronOre,
+)
 from satisfactory.recipes import get_all as get_all_recipes
 from satisfactory.storages import get_all as get_all_storages
 from factory_designer_gtk.dialogs import ConfirmOrCancelWindow
@@ -1365,6 +1368,7 @@ class MainWindow(Gtk.ApplicationWindow):
             print(f'[DEBUG] Couldn\'t open the blueprint: {ex}')
 
     # + "Save" button signal handlers
+
     def __btnSaveFactory_clicked(self, btn):
         '''
         The user has clicked the "Save" button
@@ -1415,6 +1419,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 print(f'[DEBUG] Could not save the blueprint: {ex}')
 
     # + Simulate/Purge button signal handlers
+
     def __btnSimulate_clicked(self, btn):
         self.blueprint.factory.purge()
         self.blueprint.factory.simulate()
@@ -1443,6 +1448,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.__entryFactoryName_changed(buffer.get_text())
 
     # + "Tier" combo box signal handlers
+
     def __cboTier_changed(self, cbo):
         '''
         The "Tier" combo box has had its value changed. We need to populate the "Upgrade" combo box
@@ -1453,12 +1459,14 @@ class MainWindow(Gtk.ApplicationWindow):
         self.update_buildings_list()
 
     # + "Upgrade" combo box signal handlers
+
     def __cboUpgrade_changed(self, cbo):
-        self.blueprint.upgrade = self.cboUpgrade.get_active() + 1
+        self.blueprint.factory.availability.upgrade = self.cboUpgrade.get_active() + 1
         self.unsaved_changes = True
         self.update_window()
 
     # + Building option filters signal handlers
+
     def __chkAvailability_toggled(self, chk):
         self.filters['availability'] = chk.get_active()
         self.update_window()
@@ -1492,7 +1500,11 @@ class MainWindow(Gtk.ApplicationWindow):
                 selected = selected[0].get_indices()[0]
                 # Create a default instance of that kind of component and set it to be added to the
                 # blueprint when the user clicks somewhere there.
-                self.factoryDesigner.blueprint.new_component = self.buildings[selected]()
+                if self.buildings[selected] == ResourceNode:
+                    self.factoryDesigner.blueprint.new_component = self.buildings[selected](
+                        item=IronOre)
+                else:
+                    self.factoryDesigner.blueprint.new_component = self.buildings[selected]()
                 self.factoryDesigner.mode = InteractionMode.BUILD_MODE
         self.update_window()
 

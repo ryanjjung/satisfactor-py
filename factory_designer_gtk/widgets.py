@@ -271,6 +271,7 @@ class FactoryDesignerWidget(Gtk.Widget):
                 y - (geometry.sizes['background_y'] / 2)
             )
             self.blueprint.add_component(self.blueprint.new_component, placement_point)
+            self.blueprint.selected = self.blueprint.new_component
             self.mode = InteractionMode.NORMAL
         # In other modes, figure out what just got clicked and act accordingly
         else:
