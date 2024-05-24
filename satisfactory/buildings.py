@@ -5,6 +5,7 @@ from satisfactory.base import (
     BuildingType,
     ComponentError,
     ComponentErrorLevel,
+    Conveyance,
     ConveyanceType,
     Dimension,
     Ingredient,
@@ -688,9 +689,19 @@ class Miner(Building):
         self.outputs[0].ingredients = [self.recipe.produces[0]]
 
         # Apply resource node purity and clock rate
-        self.outputs[0].ingredients[0].rate = \
+        output_rate = \
             self.outputs[0].ingredients[0].rate * self.inputs[0].source.attached_to.purity.value \
                 * self.clock_rate
+        self.outputs[0].ingredients[0].rate = output_rate
+
+        if self.outputs[0].target and isinstance(self.outputs[0].target.attached_to, Conveyance):
+            conveyance_rate = self.outputs[0].target.attached_to.rate
+            if output_rate > conveyance_rate:
+                self.add_error(ComponentError(
+                    ComponentErrorLevel.WARNING,
+                    f'The output rate is {output_rate}/min, but the connected conveyance can ' \
+                        f'only carry {conveyance_rate}.'))
+
 
 
 class MinerMk1(Miner):

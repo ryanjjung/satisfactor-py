@@ -14,10 +14,14 @@ from satisfactory.base import (
     BuildingType,
     Conveyance,
     InfiniteSupplyNode,
+    Purity,
     ResourceNode,
     Storage,
 )
-from satisfactory.buildings import get_all as get_all_buildings
+from satisfactory.buildings import (
+    get_all as get_all_buildings,
+    Miner
+)
 from satisfactory.conveyances import get_all as get_all_conveyances
 from satisfactory.factories import Factory
 from satisfactory.items import get_all as get_all_items
@@ -344,9 +348,13 @@ class MainWindow(Gtk.ApplicationWindow):
                                     f'{ingredient.rate}x {ingredient.item.name} /m'))
                         if c.recipe.produces:
                             for ingredient in c.recipe.produces:
+                                if isinstance(c, Miner):
+                                    ing_rate = ingredient.rate * c.inputs[0].source.attached_to.purity.value
+                                else:
+                                    ing_rate = ingredient.rate
                                 produces_store.append((
                                     self.pixelBuffers['items'][ingredient.item.programmatic_name],
-                                    f'{ingredient.rate}x {ingredient.item.name} /m'))
+                                    f'{ing_rate}x {ingredient.item.name} /m'))
                         self.icovwConsumes.set_model(consumes_store)
                         self.icovwConsumes.set_pixbuf_column(0)
                         self.icovwConsumes.set_text_column(1)
@@ -358,6 +366,7 @@ class MainWindow(Gtk.ApplicationWindow):
                         self.boxSelectedRecipe.set_visible(False)
 
                     # Ensure it's visible
+                    self.boxResourceNodeRecipe.set_visible(False)
                     self.boxComponentSelectedRecipe.set_visible(True)
                     self.boxISNRecipe.set_visible(False)
             elif isinstance(c, InfiniteSupplyNode):
@@ -394,11 +403,29 @@ class MainWindow(Gtk.ApplicationWindow):
                 # Make sure the right widgets are presented
                 self.boxISNRecipe.set_visible(True)
                 self.boxComponentSelectedRecipe.set_visible(False)
+                self.boxResourceNodeRecipe.set_visible(False)
+                self.boxSelectedRecipe.set_visible(False)
+            elif isinstance(c, ResourceNode):
+                # Set item dropdown by index
+                if self.cboResourceNodeItem not in skip:
+                    node_item_index = self.node_items.index(c.item.programmatic_name)
+                    self.cboResourceNodeItem.set_active(node_item_index)
+
+                # Set purity dropdown by index
+                if self.cboResourceNodePurity not in skip:
+                    purity_index = self.purities.index(c.purity)
+                    self.cboResourceNodePurity.set_active(purity_index)
+
+                # Set what we can see
+                self.boxResourceNodeRecipe.set_visible(True)
+                self.boxISNRecipe.set_visible(False)
+                self.boxComponentSelectedRecipe.set_visible(False)
                 self.boxSelectedRecipe.set_visible(False)
             else:
                 # Hide all of these widgets
                 self.boxISNRecipe.set_visible(False)
                 self.boxComponentSelectedRecipe.set_visible(False)
+                self.boxResourceNodeRecipe.set_visible(False)
                 self.boxSelectedRecipe.set_visible(False)
 
             # TODO: Update recipe consumes/produces
@@ -781,7 +808,32 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentSelectedRecipe.append(self.cboComponentSelectedRecipe)
         self.boxComponentDetails.append(self.boxComponentSelectedRecipe)
 
-        # Build a set of controls to display when InfiniteSupplyNodes are selected.
+        # Build a set of controls to display when ResourceNodes are selected
+        self.boxResourceNodeRecipe = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxResourceNodeRecipe.set_spacing(5)
+        self.boxResourceNodeRecipe.set_halign(Gtk.Align.CENTER)
+        self.lblResourceNodeItem = Gtk.Label(label='Item:')
+        self.cboResourceNodeItem = Gtk.ComboBoxText()
+
+        for item in self.node_items:
+            self.cboResourceNodeItem.append(item, item)
+
+        # Pack the item widgets
+        self.boxResourceNodeRecipe.append(self.lblResourceNodeItem)
+        self.boxResourceNodeRecipe.append(self.cboResourceNodeItem)
+
+        # Populate a combo box with node purity levels
+        self.lblResourceNodePurity = Gtk.Label(label='Purity:')
+        self.cboResourceNodePurity = Gtk.ComboBoxText()
+        for purity in Purity.__members__:
+            self.cboResourceNodePurity.append(purity, purity.title())
+
+        # Pack the resource node widgets
+        self.boxResourceNodeRecipe.append(self.lblResourceNodePurity)
+        self.boxResourceNodeRecipe.append(self.cboResourceNodePurity)
+        self.boxComponentDetails.append(self.boxResourceNodeRecipe)
+
+        # Build a set of controls to display when InfiniteSupplyNodes are selected
         self.boxISNRecipe = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.boxISNRecipe.set_spacing(5)
         self.boxISNRecipe.set_halign(Gtk.Align.CENTER)
@@ -833,6 +885,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxSelectedRecipe.append(self.boxConsumes)
         self.boxSelectedRecipe.append(self.boxProduces)
         self.boxComponentDetails.append(self.boxSelectedRecipe)
+
+        # Add a visual separator
+        self.sepBeforeConnections = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentDetails.append(self.sepBeforeConnections)
 
         # Connections
         self.boxComponentConnections = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -1065,6 +1121,18 @@ class MainWindow(Gtk.ApplicationWindow):
         Builds reusable items which are unique to this application
         '''
 
+        # Populate the special resource node settings widgets and show them.
+        # Those items should be ones that can be produced by miner recipes.
+        miner_recipes = [ (recipe_name, recipe) for recipe_name, recipe in get_all_recipes()
+            if recipe.building_type == BuildingType.MINER ]
+        node_items = []
+        for _, recipe in miner_recipes:
+            node_items.extend([ ingredient.item.programmatic_name \
+                for ingredient in recipe.produces])
+        self.node_items = sorted(set(node_items))
+
+        self.purities = [ purity[1] for purity in Purity.__members__.items() ]
+
         self.satFileFilter = Gtk.FileFilter()
         self.satFileFilter.set_name('Satisfactory Blueprints (*.sat)')
         self.satFileFilter.add_pattern('*.sat')
@@ -1077,6 +1145,9 @@ class MainWindow(Gtk.ApplicationWindow):
         Connects signals for the widgets on this window. This is done as a separate task after the
         window has been fully constructed. This prevents signals from being emitted before the
         window is functional.
+
+        Each signal is registered to the global windowSignals list so that the signals can be
+        suppressed during widget updates, preventing infinite signal loops.
         '''
 
         # Signals for widgets in the top bar containing factory-level options
@@ -1173,6 +1244,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self.spinISNRecipeRate.connect_after(
                 'value-changed',
                 self.__spinISNRecipeRate_value_changed)))
+        self.windowSignals.append((
+            self.cboResourceNodeItem,
+            self.cboResourceNodeItem.connect_after('changed', self.__cboResourceNodeItem_changed)))
+        self.windowSignals.append((
+            self.cboResourceNodePurity,
+            self.cboResourceNodePurity.connect_after('changed', self.__cboResourceNodePurity_changed)))
         self.windowSignals.append((
             self.cboISNRecipeItem,
             self.cboISNRecipeItem.connect_after(
@@ -1492,6 +1569,33 @@ class MainWindow(Gtk.ApplicationWindow):
                     self.blueprint.selected.item = item
                     self.unsaved_changes = True
                     self.update_window(skip=[self.cboISNRecipeItem])
+                except IndexError:
+                    logging.debug(f'No item called {item_name} was found')
+
+    def __cboResourceNodeItem_changed(self, cbo):
+        if self.blueprint and self.blueprint.selected \
+            and isinstance(self.blueprint.selected, ResourceNode):
+                item_name = cbo.get_active_id()
+                try:
+                    item = [ item for name, item in get_all_items() \
+                        if name == item_name][0]
+                    self.blueprint.selected.item = item
+                    self.unsaved_changes = True
+                    self.update_window(skip=[self.cboResourceNodeItem])
+                except IndexError:
+                    logging.debug(f'No item called {item_name} was found')
+
+    def __cboResourceNodePurity_changed(self, cbo):
+        if self.blueprint and self.blueprint.selected \
+            and isinstance(self.blueprint.selected, ResourceNode):
+                purity_name = cbo.get_active_id()
+                try:
+                    purity = [ purity for name, purity in Purity.__members__.items()
+                        if name == purity_name ][0]
+                    logging.debug(f'Setting purity to {purity}')
+                    self.blueprint.selected.purity = purity
+                    self.unsaved_changes = True
+                    self.update_window(skip=[self.cboResourceNodePurity])
                 except IndexError:
                     logging.debug(f'No item called {item_name} was found')
 
