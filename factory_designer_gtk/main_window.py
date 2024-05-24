@@ -431,20 +431,22 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.boxResourceNodeRecipe.set_visible(False)
                 self.boxSelectedRecipe.set_visible(False)
 
-            # TODO: Update recipe consumes/produces
-
             # Update the build cost of the component
             recipe_store = Gtk.ListStore(Pixbuf, str)
 
             # Prepare to set up current connection data by clearing out the old data
-            for icovw in self.icovwInputs:
-                self.boxComponentInputs.remove(icovw)
-            for icovw in self.icovwOutputs:
-                self.boxComponentOutputs.remove(icovw)
+            for i in range(len(self.icovwInputs)):
+                self.boxComponentInputs.remove(self.icovwInputs[i])
+                self.boxComponentInputs.remove(self.btnConnectInputs[i])
+            for i in range(len(self.icovwOutputs)):
+                self.boxComponentOutputs.remove(self.icovwOutputs[i])
+                self.boxComponentOutputs.remove(self.btnConnectOutputs[i])
 
             # Update inputs
             self.boxComponentInputs.remove(self.lblNoInputs)
             self.icovwInputs = []  # Clear out the list of IconViews showing the inputs
+            self.btnConnectInputs = []
+            i = 0
             for conn in c.inputs:  # Create one IconView per input and populate them with recipes
                 icovw = Gtk.IconView()
                 store = Gtk.ListStore(Pixbuf, str)
@@ -458,15 +460,23 @@ class MainWindow(Gtk.ApplicationWindow):
                 icovw.set_text_column(1)
                 self.icovwInputs.append(icovw)
 
-            # Show either the IconView or a "None" label
+                button = TaggableButton(tags={'input_index': i})
+                button.set_label('Connect...')
+                button.connect('clicked', self.__btnConnectInput_clicked)
+                self.btnConnectInputs.append(button)
+
+            # Show either the IconViews or a "None" label
             if len(self.icovwInputs) == 0:
                 self.boxComponentInputs.append(self.lblNoInputs)
-            for icovw in self.icovwInputs:
-                self.boxComponentInputs.append(icovw)
+            for i in range(len(self.icovwInputs)):
+                self.boxComponentInputs.append(self.icovwInputs[i])
+                self.boxComponentInputs.append(self.btnConnectInputs[i])
 
             # Update the outputs in the same way
             self.boxComponentOutputs.remove(self.lblOutputs)
             self.icovwOutputs = []
+            self.btnConnectOutputs = []
+            i = 0
             for conn in c.outputs:
                 icovw = Gtk.IconView()
                 store = Gtk.ListStore(Pixbuf, str)
@@ -480,11 +490,18 @@ class MainWindow(Gtk.ApplicationWindow):
                 icovw.set_text_column(1)
                 self.icovwOutputs.append(icovw)
 
+                button = TaggableButton(tags={'output_index': i})
+                button.set_label('Connect...')
+                button.connect('clicked', self.__btnConnectOutput_clicked)
+                self.btnConnectOutputs.append(button)
+                i += 1
+
             # Show either the IconView or a "None" label
             if len(self.icovwOutputs) > 0:
                 self.boxComponentOutputs.append(self.lblOutputs)
-            for icovw in self.icovwOutputs:
-                self.boxComponentOutputs.append(icovw)
+            for i in range(len(self.icovwOutputs)):
+                self.boxComponentOutputs.append(self.icovwOutputs[i])
+                self.boxComponentOutputs.append(self.btnConnectOutputs[i])
 
             # Get the recipe to build the component so we can update the build cost
             try:
@@ -879,11 +896,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxProduces.append(self.lblProduces)
         self.boxProduces.append(self.icovwProduces)
 
-        # Labels for when there is no input or output
-        self.lblNoInputs = Gtk.Label(label='None')
-        self.lblNoOutputs = Gtk.Label(label='None')
-        self.lblNoInputs.set_margin_top(10)
-
         # Pack the outer box
         self.boxSelectedRecipe.append(self.boxConsumes)
         self.boxSelectedRecipe.append(self.boxProduces)
@@ -905,8 +917,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.lblInputs = Gtk.Label()
         self.lblInputs.set_markup('<b>Inputs</b>')
         self.icovwInputs = [Gtk.IconView()]
+        self.btnConnectInputs = [Gtk.Button()]
         self.boxComponentInputs.append(self.lblInputs)
         self.boxComponentInputs.append(self.icovwInputs[0])
+        self.boxComponentInputs.append(self.btnConnectInputs[0])
 
         self.boxComponentOutputs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.boxComponentOutputs.set_halign(Gtk.Align.FILL)
@@ -914,8 +928,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.lblOutputs = Gtk.Label()
         self.lblOutputs.set_markup('<b>Outputs</b>')
         self.icovwOutputs = [Gtk.IconView()]
+        self.btnConnectOutputs = [Gtk.Button()]
         self.boxComponentOutputs.append(self.lblOutputs)
         self.boxComponentOutputs.append(self.icovwOutputs[0])
+        self.boxComponentOutputs.append(self.btnConnectOutputs[0])
 
         # Labels for when there is no input or output
         self.lblNoInputs = Gtk.Label(label='None')
@@ -1610,6 +1626,12 @@ class MainWindow(Gtk.ApplicationWindow):
                     self.update_window(skip=[self.cboResourceNodePurity])
                 except IndexError:
                     logging.debug(f'No item called {item_name} was found')
+
+    def __btnConnectInput_clicked(self, btn):
+        logging.debug(f'Clicked button with tags: {btn.tags}')
+
+    def __btnConnectOutput_clicked(self, btn):
+        pass
 
     # + Component tagging widget signal handlers
 
