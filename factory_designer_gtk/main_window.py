@@ -399,11 +399,17 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.boxResourceNodeRecipe.set_visible(False)
                 self.boxSelectedRecipe.set_visible(False)
             elif isinstance(c, ResourceNode):
-                logging.debug(f'Item {c.item}; Node items: {self.node_items}')
-                node_item_index = self.node_items.index(c.item.programmatic_name)
-                self.cboResourceNodeItem.set_active(node_item_index)
-                purity_index = self.purities.index(c.purity)
-                self.cboResourceNodePurity.set_active(purity_index)
+                # Set item dropdown by index
+                if self.cboResourceNodeItem not in skip:
+                    node_item_index = self.node_items.index(c.item.programmatic_name)
+                    self.cboResourceNodeItem.set_active(node_item_index)
+
+                # Set purity dropdown by index
+                if self.cboResourceNodePurity not in skip:
+                    purity_index = self.purities.index(c.purity)
+                    self.cboResourceNodePurity.set_active(purity_index)
+                
+                # Set what we can see
                 self.boxResourceNodeRecipe.set_visible(True)
                 self.boxISNRecipe.set_visible(False)
                 self.boxComponentSelectedRecipe.set_visible(False)
@@ -1132,6 +1138,9 @@ class MainWindow(Gtk.ApplicationWindow):
         Connects signals for the widgets on this window. This is done as a separate task after the
         window has been fully constructed. This prevents signals from being emitted before the
         window is functional.
+
+        Each signal is registered to the global windowSignals list so that the signals can be
+        suppressed during widget updates, preventing infinite signal loops.
         '''
 
         # Signals for widgets in the top bar containing factory-level options
@@ -1228,6 +1237,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self.spinISNRecipeRate.connect_after(
                 'value-changed',
                 self.__spinISNRecipeRate_value_changed)))
+        self.windowSignals.append((
+            self.cboResourceNodeItem,
+            self.cboResourceNodeItem.connect_after('changed', self.__cboResourceNodeItem_changed)))
+        self.windowSignals.append((
+            self.cboResourceNodePurity,
+            self.cboResourceNodePurity.connect_after('changed', self.__cboResourceNodePurity_changed)))
         self.windowSignals.append((
             self.cboISNRecipeItem,
             self.cboISNRecipeItem.connect_after(
@@ -1547,6 +1562,33 @@ class MainWindow(Gtk.ApplicationWindow):
                     self.blueprint.selected.item = item
                     self.unsaved_changes = True
                     self.update_window(skip=[self.cboISNRecipeItem])
+                except IndexError:
+                    logging.debug(f'No item called {item_name} was found')
+
+    def __cboResourceNodeItem_changed(self, cbo):
+        if self.blueprint and self.blueprint.selected \
+            and isinstance(self.blueprint.selected, ResourceNode):
+                item_name = cbo.get_active_id()
+                try:
+                    item = [ item for name, item in get_all_items() \
+                        if name == item_name][0]
+                    self.blueprint.selected.item = item
+                    self.unsaved_changes = True
+                    self.update_window(skip=[self.cboResourceNodeItem])
+                except IndexError:
+                    logging.debug(f'No item called {item_name} was found')
+
+    def __cboResourceNodePurity_changed(self, cbo):
+        if self.blueprint and self.blueprint.selected \
+            and isinstance(self.blueprint.selected, ResourceNode):
+                purity_name = cbo.get_active_id()
+                try:
+                    purity = [ purity for purity_name, purity in Purity.__members__.items() 
+                        if purity_name == purity_name ][0]
+                    logging.debug(f'Changing purity to {purity}')
+                    self.blueprint.selected.purity = purity
+                    self.unsaved_changes = True
+                    self.update_window(skip=[self.cboResourceNodePurity])
                 except IndexError:
                     logging.debug(f'No item called {item_name} was found')
 

@@ -309,7 +309,7 @@ class Blueprint(object):
 
         # Load up the component icon texture
         icon_key = None
-        if isinstance(component, InfiniteSupplyNode):
+        if type(component) in [InfiniteSupplyNode, ResourceNode]:
             icon_key = component.item.programmatic_name
         else:
             icon_key = component.__class__.__name__
