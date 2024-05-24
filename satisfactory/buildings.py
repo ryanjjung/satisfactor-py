@@ -30,7 +30,7 @@ def get_all() -> list[Building]:
     '''
 
     global ALL
-    unbuildable = [Miner, NonProcessingBuilding]
+    unbuildable = [Conveyance, Miner, NonProcessingBuilding]
     if ALL is None:
         import inspect
         import sys
@@ -701,7 +701,6 @@ class Miner(Building):
                     ComponentErrorLevel.WARNING,
                     f'The output rate is {output_rate}/min, but the connected conveyance can ' \
                         f'only carry {conveyance_rate}.'))
-
 
 
 class MinerMk1(Miner):
