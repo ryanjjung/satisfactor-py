@@ -220,7 +220,12 @@ class Base(object):
 
     @property
     def programmatic_name(self) -> str:
-        return self.name.title().replace(' ', '')
+        illegal_chars = ' .'
+        name = self.name.title()
+        for char in illegal_chars:
+            name = name.replace(char, '')
+        return name
+
 
     @property
     def wiki_url(self) -> str:

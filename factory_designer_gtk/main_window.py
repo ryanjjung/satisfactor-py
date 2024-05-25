@@ -30,8 +30,13 @@ from satisfactory.items import (
 )
 from satisfactory.recipes import get_all as get_all_recipes
 from satisfactory.storages import get_all as get_all_storages
-from factory_designer_gtk.dialogs import ConfirmOrCancelWindow
+from factory_designer_gtk.dialogs import (
+    ConfirmOrCancelWindow,
+    ConnectionManagementWindow,
+    ConnectionManagementWindowResponse,
+)
 from factory_designer_gtk.drawing import Blueprint
+from factory_designer_gtk.geometry import Coordinate2D
 from factory_designer_gtk.widgets import (
     FactoryDesignerWidget,
     InteractionMode,
@@ -330,16 +335,16 @@ class MainWindow(Gtk.ApplicationWindow):
                         self.cboComponentSelectedRecipe.remove_all()
                         for recipe_name, recipe in compatible_recipes:
                             self.cboComponentSelectedRecipe.append(recipe_name, recipe.name)
-                        current_recipe = c.recipe.programmatic_name
-
-                        # Determine index of current recipe and set the recipe selector to that
-                        current_recipe_id = None
-                        for i in range(len(compatible_recipes)):
-                            if compatible_recipes[i][0] == current_recipe:
-                                current_recipe_id = i
-                                break
-                        if current_recipe is not None:
-                            self.cboComponentSelectedRecipe.set_active(current_recipe_id)
+                        if c.recipe:
+                            current_recipe = c.recipe.programmatic_name
+                            # Determine index of current recipe and set the recipe selector to that
+                            current_recipe_id = None
+                            for i in range(len(compatible_recipes)):
+                                if compatible_recipes[i][0] == current_recipe:
+                                    current_recipe_id = i
+                                    break
+                            if current_recipe is not None:
+                                self.cboComponentSelectedRecipe.set_active(current_recipe_id)
 
                     if c.recipe:
                         consumes_store = Gtk.ListStore(Pixbuf, str)
@@ -352,7 +357,10 @@ class MainWindow(Gtk.ApplicationWindow):
                         if c.recipe.produces:
                             for ingredient in c.recipe.produces:
                                 if isinstance(c, Miner):
-                                    ing_rate = ingredient.rate * c.inputs[0].source.attached_to.purity.value
+                                    if c.inputs[0].source and c.inputs[0].source.attached_to:
+                                        ing_rate = ingredient.rate * c.inputs[0].source.attached_to.purity.value
+                                    else:
+                                        ing_rate = ingredient.rate
                                 else:
                                     ing_rate = ingredient.rate
                                 produces_store.append((
@@ -446,8 +454,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.boxComponentInputs.remove(self.lblNoInputs)
             self.icovwInputs = []  # Clear out the list of IconViews showing the inputs
             self.btnConnectInputs = []
-            i = 0
-            for conn in c.inputs:  # Create one IconView per input and populate them with recipes
+            for conn in c.inputs:  # Create one IconView and Button per input
                 icovw = Gtk.IconView()
                 store = Gtk.ListStore(Pixbuf, str)
                 for ingredient in conn.ingredients:
@@ -460,9 +467,11 @@ class MainWindow(Gtk.ApplicationWindow):
                 icovw.set_text_column(1)
                 self.icovwInputs.append(icovw)
 
-                button = TaggableButton(tags={'input_index': i})
+                button = TaggableButton(tags={
+                    'component': c,
+                    'connection': conn})
                 button.set_label('Connect...')
-                button.connect('clicked', self.__btnConnectInput_clicked)
+                button.connect('clicked', self.__btnConnection_clicked)
                 self.btnConnectInputs.append(button)
 
             # Show either the IconViews or a "None" label
@@ -476,7 +485,6 @@ class MainWindow(Gtk.ApplicationWindow):
             self.boxComponentOutputs.remove(self.lblOutputs)
             self.icovwOutputs = []
             self.btnConnectOutputs = []
-            i = 0
             for conn in c.outputs:
                 icovw = Gtk.IconView()
                 store = Gtk.ListStore(Pixbuf, str)
@@ -490,11 +498,12 @@ class MainWindow(Gtk.ApplicationWindow):
                 icovw.set_text_column(1)
                 self.icovwOutputs.append(icovw)
 
-                button = TaggableButton(tags={'output_index': i})
+                button = TaggableButton(tags={
+                    'component': c,
+                    'connection': conn})
                 button.set_label('Connect...')
-                button.connect('clicked', self.__btnConnectOutput_clicked)
+                button.connect('clicked', self.__btnConnection_clicked)
                 self.btnConnectOutputs.append(button)
-                i += 1
 
             # Show either the IconView or a "None" label
             if len(self.icovwOutputs) > 0:
@@ -1620,18 +1629,107 @@ class MainWindow(Gtk.ApplicationWindow):
                 try:
                     purity = [ purity for name, purity in Purity.__members__.items()
                         if name == purity_name ][0]
-                    logging.debug(f'Setting purity to {purity}')
                     self.blueprint.selected.purity = purity
                     self.unsaved_changes = True
                     self.update_window(skip=[self.cboResourceNodePurity])
                 except IndexError:
                     logging.debug(f'No item called {item_name} was found')
 
-    def __btnConnectInput_clicked(self, btn):
-        logging.debug(f'Clicked button with tags: {btn.tags}')
+    def __btnConnection_clicked(self, btn):
+        wdwConnection = ConnectionManagementWindow(
+            self,
+            btn.tags['component'],
+            btn.tags['connection'],
+            self.__wdwConnection_closed)
 
-    def __btnConnectOutput_clicked(self, btn):
-        pass
+    def __wdwConnection_closed(self, response: ConnectionManagementWindowResponse):
+        # If a change is to be made, dig up the things the response indicates
+        if response.changed:
+            source_component = None
+            source_conn = None
+            target_component = None
+            target_conn = None
+            
+            # Get the source component and connection objects
+            if None not in [response.source_component_id, response.source_connection_id]:
+                source_component = self.blueprint.factory.get_component_by_id(
+                    response.source_component_id)
+                source_connections = source_component.outputs \
+                    if response.connect_output \
+                    else source_component.inputs
+                source_conn = source_connections[response.source_connection_id]
+        
+            # Get the target component and connection objects
+            if None not in [response.target_component_id, response.target_connection_id]:
+                target_component = self.blueprint.factory.get_component_by_id(
+                    response.target_component_id)
+                target_connections = target_component.inputs \
+                    if response.connect_output \
+                    else target_component.outputs
+                target_conn = target_connections[response.target_connection_id]
+
+            # Determine what the source connection is actually connected to.
+            real_target_conn = None
+            if response.connect_output:
+                real_target_conn = source_conn.target
+            else:
+                real_target_conn = source_conn.source
+
+            # If nothing has changed, then don't do anything.
+            if real_target_conn == target_conn \
+                and response.conveyance_class == type(source_conn.target.attached_to):
+                    return
+            
+            # If there's an existing connection, we have to detect it and get rid of it
+            if real_target_conn:
+                old_conveyance = None
+                if not issubclass(source_component.__class__, Miner) \
+                    and not isinstance(source_component, ResourceNode):
+                        if response.connect_output:
+                            old_conveyance = source_conn.target.attached_to
+                        else:
+                            old_conveyance = source_conn.source.attached_to
+            
+                # Clear it out of everywhere we store info about it.
+                logging.debug(f'old conveyance: {old_conveyance}')
+                if old_conveyance:
+                    del(self.blueprint.geometry[old_conveyance.id])
+                    self.blueprint.factory.remove(old_conveyance.id)
+
+                # Disconnect the remote side first or else we can't get to it later to fix it.
+                logging.debug(f'{[(attr, getattr(response, attr)) for attr in [attr for attr in dir(response) if not attr.startswith('_')]]}')
+                if response.connect_output:
+                    if source_conn.target:
+                        source_conn.target.source = None
+                        source_conn.target = None
+                else:
+                    if source_conn.source:
+                        source_conn.source.target = None
+                        source_conn.source = None
+
+            # If the response indicates a connection to be made, create that connection
+            if source_conn and target_conn:
+                # If the connection is between a miner and resource node, connect them directly
+                if issubclass(source_component.__class__, Miner) and \
+                    isinstance(target_component, ResourceNode):
+                        source_conn.connect(target_conn)
+                elif isinstance(source_component, ResourceNode) and \
+                    issubclass(target_component.__class__, Miner):
+                        source_conn.connect(target_conn)
+                # If the connection is between any other kind of component, connect them using a conveyance
+                else:
+                    new_conveyance = response.conveyance_class()
+                    if response.connect_output:
+                        source_conn.connect(new_conveyance.inputs[0])
+                        new_conveyance.outputs[0].connect(target_conn)
+                    else:
+                        source_conn.connect(new_conveyance.outputs[0])
+                        new_conveyance.inputs[0].connect(target_conn)
+                    self.blueprint.add_component(new_conveyance, Coordinate2D())
+
+        # Make sure the changes get drawn
+        self.blueprint.invalidate_geometry()
+        self.factoryDesigner.queue_draw()
 
     # + Component tagging widget signal handlers
 
