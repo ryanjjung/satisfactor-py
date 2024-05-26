@@ -243,12 +243,6 @@ class MainWindow(Gtk.ApplicationWindow):
             self.icovwBuildings.set_pixbuf_column(0)
             self.icovwBuildings.set_text_column(1)
 
-            # Make sure the Build button says the right thing
-            if self.factoryDesigner.mode == InteractionMode.BUILD_MODE:
-                self.btnBuild.set_label('Cancel')
-            else:
-                self.btnBuild.set_label('Build')
-
     def update_component_context(self,
         skip: list = []
     ):
@@ -750,8 +744,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.btnBuild = Gtk.Button(label='Build')
 
         # Pack the box
-        self.boxBuildings.append(self.scrollBuildings)
         self.boxBuildings.append(self.btnBuild)
+        self.boxBuildings.append(self.scrollBuildings)
 
         # Compile panel contents
         self.paneBuildingsOptions.set_start_child(self.scrollBuildingFilters)
@@ -1517,20 +1511,26 @@ class MainWindow(Gtk.ApplicationWindow):
             self.update_buildings_list()
 
     def __btnBuild_clicked(self, btn):
-        if self.factoryDesigner.mode == InteractionMode.BUILD_MODE:
-            self.factoryDesigner.mode = InteractionMode.NORMAL
-        else:
-            selected = self.icovwBuildings.get_selected_items()
-            if len(selected) > 0:
-                selected = selected[0].get_indices()[0]
-                # Create a default instance of that kind of component and set it to be added to the
-                # blueprint when the user clicks somewhere there.
-                if self.buildings[selected] == ResourceNode:
-                    self.factoryDesigner.blueprint.new_component = self.buildings[selected](
-                        item=IronOre)
-                else:
-                    self.factoryDesigner.blueprint.new_component = self.buildings[selected]()
-                self.factoryDesigner.mode = InteractionMode.BUILD_MODE
+        center_x = self.blueprint.viewport.region.left + (self.blueprint.viewport.region.width / 2)
+        center_x /= self.blueprint.viewport.scale
+        center_y = self.blueprint.viewport.region.top + (self.blueprint.viewport.region.height / 2)
+        center_y /= self.blueprint.viewport.scale
+
+        # Get the only selected item, which should be a class for the building, or do nothing
+        selected = self.icovwBuildings.get_selected_items()
+        if len(selected) > 0:
+            selected = selected[0].get_indices()[0]
+
+            # Create a default instance of that kind of component and set it to be added to the
+            # blueprint when the user clicks somewhere there.
+            if self.buildings[selected] == ResourceNode:
+                new_component = self.buildings[selected](
+                    item=IronOre)
+            else:
+                new_component = self.buildings[selected]()
+            self.blueprint.add_component(new_component, self.blueprint.viewport.region.location)
+            self.blueprint.selected = new_component
+
         self.update_window()
 
     # + Component detail widget signal handlers
@@ -1564,7 +1564,10 @@ class MainWindow(Gtk.ApplicationWindow):
             self.blueprint.selected.constructed = chk.get_active()
             if not isinstance(self.blueprint.selected, Conveyance):
                 geo = self.blueprint.geometry.get(self.blueprint.selected.id)
-                geo._ComponentGeometry__calculate_badges()
+                geo.calculate(
+                    scale=self.blueprint.viewport.scale,
+                    translate=self.blueprint.viewport.region.location)
+                # geo._ComponentGeometry__calculate_badges()
             self.unsaved_changes = True
             self.update_window()
 
@@ -1573,7 +1576,10 @@ class MainWindow(Gtk.ApplicationWindow):
             self.blueprint.selected.standby = chk.get_active()
             if not isinstance(self.blueprint.selected, Conveyance):
                 geo = self.blueprint.geometry.get(self.blueprint.selected.id)
-                geo._ComponentGeometry__calculate_badges()
+                geo.calculate(
+                    scale=self.blueprint.viewport.scale,
+                    translate=self.blueprint.viewport.region.location)
+                # geo._ComponentGeometry__calculate_badges()
             self.unsaved_changes = True
             self.update_window()
 
@@ -1649,63 +1655,54 @@ class MainWindow(Gtk.ApplicationWindow):
             source_conn = None
             target_component = None
             target_conn = None
-            
+
             # Get the source component and connection objects
-            if None not in [response.source_component_id, response.source_connection_id]:
+            if None not in [response.source_component_id, response.source_connection_index]:
                 source_component = self.blueprint.factory.get_component_by_id(
                     response.source_component_id)
                 source_connections = source_component.outputs \
-                    if response.connect_output \
+                    if response.source_connection_is_output \
                     else source_component.inputs
-                source_conn = source_connections[response.source_connection_id]
-        
+                source_conn = source_connections[response.source_connection_index]
+
             # Get the target component and connection objects
             if None not in [response.target_component_id, response.target_connection_id]:
                 target_component = self.blueprint.factory.get_component_by_id(
                     response.target_component_id)
                 target_connections = target_component.inputs \
-                    if response.connect_output \
+                    if response.source_connection_is_output \
                     else target_component.outputs
                 target_conn = target_connections[response.target_connection_id]
 
-            # Determine what the source connection is actually connected to.
-            real_target_conn = None
-            if response.connect_output:
-                real_target_conn = source_conn.target
-            else:
-                real_target_conn = source_conn.source
+            # Determine if anything about the connection we're being told to establish is different
+            # from what currently exists. Start by figuring out what the source connection is
+            # currently connected to.
+            _, current_target, _ = source_conn.connected_to()
 
-            # If nothing has changed, then don't do anything.
-            if real_target_conn == target_conn \
-                and response.conveyance_class == type(source_conn.target.attached_to):
+            # If the connection hasn't changed...
+            if source_conn.remote == current_target:
+                # If the conveyance type hasn't changed...
+                if response.conveyance_class == type(source_conn.target.attached_to):
+                    # Then don't do anything
                     return
-            
+
             # If there's an existing connection, we have to detect it and get rid of it
-            if real_target_conn:
-                old_conveyance = None
+            old_conveyance = None
+            if current_target is not None:
+                # Disconnect the remote side first or we can't do it later
+                source_conn.remote.disconnect()
+                source_conn.disconnect()
+
+                # If the connection isn't between a miner and resource node, then there is a
+                # conveyance we need to delete before building the new connection.
                 if not issubclass(source_component.__class__, Miner) \
                     and not isinstance(source_component, ResourceNode):
-                        if response.connect_output:
-                            old_conveyance = source_conn.target.attached_to
-                        else:
-                            old_conveyance = source_conn.source.attached_to
-            
-                # Clear it out of everywhere we store info about it.
-                logging.debug(f'old conveyance: {old_conveyance}')
-                if old_conveyance:
+                        old_conveyance = source_conn.remote.attached_to
+
+                # Clear that conveyance out of everywhere we store info about it.
+                if old_conveyance is not None:
                     del(self.blueprint.geometry[old_conveyance.id])
                     self.blueprint.factory.remove(old_conveyance.id)
-
-                # Disconnect the remote side first or else we can't get to it later to fix it.
-                logging.debug(f'{[(attr, getattr(response, attr)) for attr in [attr for attr in dir(response) if not attr.startswith('_')]]}')
-                if response.connect_output:
-                    if source_conn.target:
-                        source_conn.target.source = None
-                        source_conn.target = None
-                else:
-                    if source_conn.source:
-                        source_conn.source.target = None
-                        source_conn.source = None
 
             # If the response indicates a connection to be made, create that connection
             if source_conn and target_conn:

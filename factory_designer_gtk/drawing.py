@@ -193,19 +193,6 @@ class Blueprint(object):
         snapshot.append_color(background_color, rect)
         snapshot.pop()
 
-    def draw_build_overlay(self,
-        widget: Gtk.Widget,
-        snapshot: Gdk.Snapshot,
-    ):
-        if COLORS['overlay_color'] is None:
-            COLORS['overlay_color'] = Gdk.RGBA()
-            COLORS['overlay_color'].parse(self.overlay_color)
-
-        rect = Graphene.Rect().init(0, 0, self.viewport.region.width, self.viewport.region.height)
-        snapshot.push_clip(rect)
-        snapshot.append_color(COLORS['overlay_color'], rect)
-        snapshot.pop()
-
     def draw_component(self,
         widget: Gtk.Widget,
         snapshot: Gdk.Snapshot,
@@ -525,7 +512,6 @@ class Blueprint(object):
     def draw_frame(self,
         widget: Gtk.Widget,
         snapshot: Gtk.Snapshot,
-        draw_overlay: bool = False,
     ):
         '''
         Draws a single frame of the contents of the viewport.
@@ -610,7 +596,7 @@ class Blueprint(object):
                 geometry = self.geometry.get(component.id)
                 label_text = component.name
                 self.draw_conveyance(widget, snapshot, component, geometry, label_text)
-        
+
         # Resource nodes can only connect to miners, but they don't use conveyances to do so. To
         # keep the blueprint visually consistent, we draw a line between a node and its miner the
         # same way we draw conveyances. Here we create a fake conveyance for each resource-node-to-
@@ -631,36 +617,6 @@ class Blueprint(object):
                             target_input=0)
                         node_conv_geo.calculate()
                         self.draw_conveyance(widget, snapshot, None, node_conv_geo, '')
-
-        # If we're in build mode, draw a transparent overlay. If the mouse is over the widget, draw
-        # that component wherever the mouse is.
-        if draw_overlay:
-            self.draw_build_overlay(widget, snapshot)
-            if self.pointer_position:
-                new_component_position = Coordinate2D(
-                    self.pointer_position.x - (sizes['background_x'] / 2),
-                    self.pointer_position.y - (sizes['background_y'] / 2)
-                )
-                new_component_geo = ComponentGeometry(
-                    self.new_component,
-                    new_component_position
-                )
-                new_component_label = PangoTextLabel(
-                    self.new_component.name,
-                    self.label_font_family,
-                    self.label_font_size,
-                    widget,
-                    self.viewport.scale)
-                new_component_geo.calculate(
-                    *new_component_label.layout.get_pixel_size(),
-                    scale=self.viewport.scale,
-                )
-                self.draw_component(
-                    widget,
-                    snapshot,
-                    self.new_component,
-                    new_component_geo,
-                    new_component_label)
 
         # Clear out these flags since we've just generated all this geometry
         if FIRST_RUN: FIRST_RUN = False
