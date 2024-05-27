@@ -103,14 +103,14 @@ class ConnectionManagementWindowResponse(object):
 
         # The index values are sourced from a ComboBoxText which uses strings.
         # We have to convert them back into ints.
-        if source_connection_id is not None:
-            self.source_connection_id = int(source_connection_id)
+        if source_connection_index is not None:
+            self.source_connection_index = int(source_connection_index)
         else:
-            self.source_connection_id = None
-        if target_connection_id is not None:
-            self.target_connection_id = int(target_connection_id)
+            self.source_connection_index = None
+        if target_connection_index is not None:
+            self.target_connection_index = int(target_connection_index)
         else:
-            self.target_connection_id = None
+            self.target_connection_index = None
         self.conveyance_class = conveyance_class
 
 
@@ -131,6 +131,7 @@ class ConnectionManagementWindow(Gtk.Window):
         parent: Gtk.ApplicationWindow,
         component: Component,
         connection: Connection,
+        connection_index: int,
         callback: Callable
     ):
         # Window init
@@ -142,6 +143,7 @@ class ConnectionManagementWindow(Gtk.Window):
         self.callback = callback
         self.component = component
         self.connection = connection
+        self.connection_index = connection_index
         self.factory = parent.blueprint.factory
         self.parent = parent
 
@@ -163,7 +165,6 @@ class ConnectionManagementWindow(Gtk.Window):
         self.__build_layout()
         self.__connect_handlers()
         self.__update_available_connections()
-        self.__block_all_signals()
 
 
         # Determine if any values should be set at init time
@@ -172,17 +173,17 @@ class ConnectionManagementWindow(Gtk.Window):
         active_conveyance = None
         if self.current_connection:
             active_component = self.current_connection['component']
-            active_connection = self.current_connection['connection_index']
+            active_connection = str(self.current_connection['connection_index'])
 
             # The active conveyance is only set if the connection is connected to a conveyance
             closest_comp, closest_conn, closest_conn_id = \
                 self.connection.connected_to()
             if closest_comp is not None and issubclass(closest_comp.__class__, Conveyance):
-                active_conveyance = closest_comp().programmatic_name
+                active_conveyance = closest_comp.__class__.__name__
 
         # Update all the widgets appropriately
         self.__block_all_signals()
-        self.__update_cboComponent(active_id=active_component)
+        self.__update_cboComponent(active_id=active_component.id if active_component else None)
         self.__update_cboConnection(active_id=active_connection)
         self.__update_cboConveyance(active_id=active_conveyance)
         self.__update_btnSave()
@@ -288,8 +289,12 @@ class ConnectionManagementWindow(Gtk.Window):
 
         # Merge the current connection into the available connections
         if self.current_connection is not None:
-            available_connections[self.current_connection['component'].id].append(
-                self.current_connection)
+            if self.current_connection['component'].id in available_connections:
+                available_connections[self.current_connection['component'].id].append(
+                    self.current_connection)
+            else:
+                available_connections[self.current_connection['component'].id] = \
+                    [self.current_connection]
 
         self.available_connections = available_connections
 
@@ -302,7 +307,7 @@ class ConnectionManagementWindow(Gtk.Window):
             self.cboComponent.get_active_id(),
             self.cboConnection.get_active_id()]
 
-        if self.cboConveyance.get_visible():
+        if self.boxConveyance.get_visible():
             selections.append(self.cboConveyance.get_active_id())
 
         # If all selections are made, allow saving
@@ -336,7 +341,7 @@ class ConnectionManagementWindow(Gtk.Window):
         if target_component_id:
             for conn_data in self.available_connections[target_component_id]:
                 index = conn_data['connection_index']
-                self.cboConnection.append(index, index + 1)
+                self.cboConnection.append(str(index), str(index + 1))
         self.cboConnection.set_active_id(active_id)
 
     def __update_cboConveyance(self, active_id: str = None):
@@ -367,7 +372,7 @@ class ConnectionManagementWindow(Gtk.Window):
             # Build contents of cboConveyance and show it
             self.cboConveyance.remove_all()
             for conv in compatible_conveyances:
-                self.cboConveyance.append(conv.programmatic_name, conv.name)
+                self.cboConveyance.append(conv.__class__.__name__, conv.name)
             self.cboConveyance.set_active_id(active_id)
             self.boxConveyance.set_visible(True)
 
@@ -390,15 +395,18 @@ class ConnectionManagementWindow(Gtk.Window):
 
         # Report a change to the assembled values
         conveyance_class = None
-        if self.cboConveyance.get_visible():
-            conveyance_class = getattr(conveyances, self.cboConveyance.get_active_id())
+        if self.boxConveyance.get_visible():
+            active_conveyance = self.cboConveyance.get_active_id()
+            if active_conveyance is not None:
+                conveyance_class = getattr(conveyances, active_conveyance)
 
         self.callback(ConnectionManagementWindowResponse(
             True,
             source_component_id=self.component.id,
-            source_connection_id=self.connection_id,
+            source_connection_index=self.connection_index,
+            source_connection_is_output=self.connection.is_output(),
             target_component_id=self.cboComponent.get_active_id(),
-            target_connection_id=self.cboConnection.get_active_id(),
+            target_connection_index=self.cboConnection.get_active_id(),
             conveyance_class=conveyance_class))
 
     def __cboComponent_changed(self, cbo):
@@ -407,6 +415,7 @@ class ConnectionManagementWindow(Gtk.Window):
         '''
 
         self.__update_cboConnection()
+        self.__update_btnSave()
         # __update_btnSave is called via signal handler as a result of the above call
 
     def __cboConnection_changed(self, cbo):

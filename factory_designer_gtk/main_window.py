@@ -330,7 +330,7 @@ class MainWindow(Gtk.ApplicationWindow):
                         for recipe_name, recipe in compatible_recipes:
                             self.cboComponentSelectedRecipe.append(recipe_name, recipe.name)
                         if c.recipe:
-                            current_recipe = c.recipe.programmatic_name
+                            current_recipe = c.recipe.programmatic_name()
                             # Determine index of current recipe and set the recipe selector to that
                             current_recipe_id = None
                             for i in range(len(compatible_recipes)):
@@ -346,7 +346,7 @@ class MainWindow(Gtk.ApplicationWindow):
                         if c.recipe.consumes:
                             for ingredient in c.recipe.consumes:
                                 consumes_store.append((
-                                    self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                                    self.pixelBuffers['items'][ingredient.item.programmatic_name()],
                                     f'{ingredient.rate}x {ingredient.item.name} /m'))
                         if c.recipe.produces:
                             for ingredient in c.recipe.produces:
@@ -358,7 +358,7 @@ class MainWindow(Gtk.ApplicationWindow):
                                 else:
                                     ing_rate = ingredient.rate
                                 produces_store.append((
-                                    self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                                    self.pixelBuffers['items'][ingredient.item.programmatic_name()],
                                     f'{ing_rate}x {ingredient.item.name} /m'))
                         self.icovwConsumes.set_model(consumes_store)
                         self.icovwConsumes.set_pixbuf_column(0)
@@ -394,7 +394,7 @@ class MainWindow(Gtk.ApplicationWindow):
                     self.cboISNRecipeItem.remove_all()
                     for item_name, item in items:
                         self.cboISNRecipeItem.append(item_name, item.name)
-                    current_item = c.item.programmatic_name
+                    current_item = c.item.programmatic_name()
                     current_item_id = None
 
                     # Set the current item as active
@@ -413,7 +413,7 @@ class MainWindow(Gtk.ApplicationWindow):
             elif isinstance(c, ResourceNode):
                 # Set item dropdown by index
                 if self.cboResourceNodeItem not in skip:
-                    node_item_index = self.node_items.index(c.item.programmatic_name)
+                    node_item_index = self.node_items.index(c.item.programmatic_name())
                     self.cboResourceNodeItem.set_active(node_item_index)
 
                 # Set purity dropdown by index
@@ -448,12 +448,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self.boxComponentInputs.remove(self.lblNoInputs)
             self.icovwInputs = []  # Clear out the list of IconViews showing the inputs
             self.btnConnectInputs = []
-            for conn in c.inputs:  # Create one IconView and Button per input
+            for i in range(len(c.inputs)):  # Create one IconView and Button per input
                 icovw = Gtk.IconView()
                 store = Gtk.ListStore(Pixbuf, str)
-                for ingredient in conn.ingredients:
+                for ingredient in c.inputs[i].ingredients:
                     store.append((
-                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                        self.pixelBuffers['items'][ingredient.item.programmatic_name()],
                         f'{ingredient.rate}x {ingredient.item.name} /m'
                     ))
                 icovw.set_model(store)
@@ -463,8 +463,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
                 button = TaggableButton(tags={
                     'component': c,
-                    'connection': conn})
-                button.set_label('Connect...')
+                    'connection': c.inputs[i],
+                    'connection_index': i})
+                button.set_label('Manage...')
                 button.connect('clicked', self.__btnConnection_clicked)
                 self.btnConnectInputs.append(button)
 
@@ -479,12 +480,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self.boxComponentOutputs.remove(self.lblOutputs)
             self.icovwOutputs = []
             self.btnConnectOutputs = []
-            for conn in c.outputs:
+            for i in range(len(c.outputs)):
                 icovw = Gtk.IconView()
                 store = Gtk.ListStore(Pixbuf, str)
-                for ingredient in conn.ingredients:
+                for ingredient in c.outputs[i].ingredients:
                     store.append((
-                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                        self.pixelBuffers['items'][ingredient.item.programmatic_name()],
                         f'{ingredient.rate}x {ingredient.item.name} /m'
                     ))
                 icovw.set_model(store)
@@ -494,8 +495,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
                 button = TaggableButton(tags={
                     'component': c,
-                    'connection': conn})
-                button.set_label('Connect...')
+                    'connection': c.outputs[i],
+                    'connection_index': i})
+                button.set_label('Manage...')
                 button.connect('clicked', self.__btnConnection_clicked)
                 self.btnConnectOutputs.append(button)
 
@@ -521,7 +523,7 @@ class MainWindow(Gtk.ApplicationWindow):
             if comp_recipe:
                 for ingredient in comp_recipe.consumes:
                     recipe_store.append((
-                        self.pixelBuffers['items'][ingredient.item.programmatic_name],
+                        self.pixelBuffers['items'][ingredient.item.programmatic_name()],
                         f'{ingredient.amount}x {ingredient.item.name}'))
                 self.icovwComponentRecipe.set_model(recipe_store)
                 self.icovwComponentRecipe.set_pixbuf_column(0)
@@ -1149,7 +1151,7 @@ class MainWindow(Gtk.ApplicationWindow):
             if recipe.building_type == BuildingType.MINER ]
         node_items = []
         for _, recipe in miner_recipes:
-            node_items.extend([ ingredient.item.programmatic_name \
+            node_items.extend([ ingredient.item.programmatic_name() \
                 for ingredient in recipe.produces])
         self.node_items = sorted(set(node_items))
 
@@ -1646,11 +1648,13 @@ class MainWindow(Gtk.ApplicationWindow):
             self,
             btn.tags['component'],
             btn.tags['connection'],
+            btn.tags['connection_index'],
             self.__wdwConnection_closed)
 
     def __wdwConnection_closed(self, response: ConnectionManagementWindowResponse):
         # If a change is to be made, dig up the things the response indicates
         if response.changed:
+            self.blueprint.draw_locked = True
             source_component = None
             source_conn = None
             target_component = None
@@ -1666,13 +1670,13 @@ class MainWindow(Gtk.ApplicationWindow):
                 source_conn = source_connections[response.source_connection_index]
 
             # Get the target component and connection objects
-            if None not in [response.target_component_id, response.target_connection_id]:
+            if None not in [response.target_component_id, response.target_connection_index]:
                 target_component = self.blueprint.factory.get_component_by_id(
                     response.target_component_id)
                 target_connections = target_component.inputs \
                     if response.source_connection_is_output \
                     else target_component.outputs
-                target_conn = target_connections[response.target_connection_id]
+                target_conn = target_connections[response.target_connection_index]
 
             # Determine if anything about the connection we're being told to establish is different
             # from what currently exists. Start by figuring out what the source connection is
@@ -1680,29 +1684,36 @@ class MainWindow(Gtk.ApplicationWindow):
             _, current_target, _ = source_conn.connected_to()
 
             # If the connection hasn't changed...
-            if source_conn.remote == current_target:
+            if current_target is not None and source_conn.remote == current_target:
                 # If the conveyance type hasn't changed...
-                if response.conveyance_class == type(source_conn.target.attached_to):
+                if response.conveyance_class == type(source_conn.remote.attached_to):
                     # Then don't do anything
                     return
 
             # If there's an existing connection, we have to detect it and get rid of it
             old_conveyance = None
             if current_target is not None:
-                # Disconnect the remote side first or we can't do it later
-                source_conn.remote.disconnect()
-                source_conn.disconnect()
-
                 # If the connection isn't between a miner and resource node, then there is a
                 # conveyance we need to delete before building the new connection.
-                if not issubclass(source_component.__class__, Miner) \
+                if not (issubclass(source_component.__class__, Miner) and source_conn.is_input()) \
                     and not isinstance(source_component, ResourceNode):
-                        old_conveyance = source_conn.remote.attached_to
+                        if source_conn.remote:
+                            old_conveyance = source_conn.remote.attached_to
 
                 # Clear that conveyance out of everywhere we store info about it.
                 if old_conveyance is not None:
-                    del(self.blueprint.geometry[old_conveyance.id])
-                    self.blueprint.factory.remove(old_conveyance.id)
+                    old_conveyance.inputs[0].source.target = None
+                    old_conveyance.outputs[0].target.source = None
+                    self.blueprint.remove_component(old_conveyance.id)
+                else:
+                    # There is no conveyance between the source and existing target. Just disconnect
+                    # them manually.
+                    if source_conn.is_output():
+                        source_conn.target.source = None
+                        source_conn.target = None
+                    else:
+                        source_conn.source.target = None
+                        source_conn.source = None
 
             # If the response indicates a connection to be made, create that connection
             if source_conn and target_conn:
@@ -1716,7 +1727,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 # If the connection is between any other kind of component, connect them using a conveyance
                 else:
                     new_conveyance = response.conveyance_class()
-                    if response.connect_output:
+                    if response.source_connection_is_output:
                         source_conn.connect(new_conveyance.inputs[0])
                         new_conveyance.outputs[0].connect(target_conn)
                     else:
@@ -1726,6 +1737,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # Make sure the changes get drawn
         self.blueprint.invalidate_geometry()
+        self.blueprint.draw_locked = False
         self.factoryDesigner.queue_draw()
 
     # + Component tagging widget signal handlers

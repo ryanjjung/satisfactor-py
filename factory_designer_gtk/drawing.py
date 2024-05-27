@@ -108,6 +108,9 @@ class Blueprint(object):
         # In build mode, this is the component to be built
         self.new_component = None
 
+        # When true, frames will refuse to be drawn
+        self.draw_locked = False
+
     @staticmethod
     def load(filename: str):
         '''
@@ -297,7 +300,7 @@ class Blueprint(object):
         # Load up the component icon texture
         icon_key = None
         if type(component) in [InfiniteSupplyNode, ResourceNode]:
-            icon_key = component.item.programmatic_name
+            icon_key = component.item.programmatic_name()
         else:
             icon_key = component.__class__.__name__
         icon_texture = widget.get_texture('components', icon_key)
@@ -519,6 +522,10 @@ class Blueprint(object):
 
         global FIRST_RUN
 
+        if self.draw_locked:
+            logging.debug('Draws are locked; refusing to draw a frame right now')
+            return
+
         # Make sure the components have geometry
         for id, geometry in self.geometry.items():
             component = self.factory.get_component_by_id(id)
@@ -699,16 +706,14 @@ class Blueprint(object):
                 conveyances.append(component)
             if len(component.inputs) > 0:
                 for input in component.inputs:
-                    if input.source:
-                        if isinstance(input.source.attached_to, Conveyance):
-                            if not input.source.attached_to in conveyances:
-                                conveyances.append(input.source.attached_to)
+                    conn_component, *_ = input.connected_to()
+                    if isinstance(conn_component, Conveyance):
+                        conveyances.append(conn_component)
             if len(component.outputs) > 0:
                 for output in component.outputs:
-                    if output.target:
-                        if isinstance(output.target.attached_to, Conveyance):
-                            if not output.target.attached_to in conveyances:
-                                conveyances.append(output.target.attached_to)
+                    conn_component, *_ = output.connected_to()
+                    if isinstance(conn_component, Conveyance):
+                        conveyances.append(conn_component)
         return conveyances
 
     def get_component_location(self,

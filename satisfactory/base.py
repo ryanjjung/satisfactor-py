@@ -218,13 +218,15 @@ class Base(object):
     def image_url(self) -> str:
         return f'{IMAGE_URL_BASE}{self.image_path}'
 
-    @property
-    def programmatic_name(self) -> str:
+    def programmatic_name(self, source_str: str = None) -> str:
+        if not source_str:
+            source_str = self.name
+
+        source_str = source_str.title()
         illegal_chars = ' .'
-        name = self.name.title()
         for char in illegal_chars:
-            name = name.replace(char, '')
-        return name
+            source_str = source_str.replace(char, '')
+        return source_str
 
 
     @property
@@ -416,7 +418,7 @@ class Item(Base):
             'conveyance_type': self.conveyance_type.name if self.conveyance_type else None,
             'stack_size': self.stack_size if self.stack_size else None,
             'sink_value': self.sink_value if self.sink_value else None,
-            'programmatic_name': self.programmatic_name
+            'programmatic_name()': self.programmatic_name()
         })
         return base
 
@@ -594,7 +596,10 @@ class Connection(Component):
         return base
 
     def disconnect(self):
-        self.remote = None
+        '''
+        Inheriting classes must implement `disconnect` to nullify its source or target.
+        '''
+        raise NotImplementedError
 
     @property
     def remote(self):
@@ -626,14 +631,15 @@ class Connection(Component):
         connection = self
         if self.remote:
             component = self.remote.attached_to
+            connection = self.remote
 
             if skip_conveyances:
                 while issubclass(component.__class__, Conveyance):
-                    if component.remote:
-                        connection = component.remote
-                        component = component.remote.attached_to
+                    if self.is_output():
+                        connection = component.outputs[0].remote
                     else:
-                        component = None
+                        connection = component.inputs[0].remote
+                    component = connection.attached_to
         else:
             connection = None
 
@@ -720,6 +726,9 @@ class Input(Connection):
         # Connect them
         self.source = connection
         connection.target = self
+    
+    def disconnect(self):
+        self.source = None
 
     def process(self):
         '''
@@ -782,6 +791,9 @@ class Output(Connection):
         # Connect them
         self.target = connection
         connection.source = self
+    
+    def disconnect(self):
+        self.target = None
 
     def process(self):
         '''
@@ -889,9 +901,9 @@ class ResourceNode(Component):
                             'The connected Miner has no recipe'
                         ))
                     else:
-                        target_production = [ ingredient.item.programmatic_name \
+                        target_production = [ ingredient.item.programmatic_name() \
                             for ingredient in target_bldg.recipe.produces ]
-                        if self.item.programmatic_name not in target_production:
+                        if self.item.programmatic_name() not in target_production:
                             self.add_error(ComponentError(
                                 ComponentErrorLevel.IMPOSSIBLE,
                                 f'The connected Miner must produce {self.item.name}, but it does not.'
