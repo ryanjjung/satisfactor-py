@@ -539,6 +539,30 @@ class Foundry(Building):
         )
 
 
+class Hub(NonProcessingBuilding):
+    '''
+    A HUB building
+    '''
+
+    def __init__(self,
+        name: str = 'HUB',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            building_category=BuildingCategory.SPECIAL,
+            wiki_path='/The_HUB',
+            image_path='/5/5e/The_HUB.png',
+            building_type=BuildingType.OTHER,
+            dimensions=Dimension(
+                width=14,
+                length=26,
+                height=28,
+            ),
+            **kwargs
+        )
+
+
 class JumpPad(NonProcessingBuilding):
     '''
     A Jump Pad for launching the pilgrim
