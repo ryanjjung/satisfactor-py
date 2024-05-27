@@ -107,8 +107,6 @@ class InteractionMode(Enum):
     Discrete set of states the widget can be in with regards to user interaction.
 
         - NORMAL: The "default" state of the app, as though it has just launched.
-        - BUILD_MODE: A building has been selected from the buildings list, and the "Build" button
-            has been clicked. The user is ready to construct a new component.
         - EXISTING_COMPONENT_SELECTED: A component already placed in the blueprint has been
             selected. Details of the component have been displayed.
         - EXISTING_COMPONENT_GRABBED: A component in the blueprint has had a mouse-down event, then
@@ -116,9 +114,8 @@ class InteractionMode(Enum):
     '''
 
     NORMAL                      = 0
-    BUILD_MODE                  = 1
-    EXISTING_COMPONENT_SELECTED = 2
-    EXISTING_COMPONENT_GRABBED  = 3
+    EXISTING_COMPONENT_SELECTED = 1
+    EXISTING_COMPONENT_GRABBED  = 2
 
 
 class PointerState(Enum):
@@ -216,9 +213,7 @@ class FactoryDesignerWidget(Gtk.Widget):
         '''
 
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
-        self.blueprint.draw_frame(self,
-            snapshot,
-            draw_overlay=True if self.mode == InteractionMode.BUILD_MODE else False)
+        self.blueprint.draw_frame(self, snapshot)
 
     def __update_selection(self,
         x: float,
@@ -264,25 +259,15 @@ class FactoryDesignerWidget(Gtk.Widget):
         x: float,
         y: float,
     ):
-        # In build mode, build a component when the user clicks
-        if self.mode == InteractionMode.BUILD_MODE:
-            placement_point = geometry.Coordinate2D(
-                x - (geometry.sizes['background_x'] / 2),
-                y - (geometry.sizes['background_y'] / 2)
-            )
-            self.blueprint.add_component(self.blueprint.new_component, placement_point)
-            self.mode = InteractionMode.NORMAL
-        # In other modes, figure out what just got clicked and act accordingly
+        self.__update_selection(x, y)
+        if self.blueprint.selected:
+            self.mode = InteractionMode.EXISTING_COMPONENT_SELECTED
         else:
-            self.__update_selection(x, y)
-            if self.blueprint.selected:
-                self.mode = InteractionMode.EXISTING_COMPONENT_SELECTED
-            else:
-                self.mode = InteractionMode.NORMAL
-            self.pointer_state = PointerState.DOWN
-            self.pointer_down_at = geometry.Coordinate2D(x, y)
-            self.queue_draw()
-            self.window.update_window()
+            self.mode = InteractionMode.NORMAL
+        self.pointer_state = PointerState.DOWN
+        self.pointer_down_at = geometry.Coordinate2D(x, y)
+        self.queue_draw()
+        self.window.update_window()
 
     def on_button_release(self,
         gesture_click: Gtk.GestureClick,
@@ -393,10 +378,6 @@ class FactoryDesignerWidget(Gtk.Widget):
 
             # Force all geometry to be recalculated, then redraw the widget
             self.blueprint.invalidate_geometry()
-            redraw = True
-
-        elif self.mode == InteractionMode.BUILD_MODE:
-            self.blueprint.pointer_position = geometry.Coordinate2D(x, y)
             redraw = True
 
         if redraw: self.queue_draw()

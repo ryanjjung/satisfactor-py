@@ -108,6 +108,9 @@ class Blueprint(object):
         # In build mode, this is the component to be built
         self.new_component = None
 
+        # When true, frames will refuse to be drawn
+        self.draw_locked = False
+
     @staticmethod
     def load(filename: str):
         '''
@@ -191,19 +194,6 @@ class Blueprint(object):
         rect = Graphene.Rect().init(0, 0, self.viewport.region.width, self.viewport.region.height)
         snapshot.push_clip(rect)
         snapshot.append_color(background_color, rect)
-        snapshot.pop()
-
-    def draw_build_overlay(self,
-        widget: Gtk.Widget,
-        snapshot: Gdk.Snapshot,
-    ):
-        if COLORS['overlay_color'] is None:
-            COLORS['overlay_color'] = Gdk.RGBA()
-            COLORS['overlay_color'].parse(self.overlay_color)
-
-        rect = Graphene.Rect().init(0, 0, self.viewport.region.width, self.viewport.region.height)
-        snapshot.push_clip(rect)
-        snapshot.append_color(COLORS['overlay_color'], rect)
         snapshot.pop()
 
     def draw_component(self,
@@ -310,7 +300,7 @@ class Blueprint(object):
         # Load up the component icon texture
         icon_key = None
         if type(component) in [InfiniteSupplyNode, ResourceNode]:
-            icon_key = component.item.programmatic_name
+            icon_key = component.item.programmatic_name()
         else:
             icon_key = component.__class__.__name__
         icon_texture = widget.get_texture('components', icon_key)
@@ -525,13 +515,16 @@ class Blueprint(object):
     def draw_frame(self,
         widget: Gtk.Widget,
         snapshot: Gtk.Snapshot,
-        draw_overlay: bool = False,
     ):
         '''
         Draws a single frame of the contents of the viewport.
         '''
 
         global FIRST_RUN
+
+        if self.draw_locked:
+            logging.debug('Draws are locked; refusing to draw a frame right now')
+            return
 
         # Make sure the components have geometry
         for id, geometry in self.geometry.items():
@@ -610,7 +603,7 @@ class Blueprint(object):
                 geometry = self.geometry.get(component.id)
                 label_text = component.name
                 self.draw_conveyance(widget, snapshot, component, geometry, label_text)
-        
+
         # Resource nodes can only connect to miners, but they don't use conveyances to do so. To
         # keep the blueprint visually consistent, we draw a line between a node and its miner the
         # same way we draw conveyances. Here we create a fake conveyance for each resource-node-to-
@@ -631,36 +624,6 @@ class Blueprint(object):
                             target_input=0)
                         node_conv_geo.calculate()
                         self.draw_conveyance(widget, snapshot, None, node_conv_geo, '')
-
-        # If we're in build mode, draw a transparent overlay. If the mouse is over the widget, draw
-        # that component wherever the mouse is.
-        if draw_overlay:
-            self.draw_build_overlay(widget, snapshot)
-            if self.pointer_position:
-                new_component_position = Coordinate2D(
-                    self.pointer_position.x - (sizes['background_x'] / 2),
-                    self.pointer_position.y - (sizes['background_y'] / 2)
-                )
-                new_component_geo = ComponentGeometry(
-                    self.new_component,
-                    new_component_position
-                )
-                new_component_label = PangoTextLabel(
-                    self.new_component.name,
-                    self.label_font_family,
-                    self.label_font_size,
-                    widget,
-                    self.viewport.scale)
-                new_component_geo.calculate(
-                    *new_component_label.layout.get_pixel_size(),
-                    scale=self.viewport.scale,
-                )
-                self.draw_component(
-                    widget,
-                    snapshot,
-                    self.new_component,
-                    new_component_geo,
-                    new_component_label)
 
         # Clear out these flags since we've just generated all this geometry
         if FIRST_RUN: FIRST_RUN = False
@@ -743,16 +706,14 @@ class Blueprint(object):
                 conveyances.append(component)
             if len(component.inputs) > 0:
                 for input in component.inputs:
-                    if input.source:
-                        if isinstance(input.source.attached_to, Conveyance):
-                            if not input.source.attached_to in conveyances:
-                                conveyances.append(input.source.attached_to)
+                    conn_component, *_ = input.connected_to()
+                    if isinstance(conn_component, Conveyance):
+                        conveyances.append(conn_component)
             if len(component.outputs) > 0:
                 for output in component.outputs:
-                    if output.target:
-                        if isinstance(output.target.attached_to, Conveyance):
-                            if not output.target.attached_to in conveyances:
-                                conveyances.append(output.target.attached_to)
+                    conn_component, *_ = output.connected_to()
+                    if isinstance(conn_component, Conveyance):
+                        conveyances.append(conn_component)
         return conveyances
 
     def get_component_location(self,

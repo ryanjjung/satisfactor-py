@@ -85,14 +85,14 @@ class Factory(Base):
                 for comp in component:
                     comp.factory = self
                     self._components.append(comp)
-    
+
     def remove(self,
         component_id: str
     ):
         '''
         Removes the component with the given unique ID from the factory.
         '''
-        
+
         component = None
         for component in self.components:
             if component.id == component_id:
@@ -123,6 +123,75 @@ class Factory(Base):
 
         self.traverse_all(drain_component)
         self.errors = list()
+
+    def get_available_connections(self,
+        compatible_with: Connection,
+        ignore_conveyances: bool = True,
+    ):
+        '''
+        Returns a dictionary containing information about connections which are candidates for
+        connecting with the given connection. That is, they have the same conveyance type and are
+        the opposite kind of Connection (Inputs are compatible with Outputs, for example, or vice
+        versa). That dictionary structure looks like this:
+
+            {
+                "<component_id>": [{
+                    'component': <Component>,
+                    'connection': <Input|Output>,
+                    'connection_index': <int>
+                }]
+            }
+
+        The 'connection' is the Input or Output that is available. The 'connection_index' represents
+        the index in the remote component's appropriate list of inputs or outputs where this
+        connection can be found. The 'component' is the component the available connection is
+        attached to.
+
+        Arguments:
+
+            - compatible_with: An Input or Output for which we are seeking a compatible connection.
+            - ignore_conveyances: In the factory designer, we do not manipulate conveyances
+                ourselves, so we are not usually interested in including them in this function call.
+        '''
+
+        source_component = compatible_with.attached_to
+        target_type = Input if isinstance(compatible_with, Output) else Output
+
+        available_connections = {}
+        # Go through every component in the factory
+        for component in self.components:
+
+            # Ignore the component we've been asked to find compatible connections for
+            if component == source_component:
+                continue
+
+            # Ignore conveyances if we've been asked to
+            if issubclass(component.__class__, Conveyance):
+                continue
+
+            # Go through the right kind of connections
+            connections = component.inputs if target_type is Input else component.outputs
+            connection_objs = []
+            for i in range(len(connections)):
+                # Ignore connections with incompatible conveyance types
+                if connections[i].conveyance_type != compatible_with.conveyance_type:
+                    continue
+
+                # Ignore connections that are already connected
+                if connections[i].remote is not None:
+                    continue
+
+                # If it's passed through the filters, add it to the list
+                connection_objs.append({
+                    'component': component,
+                    'connection': connections[i],
+                    'connection_index': i,
+                })
+
+            # Update the main dict
+            if len(connection_objs) > 0:
+                available_connections[component.id] = connection_objs
+        return available_connections
 
     def get_buildings_by_type(self,
         building_type: BuildingType

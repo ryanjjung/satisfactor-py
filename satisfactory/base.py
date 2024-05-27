@@ -218,9 +218,16 @@ class Base(object):
     def image_url(self) -> str:
         return f'{IMAGE_URL_BASE}{self.image_path}'
 
-    @property
-    def programmatic_name(self) -> str:
-        return self.name.title().replace(' ', '')
+    def programmatic_name(self, source_str: str = None) -> str:
+        if not source_str:
+            source_str = self.name
+
+        source_str = source_str.title()
+        illegal_chars = ' .'
+        for char in illegal_chars:
+            source_str = source_str.replace(char, '')
+        return source_str
+
 
     @property
     def wiki_url(self) -> str:
@@ -411,7 +418,7 @@ class Item(Base):
             'conveyance_type': self.conveyance_type.name if self.conveyance_type else None,
             'stack_size': self.stack_size if self.stack_size else None,
             'sink_value': self.sink_value if self.sink_value else None,
-            'programmatic_name': self.programmatic_name
+            'programmatic_name()': self.programmatic_name()
         })
         return base
 
@@ -588,6 +595,62 @@ class Connection(Component):
         })
         return base
 
+    def disconnect(self):
+        '''
+        Inheriting classes must implement `disconnect` to nullify its source or target.
+        '''
+        raise NotImplementedError
+
+    @property
+    def remote(self):
+        '''
+        Inheriting classes must implement `remote` to return either the source or target, depending
+        on the type of Connection.
+        '''
+        raise NotImplementedError
+
+    def connected_to(self,
+        skip_conveyances: bool = False
+    ):
+        '''
+        Returns a tuple of three values: (component, connection, connection_index)
+
+            - component: The Component this Connection is connected to.
+            - connection: The Input or Output this Connection is connected to on the remote
+                Component.
+            - connection_index: The index of the remote Component's `inputs` or `outputs` list where
+                the remote Connection can be found.
+
+        When skip_conveyances is False, this function typically returns a Conveyance of some kind
+        because that's what most components typically connect to. When True, this function will
+        traverse conveyances until it finds a different kind of Component, then return that instead.
+        '''
+
+        component = None
+        conn_id = None
+        connection = self
+        if self.remote:
+            component = self.remote.attached_to
+            connection = self.remote
+
+            if skip_conveyances:
+                while issubclass(component.__class__, Conveyance):
+                    if self.is_output():
+                        connection = component.outputs[0].remote
+                    else:
+                        connection = component.inputs[0].remote
+                    component = connection.attached_to
+        else:
+            connection = None
+
+        if component is not None:
+            if self.is_input():
+                conn_id = component.outputs.index(connection)
+            else:
+                conn_id = component.inputs.index(connection)
+
+        return (component, connection, conn_id)
+
     def is_input(self) -> bool:
         '''
         Inheriting classes must implement `is_input` to return True or False, which indicates the
@@ -634,6 +697,10 @@ class Input(Connection):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    @property
+    def remote(self):
+        return self.source
+
     def is_input(self) -> bool:
         '''
         Implementation of Connection.is_input
@@ -659,6 +726,9 @@ class Input(Connection):
         # Connect them
         self.source = connection
         connection.target = self
+    
+    def disconnect(self):
+        self.source = None
 
     def process(self):
         '''
@@ -699,6 +769,10 @@ class Output(Connection):
 
         return False
 
+    @property
+    def remote(self):
+        return self.target
+
     def connect(self,
         connection: Connection
     ) -> bool:
@@ -717,6 +791,9 @@ class Output(Connection):
         # Connect them
         self.target = connection
         connection.source = self
+    
+    def disconnect(self):
+        self.target = None
 
     def process(self):
         '''
@@ -824,9 +901,9 @@ class ResourceNode(Component):
                             'The connected Miner has no recipe'
                         ))
                     else:
-                        target_production = [ ingredient.item.programmatic_name \
+                        target_production = [ ingredient.item.programmatic_name() \
                             for ingredient in target_bldg.recipe.produces ]
-                        if self.item.programmatic_name not in target_production:
+                        if self.item.programmatic_name() not in target_production:
                             self.add_error(ComponentError(
                                 ComponentErrorLevel.IMPOSSIBLE,
                                 f'The connected Miner must produce {self.item.name}, but it does not.'
