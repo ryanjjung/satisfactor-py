@@ -43,6 +43,8 @@ from satisfactory.items import (
     HatcherRemains as iHatcherRemains,
     HeavyOilResidue as iHeavyOilResidue,
     HogRemains as iHogRemains,
+    Hub as iHub,
+    HubParts as iHubParts,
     IronIngot as iIronIngot,
     IronOre as iIronOre,
     IronPlate as iIronPlate,
@@ -540,6 +542,15 @@ HogProtein = Recipe(
     building_type=BuildingType.CONSTRUCTOR,
     consumes=[Ingredient(iHogRemains, 1, 1)],
     produces=[Ingredient(iAlienProtein, 1, 1)]
+)
+
+Hub = Recipe(
+    name='The HUB',
+    wiki_path='/The_HUB',
+    availability=Availability(0, 0),
+    building_type=BuildingType.HUB,
+    consumes=[Ingredient(iHubParts, 1, None)],
+    produces=[Ingredient(iHub, 1, None)]
 )
 
 IronIngot = Recipe(

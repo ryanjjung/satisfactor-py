@@ -30,7 +30,7 @@ def get_all() -> list[Building]:
     '''
 
     global ALL
-    unbuildable = [Conveyance, Miner, NonProcessingBuilding]
+    unbuildable = [Conveyance, Miner]
     if ALL is None:
         import inspect
         import sys
@@ -500,6 +500,56 @@ class ConveyorPole(NonProcessingBuilding):
                 width=2,
                 length=1,
                 height=1
+            ),
+            **kwargs
+        )
+
+
+class CraftBench(NonProcessingBuilding):
+    '''
+    A building where you can process recipes by hand
+    '''
+
+    def __init__(self,
+        name: str = 'Craft Bench',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            building_category=BuildingCategory.PRODUCTION,
+            building_type=BuildingType.OTHER,
+            availability=Availability(0, 0),
+            wiki_path='/Craft_Bench',
+            image_path='/7/75/Craft_Bench.png',
+            dimensions=Dimension(
+                width=6,
+                length=3,
+                height=3
+            ),
+            **kwargs
+        )
+
+
+class EquipmentWorkshop(NonProcessingBuilding):
+    '''
+    A building where you can build equipment
+    '''
+
+    def __init__(self,
+        name: str = 'Equipment Workshop',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            building_category=BuildingCategory.PRODUCTION,
+            building_type=BuildingType.OTHER,
+            availability=Availability(0, 1),
+            wiki_path='/Equipment_Workshop',
+            image_path='/d/d9/Equipment_Workshop.png',
+            dimensions=Dimension(
+                width=10,
+                length=7,
+                height=5
             ),
             **kwargs
         )

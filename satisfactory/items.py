@@ -80,6 +80,16 @@ AwesomeSinkPoint = Item(
     image_path='/c/c3/Satisfactory_logo_full_color_square.png',
 )
 
+BaconAgaric = Item(
+    name='Bacon Agaric',
+    availability=Availability(0, 0),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=50,
+    sink_value=None,
+    wiki_path='/Bacon_Agaric',
+    image_path='/0/0f/Bacon_Agaric.png',
+)
+
 BasicWall1mFicsit = Item(
     name='Basic Wall 1m (FICSIT)',
     availability=Availability(1, 1),
@@ -110,6 +120,16 @@ Beacon = Item(
     image_path='/b/b3/Beacon.png',
 )
 
+BerylNut = Item(
+    name='Beryl Nut',
+    availability=Availability(0, 0),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=100,
+    sink_value=None,
+    wiki_path='/Beryl_Nut',
+    image_path='/9/95/Beryl_Nut.png',
+)
+
 Biomass = Item(
     name='Biomass',
     availability=Availability(0, 6),
@@ -128,6 +148,17 @@ BiomassBurner = Item(
     sink_value=None,
     wiki_path='/Biomass_Burner',
     image_path='/2/20/Biomass_Burner.png',
+)
+
+BluePowerSlug = Item(
+    name='Blue Power Slug',
+    availability=Availability(0, 0),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=50,
+    sink_value=None,
+    wiki_path='/Power_Slug#Blue',
+    image_path='/1/1f/Dropped_Power_Slug.png', # The wiki_path has an animated gif as its image,
+        # which we don't support, so we use this "dropped" image instead.
 )
 
 Cable = Item(
@@ -425,6 +456,24 @@ HogRemains = Item(
     image_path='/e/e0/Hog_Remains.png'
 )
 
+Hub = Item(
+    name='The HUB',
+    conveyance_type=None,
+    stack_size=None,
+    sink_value=None,
+    wiki_path='/The_HUB',
+    image_path='/5/5e/The_HUB.png'
+)
+
+HubParts = Item(
+    name='HUB Parts',
+    conveyance_type=None,
+    stack_size=1,
+    sink_value=None,
+    wiki_path='/HUB_Parts',
+    image_path='/3/38/HUB_Parts.png'
+)
+
 IronIngot = Item(
     name='Iron Ingot',
     conveyance_type=ConveyanceType.BELT,
@@ -646,6 +695,17 @@ PowerPoleMk1 = Item(
     sink_value=None,
     wiki_path='/Power_Poles#Mk.1-0',
     image_path='/a/af/Power_Pole_Mk.1.png',
+)
+
+PurplePowerSlug = Item(
+    name='Purple Power Slug',
+    availability=Availability(0, 0),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=50,
+    sink_value=None,
+    wiki_path='/Power_Slug#Purple',
+    image_path='/1/1f/Dropped_Power_Slug.png', # The wiki_path has an animated gif as its image,
+        # which we don't support, so we use this "dropped" image instead.
 )
 
 Ramp1mFicsit = Item(
@@ -932,4 +992,15 @@ XenoZapper = Item(
     sink_value=1880,
     wiki_path='/Xeno-Zapper',
     image_path='/5/5d/Xeno-Zapper.png',
+)
+
+YellowPowerSlug = Item(
+    name='Yellow Power Slug',
+    availability=Availability(0, 0),
+    conveyance_type=ConveyanceType.BELT,
+    stack_size=50,
+    sink_value=None,
+    wiki_path='/Power_Slug#Yellow',
+    image_path='/1/1f/Dropped_Power_Slug.png', # The wiki_path has an animated gif as its image,
+        # which we don't support, so we use this "dropped" image instead.
 )
