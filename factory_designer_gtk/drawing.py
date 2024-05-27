@@ -40,6 +40,7 @@ COLORS = {
     'conn_bg': None,
     'conn_deselected': None,
     'conn_selected': None,
+    'conn_errored': None,
     'conn_label': None,
     'overlay_color': None,
 }
@@ -69,6 +70,7 @@ class Blueprint(object):
         label_font_family: str = 'Sans',
         label_font_size: float = 10.0,
         line_color: str = '#a3a8fa',
+        line_color_errored: str = '#ffc800',
         overlay_color: str = '#00000055',
         selected_component_bg_color: str = '#95d0ff',
         selected_line_color: str = '#95d0ff',
@@ -91,6 +93,7 @@ class Blueprint(object):
         self.conveyance_font_size = conveyance_font_size
         self.label_color = label_color
         self.line_color = line_color
+        self.line_color_errored = line_color_errored
         self.overlay_color = overlay_color
         self.selected_component_bg_color = selected_component_bg_color
         self.selected_line_color = selected_line_color
@@ -463,11 +466,17 @@ class Blueprint(object):
         if not COLORS['conn_label']:
             COLORS['conn_label'] = Gdk.RGBA()
             COLORS['conn_label'].parse(self.conveyance_label_color)
+        if not COLORS['conn_errored']:
+            COLORS['conn_errored'] = Gdk.RGBA()
+            COLORS['conn_errored'].parse(self.line_color_errored)
 
         if self.selected == conveyance and self.selected is not None:
             line_color = COLORS['conn_selected']
         else:
-            line_color = COLORS['conn_deselected']
+            if conveyance is not None and len(conveyance.errors) > 0:
+                line_color = COLORS['conn_errored']
+            else:
+                line_color = COLORS['conn_deselected']
 
         # Draw the twice-curving line of the conveyance
         stroke = Gsk.Stroke.new(geometry.width)
