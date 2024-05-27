@@ -1,0 +1,18 @@
+{
+    "satisfactory": {
+        "version": "0.0.1",
+        "compatibilities": {
+            "gtk_factory_designer": [
+                "0.0.1"
+            ]
+        }
+    },
+    "gtk_factory_designer": {
+        "version": "0.0.1",
+        "compatibilities": {
+            "satisafactory": [
+                "0.0.1"
+            ]
+        }
+    }
+}
