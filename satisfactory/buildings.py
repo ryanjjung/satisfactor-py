@@ -30,7 +30,7 @@ def get_all() -> list[Building]:
     '''
 
     global ALL
-    unbuildable = [Conveyance, Miner]
+    unbuildable = [Conveyance, Miner, NonProcessingBuilding]
     if ALL is None:
         import inspect
         import sys

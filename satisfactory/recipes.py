@@ -548,7 +548,7 @@ Hub = Recipe(
     name='The HUB',
     wiki_path='/The_HUB',
     availability=Availability(0, 0),
-    building_type=BuildingType.HUB,
+    building_type=BuildingType.OTHER,
     consumes=[Ingredient(iHubParts, 1, None)],
     produces=[Ingredient(iHub, 1, None)]
 )
