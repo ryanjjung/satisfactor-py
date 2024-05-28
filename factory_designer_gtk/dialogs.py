@@ -166,7 +166,6 @@ class ConnectionManagementWindow(Gtk.Window):
         self.__connect_handlers()
         self.__update_available_connections()
 
-
         # Determine if any values should be set at init time
         active_component = None
         active_connection = None
@@ -357,21 +356,28 @@ class ConnectionManagementWindow(Gtk.Window):
                 self.cboConveyance.set_active_id(None)
         else:
             # Create dummy instances of the conveyances so we can get at their properties
-            compatible_conveyances = [ conv() for conv in conveyances.get_all() ]
+            all_conveyances = [ conv() for conv in conveyances.get_all() ]
 
             # Filter by type
-            compatible_conveyances = [ conv for conv in compatible_conveyances
+            compatible_conveyances = [ conv for conv in all_conveyances
                 if conv.conveyance_type == self.connection.conveyance_type ]
 
             # Filter by availability if that's turned on
+            logging.debug(f'Factory availability: {self.factory.availability.to_dict()}')
+            available_conveyances = []
             if self.parent.chkAvailability.get_active():
-                compatible_conveyances = [ conv for conv in compatible_conveyances
-                    if conv.availability.tier <= self.factory.availability.tier
-                    and conv.availability.upgrade <= self.factory.availability.upgrade ]
+                for conv in compatible_conveyances:
+                    if conv.availability.tier < self.factory.availability.tier:
+                        available_conveyances.append(conv)
+                    elif conv.availability.tier == self.factory.availability.tier:
+                        if conv.availability.upgrade <= self.factory.availability.upgrade:
+                            available_conveyances.append(conv)
+            else:
+                available_conveyances = compatible_conveyances
 
             # Build contents of cboConveyance and show it
             self.cboConveyance.remove_all()
-            for conv in compatible_conveyances:
+            for conv in available_conveyances:
                 self.cboConveyance.append(conv.__class__.__name__, conv.name)
             self.cboConveyance.set_active_id(active_id)
             self.boxConveyance.set_visible(True)
