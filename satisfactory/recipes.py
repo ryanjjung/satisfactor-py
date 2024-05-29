@@ -264,7 +264,7 @@ Chainsaw = Recipe(
 )
 
 CoalMk1 = Recipe(
-    name='Coal',
+    name='Coal Mk 1',
     availability=Availability(3, 1),
     wiki_path='/Coal',
     building_type=BuildingType.MINER,
