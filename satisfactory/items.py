@@ -530,7 +530,7 @@ Leaves = Item(
 )
 
 Limestone = Item(
-    name='Limestone Mk.1',
+    name='Limestone',
     availability=Availability(0, 3),
     conveyance_type=ConveyanceType.BELT,
     stack_size=100,
