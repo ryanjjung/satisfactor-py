@@ -505,6 +505,56 @@ class ConveyorPole(NonProcessingBuilding):
         )
 
 
+class CraftBench(NonProcessingBuilding):
+    '''
+    A building where you can process recipes by hand
+    '''
+
+    def __init__(self,
+        name: str = 'Craft Bench',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            building_category=BuildingCategory.PRODUCTION,
+            building_type=BuildingType.OTHER,
+            availability=Availability(0, 0),
+            wiki_path='/Craft_Bench',
+            image_path='/7/75/Craft_Bench.png',
+            dimensions=Dimension(
+                width=6,
+                length=3,
+                height=3
+            ),
+            **kwargs
+        )
+
+
+class EquipmentWorkshop(NonProcessingBuilding):
+    '''
+    A building where you can build equipment
+    '''
+
+    def __init__(self,
+        name: str = 'Equipment Workshop',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            building_category=BuildingCategory.PRODUCTION,
+            building_type=BuildingType.OTHER,
+            availability=Availability(0, 1),
+            wiki_path='/Equipment_Workshop',
+            image_path='/d/d9/Equipment_Workshop.png',
+            dimensions=Dimension(
+                width=10,
+                length=7,
+                height=5
+            ),
+            **kwargs
+        )
+
+
 class Foundry(Building):
     '''
     A Foundry Building
@@ -535,6 +585,30 @@ class Foundry(Building):
                 attached_to=self,
                 conveyance_type=ConveyanceType.BELT
             )],
+            **kwargs
+        )
+
+
+class Hub(NonProcessingBuilding):
+    '''
+    A HUB building
+    '''
+
+    def __init__(self,
+        name: str = 'HUB',
+        **kwargs
+    ):
+        super().__init__(
+            name=name,
+            building_category=BuildingCategory.SPECIAL,
+            wiki_path='/The_HUB',
+            image_path='/5/5e/The_HUB.png',
+            building_type=BuildingType.OTHER,
+            dimensions=Dimension(
+                width=14,
+                length=26,
+                height=28,
+            ),
             **kwargs
         )
 
@@ -722,6 +796,30 @@ class MinerMk1(Miner):
         )
 
 
+class LookoutTower(NonProcessingBuilding):
+    '''
+    A tall tower to build from
+    '''
+
+    def __init__(self,
+        name: str = 'Lookout Tower',
+        **kwargs
+    ):
+        super().__init__(
+            building_category=BuildingCategory.ORGANIZATION,
+            building_type=BuildingType.OTHER,
+            wiki_path='/Lookout_Tower',
+            image_path='/c/cc/Lookout_Tower.png',
+            name=name,
+            availability=Availability(1, 1),
+            dimensions=Dimension(
+                width=9,
+                length=9,
+                height=24
+            ),
+            **kwargs
+        )
+
 class PipelineJunctionCross(Building):
     '''
     A combination splitter/merger for pipe networks. Has a configurable number of inputs and
@@ -886,6 +984,31 @@ class PipelineSupport(NonProcessingBuilding):
                 width=2,
                 length=1,
                 height=1
+            ),
+            **kwargs
+        )
+
+
+class PowerPoleMk1(NonProcessingBuilding):
+    '''
+    An entry level power pole
+    '''
+
+    def __init__(self,
+        name: str = 'Power Pole Mk.1',
+        **kwargs
+    ):
+        super().__init__(
+            building_category=BuildingCategory.POWER,
+            building_type=BuildingType.POWER_POLE,
+            wiki_path='/Power_Poles#Mk.1-0',
+            image_path='/a/af/Power_Pole_Mk.1.png',
+            name=name,
+            availability=Availability(0, 3),
+            dimensions=Dimension(
+                width=0.8,
+                length=0.8,
+                height=7
             ),
             **kwargs
         )

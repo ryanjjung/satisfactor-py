@@ -121,7 +121,10 @@ class MainWindow(Gtk.ApplicationWindow):
         global ALL_BUILDINGS
         if ALL_BUILDINGS is None:
             ALL_BUILDINGS = [ ResourceNode(), InfiniteSupplyNode() ]
-            ALL_BUILDINGS.extend([ bldg() for bldg in get_all_buildings()])
+            for bldg in get_all_buildings():
+                logging.debug(f'Building: {bldg}')
+                ALL_BUILDINGS.append(bldg())
+            #ALL_BUILDINGS.extend([ bldg() for bldg in get_all_buildings()])
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_storages()])
         return ALL_BUILDINGS
 
@@ -314,13 +317,20 @@ class MainWindow(Gtk.ApplicationWindow):
                     # Always filter compatible recipes by building type
                     compatible_recipes = [ (recipe_name, recipe) for recipe_name, recipe in get_all_recipes()
                         if recipe.building_type == c.building_type]
+                    logging.debug(f'Compatible recipes: {compatible_recipes}')
                     # If the user has availability filtering enabled, filter by that as well
+                    available_recipes = []
                     if self.chkAvailability.get_active():
-                        compatible_recipes = [ (recipe_name, recipe) for recipe_name, recipe in compatible_recipes
+                        for _, recipe in compatible_recipes:
                             if (recipe.availability.tier is None
-                                or recipe.availability.tier <= self.blueprint.factory.availability.tier)
-                            and (recipe.availability.upgrade is None
-                                or recipe.availability.upgrade <= self.blueprint.factory.availability.upgrade)]
+                                or recipe.availability.tier < self.blueprint.factory.availability.tier):
+                                    available_recipes.append(recipe)
+                            elif recipe.availability.tier == self.blueprint.factory.availability.tier:
+                                if recipe.availability.upgrade is None \
+                                    or recipe.availability.upgrade <= self.blueprint.factory.availability.upgrade:
+                                        available_recipes.append(recipe)
+                    else:
+                        available_recipes = compatible_recipes
 
                     compatible_recipes.sort(key=lambda x: x[0])
 
