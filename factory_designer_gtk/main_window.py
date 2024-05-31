@@ -122,7 +122,6 @@ class MainWindow(Gtk.ApplicationWindow):
         if ALL_BUILDINGS is None:
             ALL_BUILDINGS = [ ResourceNode(), InfiniteSupplyNode() ]
             for bldg in get_all_buildings():
-                logging.debug(f'Building: {bldg}')
                 ALL_BUILDINGS.append(bldg())
             #ALL_BUILDINGS.extend([ bldg() for bldg in get_all_buildings()])
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_storages()])
@@ -1828,4 +1827,5 @@ class MainWindow(Gtk.ApplicationWindow):
             # Delete the component itself, deselect everything, update the window
             self.blueprint.remove_component(comp.id)
             self.blueprint.selected = None
+            self.unsaved_changes = True
             self.update_window()

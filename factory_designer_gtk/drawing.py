@@ -631,7 +631,7 @@ class Blueprint(object):
                             target_comp=target,
                             target_geo=self.geometry[target.id],
                             target_input=0)
-                        node_conv_geo.calculate()
+                        node_conv_geo.calculate(scale=self.viewport.scale)
                         self.draw_conveyance(widget, snapshot, None, node_conv_geo, '')
 
         # Clear out these flags since we've just generated all this geometry
