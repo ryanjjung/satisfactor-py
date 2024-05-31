@@ -1828,4 +1828,5 @@ class MainWindow(Gtk.ApplicationWindow):
             # Delete the component itself, deselect everything, update the window
             self.blueprint.remove_component(comp.id)
             self.blueprint.selected = None
+            self.unsaved_changes = True
             self.update_window()
