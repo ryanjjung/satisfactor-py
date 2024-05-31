@@ -122,7 +122,6 @@ class MainWindow(Gtk.ApplicationWindow):
         if ALL_BUILDINGS is None:
             ALL_BUILDINGS = [ ResourceNode(), InfiniteSupplyNode() ]
             for bldg in get_all_buildings():
-                logging.debug(f'Building: {bldg}')
                 ALL_BUILDINGS.append(bldg())
             #ALL_BUILDINGS.extend([ bldg() for bldg in get_all_buildings()])
             ALL_BUILDINGS.extend([ bldg() for bldg in get_all_storages()])
