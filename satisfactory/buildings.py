@@ -796,6 +796,30 @@ class MinerMk1(Miner):
         )
 
 
+class LookoutTower(NonProcessingBuilding):
+    '''
+    A tall tower to build from
+    '''
+
+    def __init__(self,
+        name: str = 'Lookout Tower',
+        **kwargs
+    ):
+        super().__init__(
+            building_category=BuildingCategory.ORGANIZATION,
+            building_type=BuildingType.OTHER,
+            wiki_path='/Lookout_Tower',
+            image_path='/c/cc/Lookout_Tower.png',
+            name=name,
+            availability=Availability(1, 1),
+            dimensions=Dimension(
+                width=9,
+                length=9,
+                height=24
+            ),
+            **kwargs
+        )
+
 class PipelineJunctionCross(Building):
     '''
     A combination splitter/merger for pipe networks. Has a configurable number of inputs and
@@ -960,6 +984,31 @@ class PipelineSupport(NonProcessingBuilding):
                 width=2,
                 length=1,
                 height=1
+            ),
+            **kwargs
+        )
+
+
+class PowerPoleMk1(NonProcessingBuilding):
+    '''
+    An entry level power pole
+    '''
+
+    def __init__(self,
+        name: str = 'Power Pole Mk.1',
+        **kwargs
+    ):
+        super().__init__(
+            building_category=BuildingCategory.POWER,
+            building_type=BuildingType.POWER_POLE,
+            wiki_path='/Power_Poles#Mk.1-0',
+            image_path='/a/af/Power_Pole_Mk.1.png',
+            name=name,
+            availability=Availability(0, 3),
+            dimensions=Dimension(
+                width=0.8,
+                length=0.8,
+                height=7
             ),
             **kwargs
         )
