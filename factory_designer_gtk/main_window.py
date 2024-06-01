@@ -20,7 +20,9 @@ from satisfactory.base import (
 )
 from satisfactory.buildings import (
     get_all as get_all_buildings,
-    Miner
+    ConveyorMerger,
+    ConveyorSplitter,
+    Miner,
 )
 from satisfactory.conveyances import get_all as get_all_conveyances
 from satisfactory.factories import Factory
@@ -294,10 +296,13 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.entryComponentName.get_buffer().set_text(c.name, -1)
 
             # Update the clock rate, but not everything has one
-            if isinstance(c, Building) and not isinstance(c, Conveyance):
-                if self.entryComponentClockRate not in skip:
-                    self.entryComponentClockRate.get_buffer().set_text(str(c.clock_rate), -1)
-                self.boxComponentClockRate.set_visible(True)
+            if isinstance(c, Building) \
+                and not isinstance(c, Conveyance) \
+                and not isinstance(c, ConveyorMerger) \
+                and not isinstance(c, ConveyorSplitter):
+                    if self.spinComponentClockRate not in skip:
+                        self.spinComponentClockRate.set_value(c.clock_rate)
+                    self.boxComponentClockRate.set_visible(True)
             else:
                 self.boxComponentClockRate.set_visible(False)
 
@@ -316,7 +321,6 @@ class MainWindow(Gtk.ApplicationWindow):
                     # Always filter compatible recipes by building type
                     compatible_recipes = [ (recipe_name, recipe) for recipe_name, recipe in get_all_recipes()
                         if recipe.building_type == c.building_type]
-                    logging.debug(f'Compatible recipes: {compatible_recipes}')
                     # If the user has availability filtering enabled, filter by that as well
                     available_recipes = []
                     if self.chkAvailability.get_active():
@@ -817,10 +821,16 @@ class MainWindow(Gtk.ApplicationWindow):
         # Clock rate controls
         self.boxComponentClockRate = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.lblComponentClockRate = Gtk.Label(label='Clock rate:')
-        self.entryComponentClockRate = Gtk.Entry()
-        self.entryComponentClockRate.set_hexpand(True)
+        self.adjClockSpeed = Gtk.Adjustment(
+            lower=0.0,
+            upper=2.5,
+            step_increment=0.1,
+            page_increment=1.0)
+        self.adjClockSpeed.set_step_increment(0.1)
+        self.spinComponentClockRate = Gtk.SpinButton(adjustment=self.adjClockSpeed)
+        self.spinComponentClockRate.set_digits(2)
         self.boxComponentClockRate.append(self.lblComponentClockRate)
-        self.boxComponentClockRate.append(self.entryComponentClockRate)
+        self.boxComponentClockRate.append(self.spinComponentClockRate)
         self.boxComponentDetails.append(self.boxComponentClockRate)
 
         # Checkboxes for togglables in a box
@@ -1252,13 +1262,8 @@ class MainWindow(Gtk.ApplicationWindow):
             self.entryComponentName.get_buffer().connect_after('inserted-text',
                 self.__entryComponentName_inserted)))
         self.windowSignals.append((
-            self.entryComponentClockRate.get_buffer(),
-            self.entryComponentClockRate.get_buffer().connect_after('deleted-text',
-                self.__entryComponentClockRate_deleted)))
-        self.windowSignals.append((
-            self.entryComponentClockRate.get_buffer(),
-            self.entryComponentClockRate.get_buffer().connect_after('inserted-text',
-                self.__entryComponentClockRate_inserted)))
+            self.spinComponentClockRate,
+            self.spinComponentClockRate.connect('value-changed', self.__spinComponentClockRate_changed)))
         self.windowSignals.append((
             self.chkComponentConstructed,
             self.chkComponentConstructed.connect_after('toggled',
@@ -1296,7 +1301,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.windowSignals.append((
             self.btnDeleteComponent,
             self.btnDeleteComponent.connect('clicked', self.__btnDeleteComponent_clicked)))
-
 
     def __load_images(self):
         '''
@@ -1559,16 +1563,12 @@ class MainWindow(Gtk.ApplicationWindow):
         if self.blueprint and self.blueprint.selected:
             self.__entryComponentName_changed(buffer.get_text())
 
-    def __entryComponentClockRate_changed(self, text):
-        self.blueprint.selected.clock_rate = float(text)
+    def __spinComponentClockRate_changed(self, range):
+        rate = round(self.spinComponentClockRate.get_value(), 2)
+        self.blueprint.selected.clock_rate = rate
         self.unsaved_changes = True
-        self.update_window(skip=[self.entryComponentClockRate])
-
-    def __entryComponentClockRate_deleted(self, buffer, position, chars):
-        self.__entryComponentClockRate_changed(buffer.get_text())
-
-    def __entryComponentClockRate_inserted(self, buffer, position, chars, nchars):
-        self.__entryComponentClockRate_changed(buffer.get_text())
+        self.update_window()
+        # self.update_window(skip=[self.spinComponentClockRate])
 
     def __chkComponentConstructed_toggled(self, chk):
         if self.blueprint and self.blueprint.selected:
