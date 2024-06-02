@@ -1193,114 +1193,97 @@ class MainWindow(Gtk.ApplicationWindow):
         suppressed during widget updates, preventing infinite signal loops.
         '''
 
-        # Signals for widgets in the top bar containing factory-level options
-        self.windowSignals.append((
-            self.btnNewFactory,
-            self.btnNewFactory.connect('clicked', self.__btnNewFactory_clicked)))
-        self.windowSignals.append((
-            self.btnOpenFactory,
-            self.btnOpenFactory.connect('clicked', self.__btnOpenFactory_clicked)))
-        self.windowSignals.append((
-            self.btnSaveFactory,
-            self.btnSaveFactory.connect('clicked', self.__btnSaveFactory_clicked)))
-        self.windowSignals.append((
-            self.btnSaveFactoryAs,
-            self.btnSaveFactoryAs.connect('clicked', self.__btnSaveFactoryAs_clicked)))
-        self.windowSignals.append((
-            self.btnSimulate,
-            self.btnSimulate.connect('clicked', self.__btnSimulate_clicked)))
-        self.windowSignals.append((
-            self.btnPurge,
-            self.btnPurge.connect('clicked', self.__btnPurge_clicked)))
+        self.windowSignals.extend([
+            # Signals for widgets in the top bar containing factory-level options
+            (self.btnNewFactory,
+                self.btnNewFactory.connect('clicked', self.__btnNewFactory_clicked)),
+            (self.btnOpenFactory,
+                self.btnOpenFactory.connect('clicked', self.__btnOpenFactory_clicked)),
+            (self.btnSaveFactory,
+                self.btnSaveFactory.connect('clicked', self.__btnSaveFactory_clicked)),
+            (self.btnSaveFactoryAs,
+                self.btnSaveFactoryAs.connect('clicked', self.__btnSaveFactoryAs_clicked)),
+            (self.btnSimulate,
+                self.btnSimulate.connect('clicked', self.__btnSimulate_clicked)),
+            (self.btnPurge,
+                self.btnPurge.connect('clicked', self.__btnPurge_clicked)),
 
-        # Signals for the buildings panel
-        self.windowSignals.append((
-            self.chkAvailability,
-            self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)))
-        self.windowSignals.append((
-            self.chkBuildingCategory,
-            self.chkBuildingCategory.connect_after('toggled', self.__chkBuildingCategory_toggled)))
-        self.windowSignals.append((
-            self.cboBuildingCategory,
-            self.cboBuildingCategory.connect_after('changed', self.__cboBuildingCategory_changed)))
-        self.windowSignals.append((
-            self.chkNameFilter,
-            self.chkNameFilter.connect_after('toggled', self.__chkNameFilter_toggled)))
-        self.windowSignals.append((
-            self.entryNameFilter.get_buffer(),
-            self.entryNameFilter.get_buffer().connect_after('deleted-text',
-                self.__entryNameFilter_deleted)))
-        self.windowSignals.append((
-            self.entryNameFilter.get_buffer(),
-            self.entryNameFilter.get_buffer().connect_after('inserted-text',
-                self.__entryNameFilter_inserted)))
-        self.windowSignals.append((
-            self.btnBuild,
-            self.btnBuild.connect('clicked', self.__btnBuild_clicked)))
+            # Signals for the buildings panel
+            (self.chkAvailability,
+                self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)),
+            (self.chkBuildingCategory,
+                self.chkBuildingCategory.connect_after(
+                    'toggled',
+                    self.__chkBuildingCategory_toggled)),
+            (self.cboBuildingCategory,
+                self.cboBuildingCategory.connect_after(
+                    'changed',
+                    self.__cboBuildingCategory_changed)),
+            (self.chkNameFilter,
+                self.chkNameFilter.connect_after('toggled', self.__chkNameFilter_toggled)),
+            (self.entryNameFilter.get_buffer(),
+                self.entryNameFilter.get_buffer().connect_after('deleted-text',
+                    self.__entryNameFilter_deleted)),
+            (self.entryNameFilter.get_buffer(),
+                self.entryNameFilter.get_buffer().connect_after('inserted-text',
+                    self.__entryNameFilter_inserted)),
+            (self.btnBuild,
+                self.btnBuild.connect('clicked', self.__btnBuild_clicked)),
 
-        # Signals for component detail widgets
-        self.windowSignals.append((
-            self.entryFactoryName.get_buffer(),
-            self.entryFactoryName.get_buffer().connect_after('deleted-text',
-                self.__entryFactoryName_deleted)))
-        self.windowSignals.append((
-            self.entryFactoryName.get_buffer(),
-            self.entryFactoryName.get_buffer().connect('inserted-text',
-                self.__entryFactoryName_inserted)))
-        self.windowSignals.append((
-            self.cboTier,
-            self.cboTier.connect_after('changed', self.__cboTier_changed)))
-        self.windowSignals.append((
-            self.cboUpgrade,
-            self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)))
-        self.windowSignals.append((
-            self.entryComponentName.get_buffer(),
-            self.entryComponentName.get_buffer().connect_after('deleted-text',
-                self.__entryComponentName_deleted)))
-        self.windowSignals.append((
-            self.entryComponentName.get_buffer(),
-            self.entryComponentName.get_buffer().connect_after('inserted-text',
-                self.__entryComponentName_inserted)))
-        self.windowSignals.append((
-            self.spinComponentClockRate,
-            self.spinComponentClockRate.connect('value-changed', self.__spinComponentClockRate_changed)))
-        self.windowSignals.append((
-            self.chkComponentConstructed,
-            self.chkComponentConstructed.connect_after('toggled',
-                self.__chkComponentConstructed_toggled)))
-        self.windowSignals.append((
-            self.chkComponentStandby,
-            self.chkComponentStandby.connect_after('toggled',
-                self.__chkComponentStandby_toggled)))
-        self.windowSignals.append((
-            self.cboComponentSelectedRecipe,
-            self.cboComponentSelectedRecipe.connect_after(
-                'changed',
-                self.__cboComponentSelectedRecipe_changed)))
-        self.windowSignals.append((
-            self.spinISNRecipeRate,
-            self.spinISNRecipeRate.connect_after(
-                'value-changed',
-                self.__spinISNRecipeRate_value_changed)))
-        self.windowSignals.append((
-            self.cboResourceNodeItem,
-            self.cboResourceNodeItem.connect_after('changed', self.__cboResourceNodeItem_changed)))
-        self.windowSignals.append((
-            self.cboResourceNodePurity,
-            self.cboResourceNodePurity.connect_after('changed', self.__cboResourceNodePurity_changed)))
-        self.windowSignals.append((
-            self.cboISNRecipeItem,
-            self.cboISNRecipeItem.connect_after(
-                'changed',
-                self.__cboISNRecipeItem_changed)))
-        self.windowSignals.append((
-            self.btnNewComponentTag,
-            self.btnNewComponentTag.connect('clicked', self.__btnNewComponentTag_clicked)))
+            # Signals for component detail widgets
+            (self.entryFactoryName.get_buffer(),
+                self.entryFactoryName.get_buffer().connect_after('deleted-text',
+                    self.__entryFactoryName_deleted)),
+            (self.entryFactoryName.get_buffer(),
+                self.entryFactoryName.get_buffer().connect('inserted-text',
+                    self.__entryFactoryName_inserted)),
+            (self.cboTier,
+                self.cboTier.connect_after('changed', self.__cboTier_changed)),
+            (self.cboUpgrade,
+                self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)),
+            (self.entryComponentName.get_buffer(),
+                self.entryComponentName.get_buffer().connect_after('deleted-text',
+                    self.__entryComponentName_deleted)),
+            (self.entryComponentName.get_buffer(),
+                self.entryComponentName.get_buffer().connect_after('inserted-text',
+                    self.__entryComponentName_inserted)),
+            (self.spinComponentClockRate,
+                self.spinComponentClockRate.connect(
+                    'value-changed',
+                    self.__spinComponentClockRate_changed)),
+            (self.chkComponentConstructed,
+                self.chkComponentConstructed.connect_after('toggled',
+                    self.__chkComponentConstructed_toggled)),
+            (self.chkComponentStandby,
+                self.chkComponentStandby.connect_after('toggled',
+                    self.__chkComponentStandby_toggled)),
+            (self.cboComponentSelectedRecipe,
+                self.cboComponentSelectedRecipe.connect_after(
+                    'changed',
+                    self.__cboComponentSelectedRecipe_changed)),
+            (self.spinISNRecipeRate,
+                self.spinISNRecipeRate.connect_after(
+                    'value-changed',
+                    self.__spinISNRecipeRate_value_changed)),
+            (self.cboResourceNodeItem,
+                self.cboResourceNodeItem.connect_after(
+                    'changed',
+                    self.__cboResourceNodeItem_changed)),
+            (self.cboResourceNodePurity,
+                self.cboResourceNodePurity.connect_after(
+                    'changed',
+                    self.__cboResourceNodePurity_changed)),
+            (self.cboISNRecipeItem,
+                self.cboISNRecipeItem.connect_after(
+                    'changed',
+                    self.__cboISNRecipeItem_changed)),
+            (self.btnNewComponentTag,
+                self.btnNewComponentTag.connect('clicked', self.__btnNewComponentTag_clicked)),
 
-        # Widgets in the "danger zone"
-        self.windowSignals.append((
-            self.btnDeleteComponent,
-            self.btnDeleteComponent.connect('clicked', self.__btnDeleteComponent_clicked)))
+            # Widgets in the "danger zone"
+            (self.btnDeleteComponent,
+                self.btnDeleteComponent.connect('clicked', self.__btnDeleteComponent_clicked)),
+        ])
 
     def __load_images(self):
         '''
