@@ -1194,6 +1194,9 @@ class MainWindow(Gtk.ApplicationWindow):
         '''
 
         self.windowSignals.extend([
+            # Signals for this window
+            (self, self.connect('close-request', self.__mainWindow_closeRequested)),
+
             # Signals for widgets in the top bar containing factory-level options
             (self.btnNewFactory,
                 self.btnNewFactory.connect('clicked', self.__btnNewFactory_clicked)),
@@ -1320,6 +1323,30 @@ class MainWindow(Gtk.ApplicationWindow):
 
 
     # Signal Handlers
+
+    # + Signal handlers for this window
+    def __mainWindow_closeRequested(self, window):
+        '''
+        The user has clicked the "X" on this window or otherwise told it to close. We intercept that
+        request and make sure no unsaved changes will be lost.
+        '''
+
+        if self.unsaved_changes:
+            self.confirm_discard(self.__discard_response_close_window)
+            return True
+        else:
+            return False
+    
+    def __discard_response_close_window(self, response):
+        '''
+        The user has tried to close the window, but they had unsaved changes. We asked them if it's
+        okay to discard their changes, and they have given us a response. If it's okay, close the
+        window, but otherwise return them to the designer so they can save.
+        '''
+
+        if response:
+            self.destroy()
+
 
     # + "New" button signal handlers
 
