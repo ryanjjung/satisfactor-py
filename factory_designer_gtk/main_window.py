@@ -1350,7 +1350,6 @@ class MainWindow(Gtk.ApplicationWindow):
         if response:
             self.destroy()
 
-
     # + "New" button signal handlers
 
     def __btnNewFactory_clicked(self, btn):
@@ -1375,7 +1374,6 @@ class MainWindow(Gtk.ApplicationWindow):
             self.factoryDesigner.blueprint = self.blueprint
             self.unsaved_changes = True
             self.update_window()
-
 
     # + "Open" button signal handlers
 
@@ -1681,6 +1679,8 @@ class MainWindow(Gtk.ApplicationWindow):
             source_conn = None
             target_component = None
             target_conn = None
+            old_target_component = None
+            old_target_conn = None
 
             # Get the source component and connection objects
             if None not in [response.source_component_id, response.source_connection_index]:
@@ -1700,27 +1700,31 @@ class MainWindow(Gtk.ApplicationWindow):
                     else target_component.outputs
                 target_conn = target_connections[response.target_connection_index]
 
-            # Determine if anything about the connection we're being told to establish is different
-            # from what currently exists. Start by figuring out what the source connection is
-            # currently connected to.
-            _, current_target, _ = source_conn.connected_to()
+            # Get the old target component and connection objects
+            if None not in [response.old_target_component_id, response.old_target_connection_index]:
+                old_target_component = self.blueprint.factory.get_component_by_id(
+                    response.old_target_component_id)
+                old_target_connections = old_target_component.inputs \
+                    if response.source_connection_is_output \
+                        else old_target_component.outputs
+                old_target_conn = old_target_connections[response.old_target_connection_index]
 
             # If the connection hasn't changed...
-            if current_target is not None and source_conn.remote == current_target:
+            if old_target_conn is not None and old_target_conn == target_conn:
                 # If the conveyance type hasn't changed...
                 if response.conveyance_class == type(source_conn.remote.attached_to):
-                    # Then don't do anything
+                    # Then don't do anything, only unlock the drawing routines
+                    self.blueprint.draw_locked = False
                     return
 
             # If there's an existing connection, we have to detect it and get rid of it
             old_conveyance = None
-            if current_target is not None:
+            if old_target_component is not None:
                 # If the connection isn't between a miner and resource node, then there is a
                 # conveyance we need to delete before building the new connection.
                 if not (issubclass(source_component.__class__, Miner) and source_conn.is_input()) \
                     and not isinstance(source_component, ResourceNode):
-                        if source_conn.remote:
-                            old_conveyance = source_conn.remote.attached_to
+                        old_conveyance, *_ = source_conn.connected_to()
 
                 # Clear that conveyance out of everywhere we store info about it.
                 if old_conveyance is not None:
