@@ -94,12 +94,17 @@ class ConnectionManagementWindowResponse(object):
         source_connection_is_output: bool = None,
         target_component_id: str = None,
         target_connection_index: int = None,
+        old_target_component_id: str = None,
+        old_target_connection_index: int = None,
         conveyance_class: type = None
     ):
         self.changed = changed
         self.source_component_id = source_component_id
         self.source_connection_is_output = source_connection_is_output
         self.target_component_id = target_component_id
+        self.target_connection_index = target_connection_index
+        self.old_target_component_id = old_target_component_id
+        self.old_target_connection_index = old_target_connection_index
 
         # The index values are sourced from a ComboBoxText which uses strings.
         # We have to convert them back into ints.
@@ -363,7 +368,6 @@ class ConnectionManagementWindow(Gtk.Window):
                 if conv.conveyance_type == self.connection.conveyance_type ]
 
             # Filter by availability if that's turned on
-            logging.debug(f'Factory availability: {self.factory.availability.to_dict()}')
             available_conveyances = []
             if self.parent.chkAvailability.get_active():
                 for conv in compatible_conveyances:
@@ -413,7 +417,10 @@ class ConnectionManagementWindow(Gtk.Window):
             source_connection_is_output=self.connection.is_output(),
             target_component_id=self.cboComponent.get_active_id(),
             target_connection_index=self.cboConnection.get_active_id(),
+            old_target_component_id=self.current_connection['component'].id,
+            old_target_connection_index=self.current_connection['connection_index'],
             conveyance_class=conveyance_class))
+
 
     def __cboComponent_changed(self, cbo):
         '''
