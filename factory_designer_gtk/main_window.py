@@ -358,9 +358,10 @@ class MainWindow(Gtk.ApplicationWindow):
                         produces_store = Gtk.ListStore(Pixbuf, str)
                         if c.recipe.consumes:
                             for ingredient in c.recipe.consumes:
+                                ing_rate = ingredient.rate * c.clock_rate
                                 consumes_store.append((
                                     self.pixelBuffers['items'][ingredient.item.programmatic_name()],
-                                    f'{ingredient.rate}x {ingredient.item.name} /m'))
+                                    f'{ing_rate}x {ingredient.item.name} /m'))
                         if c.recipe.produces:
                             for ingredient in c.recipe.produces:
                                 if isinstance(c, Miner):
@@ -370,6 +371,7 @@ class MainWindow(Gtk.ApplicationWindow):
                                         ing_rate = ingredient.rate
                                 else:
                                     ing_rate = ingredient.rate
+                                ing_rate *= c.clock_rate
                                 produces_store.append((
                                     self.pixelBuffers['items'][ingredient.item.programmatic_name()],
                                     f'{ing_rate}x {ingredient.item.name} /m'))
@@ -818,21 +820,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentName.append(self.entryComponentName)
         self.boxComponentDetails.append(self.boxComponentName)
 
-        # Clock rate controls
-        self.boxComponentClockRate = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.lblComponentClockRate = Gtk.Label(label='Clock rate:')
-        self.adjClockSpeed = Gtk.Adjustment(
-            lower=0.0,
-            upper=2.5,
-            step_increment=0.1,
-            page_increment=1.0)
-        self.adjClockSpeed.set_step_increment(0.1)
-        self.spinComponentClockRate = Gtk.SpinButton(adjustment=self.adjClockSpeed)
-        self.spinComponentClockRate.set_digits(2)
-        self.boxComponentClockRate.append(self.lblComponentClockRate)
-        self.boxComponentClockRate.append(self.spinComponentClockRate)
-        self.boxComponentDetails.append(self.boxComponentClockRate)
-
         # Checkboxes for togglables in a box
         self.boxComponentBooleans = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.boxComponentBooleans.set_halign(Gtk.Align.CENTER)
@@ -851,6 +838,22 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentSelectedRecipe.append(self.lblComponentSelectedRecipe)
         self.boxComponentSelectedRecipe.append(self.cboComponentSelectedRecipe)
         self.boxComponentDetails.append(self.boxComponentSelectedRecipe)
+
+        # Clock rate controls
+        self.boxComponentClockRate = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.boxComponentClockRate.set_halign(Gtk.Align.CENTER)
+        self.lblComponentClockRate = Gtk.Label(label='Clock rate:')
+        self.adjClockSpeed = Gtk.Adjustment(
+            lower=0.0,
+            upper=2.5,
+            step_increment=0.1,
+            page_increment=1.0)
+        self.adjClockSpeed.set_step_increment(0.1)
+        self.spinComponentClockRate = Gtk.SpinButton(adjustment=self.adjClockSpeed)
+        self.spinComponentClockRate.set_digits(2)
+        self.boxComponentClockRate.append(self.lblComponentClockRate)
+        self.boxComponentClockRate.append(self.spinComponentClockRate)
+        self.boxComponentDetails.append(self.boxComponentClockRate)
 
         # Build a set of controls to display when ResourceNodes are selected
         self.boxResourceNodeRecipe = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
