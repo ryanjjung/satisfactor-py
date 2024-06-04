@@ -20,7 +20,7 @@ from factory_designer_gtk import (
     drawing,
     geometry
 )
-from typing import Any
+from typing import Any, Callable
 
 
 # These functions provide support for testing and the widgets in this file
@@ -457,18 +457,6 @@ class TaggableButton(Gtk.Button, Taggable):
         Taggable.__init__(self, tags=tags)
 
 
-class TaggableEditableLabel(Gtk.EditableLabel, Taggable):
-    '''
-    An arbitrarily taggable GTK EditableLabel widget
-    '''
-
-    def __init__(self,
-        tags: dict[str: str] = {}
-    ):
-        Gtk.EditableLabel.__init__(self)
-        Taggable.__init__(self, tags=tags)
-
-
 class TaggableEntryBuffer(Gtk.EntryBuffer, Taggable):
     '''
     An arbitrarily taggable GTK EntryBuffer
@@ -479,3 +467,182 @@ class TaggableEntryBuffer(Gtk.EntryBuffer, Taggable):
     ):
         Gtk.EntryBuffer.__init__(self)
         Taggable.__init__(self, tags=tags)
+
+
+class TagBox(Gtk.Box):
+    '''
+    A TagGrid is a Gtk.Box containing a Gtk.Grid of controls built specifically to modify the tags
+    for a component. The grid has four columns:
+
+        - A "remove" button to delete a tag
+        - A label for the tag key, which cannot be chanced once built
+        - A simple label that says, "="
+        - A text entry for the tag value
+
+    Surrounding the grid are some labels for clarity and controls to add new tags.
+    '''
+
+    def __init__(self,
+        component: base.Component = None,
+        callback: Callable = None
+    ):
+        '''
+        Construct the tag grid based on the tags applied to the provided component.
+
+            - component: The component whose tags are being viewed/edited
+            - callback: A function which will be called anytime a change is made to the tags. It
+                accepts no arguments.
+
+        If either of these arguments is `None`, we construct an empty instance. This allows us to
+        create a "blank" object at init time which gets fixed at update time.
+        '''
+
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        self.callback = callback
+        self.__component = component
+
+        # Set up the outer box for packing
+        self.set_halign(Gtk.Align.CENTER)
+
+        self.__build()
+
+    @property
+    def component(self):
+        return self.__component
+
+    @component.setter
+    def component(self, component: base.Component):
+        self.__component = component
+        self.repopulate()
+
+    def __build(self):
+        # Set up the top-side labels
+        lblTags = Gtk.Label()
+        lblTags.set_markup('<b>Tags</b>')
+        lblTags.set_margin_bottom(5)
+        self.append(lblTags)
+
+        # Set up a four-column grid
+        self.gridTags = Gtk.Grid()
+        for i in range(4):
+            self.gridTags.insert_column(0)
+        self.gridTags.set_baseline_row(0)
+        self.gridTags.set_row_homogeneous(True)
+        self.gridTags.set_column_spacing(10)
+        self.append(self.gridTags)
+
+        # This function populates the grid with component data
+        self.repopulate()
+
+        # Set up widgets for adding a new tag. Start with a header.
+        lblNewTagHeader = Gtk.Label()
+        lblNewTagHeader.set_markup('<b>New Tag</b>')
+
+        # Add a row of controls to add the new tag
+        boxNewTag = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        boxNewTag.set_halign(Gtk.Align.CENTER)
+        boxNewTag.set_spacing(5)
+        self.entryNewTagKey = Gtk.Entry()
+        lblNewTagEquals = Gtk.Label(label='=')
+        self.entryNewTagValue = Gtk.Entry()
+        btnNewTag = Gtk.Button()
+        btnNewTag.set_icon_name('list-add')
+        btnNewTag.connect('clicked', self.__btnNewTag_clicked)
+
+        # Pack the box in a row
+        boxNewTag.append(self.entryNewTagKey)
+        boxNewTag.append(lblNewTagEquals)
+        boxNewTag.append(self.entryNewTagValue)
+        boxNewTag.append(btnNewTag)
+
+        # Pack these elements into this widget
+        self.append(lblNewTagHeader)
+        self.append(boxNewTag)
+
+    def repopulate(self):
+        '''
+        Call this function sometime after calling __build to force the reconstruction of all widgets
+        which show component data.
+        '''
+
+        logging.debug('Repopulate called')
+        # Remove all rows in the grid
+        remove = 0
+        while remove is not None:
+            remove = self.gridTags.remove_row(0)
+
+        if not self.component:
+            return
+
+        # Add a row for each key. We have to iterate over indices instead of typical dict iteration
+        # here because the indices are needed by the base class for row counting.
+        sorted_keys = sorted(self.component.tags)
+        for i in range(len(sorted_keys)):
+            # Extract the key and value
+            key = sorted_keys[i]
+            value = self.component.tags[sorted_keys[i]]
+
+            # Create a row
+            self.gridTags.insert_row(i)
+
+            # Add the "remove" button
+            btnRemoveTag = TaggableButton(tags={'tag_key': key, 'row_id': i})
+            btnRemoveTag.set_icon_name('list-remove')
+            btnRemoveTag.connect('clicked', self.__btnRemoveTag_clicked)
+
+            # The labels for the key name and "=" sign. The "=" label is separate because it helps
+            # line the grid up better.
+            lblKey = Gtk.Label(label=key)
+            lblEquals = Gtk.Label(label='=')
+
+            # Add the value entry
+            entryValue = Gtk.Entry()
+            bufferValue = TaggableEntryBuffer(tags={'tag_key': key})
+            bufferValue.set_text(value, -1)
+            bufferValue.connect_after('deleted-text', self.__bufferValue_deleted)
+            bufferValue.connect_after('inserted-text', self.__bufferValue_inserted)
+            entryValue.set_buffer(bufferValue)
+
+            # Attach all these widgets to the grid. Function accepts these args in this order:
+            #     (widget, column, row, width, height)
+            self.gridTags.attach(btnRemoveTag, 0, i, 1, 1)
+            self.gridTags.attach(lblKey, 1, i, 1, 1)
+            self.gridTags.attach(lblEquals, 2, i, 1, 1)
+            self.gridTags.attach(entryValue, 3, i, 1, 1)
+
+    def __btnNewTag_clicked(self, btn):
+        key = self.entryNewTagKey.get_buffer().get_text()
+        value = self.entryNewTagValue.get_buffer().get_text()
+        if key == '':
+            dlgError = Gtk.AlertDialog()
+            dlgError.set_modal(True)
+            dlgError.set_message('The tag name cannot be empty.')
+            dlgError.choose(self)
+            return
+        if key in self.component.tags.keys():
+            dlgError = Gtk.AlertDialog()
+            dlgError.set_modal(True)
+            dlgError.set_message(f'A tag called "{key}" already exists')
+            dlgError.choose(self)
+            return
+        self.component.tags[key] = value
+        self.entryNewTagKey.get_buffer().set_text('', -1)
+        self.entryNewTagValue.get_buffer().set_text('', -1)
+        self.callback()
+
+    def __btnRemoveTag_clicked(self, btn):
+        # The button is a TaggableButton containing the key of the removed tag and the row of the
+        # Grid that we need to remove.
+        del(self.component.tags[btn.tags['tag_key']])
+        self.gridTags.remove_row(btn.tags['row_id'])
+        self.callback()
+
+    def __bufferValue_changed(self, key, value):
+        self.component.tags[key] = value
+        callback()
+
+    def __bufferValue_deleted(self, buffer, position, chars):
+        self.__bufferValue_changed(buffer.tags['tag_key'], buffer.get_text())
+
+    def __bufferValue_inserted(self, buffer, position, chars, nchars):
+        self.__bufferValue_changed(buffer.tags['tag_key'], buffer.get_text())

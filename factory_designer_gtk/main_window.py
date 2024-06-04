@@ -44,6 +44,7 @@ from factory_designer_gtk.widgets import (
     InteractionMode,
     TaggableButton,
     TaggableEntryBuffer,
+    TagBox,
 )
 
 
@@ -563,58 +564,8 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.boxComponentErrors.append(lbl)
 
             # Update tags listing
-            # It's not easy to clear out the rows iteratively, so we just recreate the entire grid
-            if self.gridComponentTags not in skip:
-                grid = Gtk.Grid()
-
-                # The grid's four columns are (remove button, key, "=", value)
-                for i in range(4):
-                    grid.insert_column(0)
-                grid.set_baseline_row(0)
-                grid.set_row_homogeneous(True)
-                grid.set_column_spacing(10)
-
-                sorted_keys = sorted(c.tags)
-                # We have to track these indices so we can respond better to user behavior later
-                # That's why we use this awkward counting approach here
-                for i in range(len(sorted_keys)):
-                    key = sorted_keys[i]
-                    value = c.tags[sorted_keys[i]]
-
-                    # Create a new row full of widgets
-                    grid.insert_row(i)
-
-                    # Build a "remove" button for deleting the tag. Each of these is a "taggable" form
-                    # of the widget, allowing us to keep the tag context through to the signal handlers.
-                    btnRemoveComponentTag = TaggableButton(tags={'tag_key': key})
-                    btnRemoveComponentTag.set_icon_name('list-remove')
-                    btnRemoveComponentTag.connect('clicked', self.__btnRemoveComponentTag_clicked)
-
-                    # Build a label to display the key
-                    lblComponentTagKey = Gtk.Label(label=key)
-                    lblComponentTagEquals = Gtk.Label(label='=')
-
-                    # Build a taggable text entry for changing tag values
-                    entryComponentTagValue = Gtk.Entry()
-                    value_buffer = TaggableEntryBuffer(tags={'tag_key': key})
-                    value_buffer.set_text(value, -1)
-                    value_buffer.connect_after('deleted-text', self.__entryComponentTagValue_deleted)
-                    value_buffer.connect_after('inserted-text', self.__entryComponentTagValue_inserted)
-                    entryComponentTagValue.set_buffer(value_buffer)
-
-                    # grid.attach takes (widget, column, row, width, height)
-                    grid.attach(btnRemoveComponentTag, 0, i, 1, 1)
-                    grid.attach(lblComponentTagKey, 1, i, 1, 1)
-                    grid.attach(lblComponentTagEquals, 2, i, 1, 1)
-                    grid.attach(entryComponentTagValue, 3, i, 1, 1)
-
-                self.boxComponentTags.remove(self.gridComponentTags)
-                self.gridComponentTags = grid
-                if len(sorted_keys) > 0:
-                    # Force a repack of the replacement grid if there are any tags
-                    self.boxComponentTags.append(self.gridComponentTags)
-                else:
-                    self.boxComponentTags.append(self.lblNoComponentTags)
+            self.boxComponentTags.component = self.blueprint.selected
+            self.boxComponentTags.repopulate()
 
             # Make sure everything is visible
             self.boxComponentDetails.set_visible(True)
@@ -991,34 +942,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentDetails.append(self.boxComponentRecipe)
 
         # A grid of tag data and widgets (which mostly gets set up in update_window calls)
-        self.boxComponentTags = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.boxComponentTags.set_halign(Gtk.Align.CENTER)
-        self.lblComponentTags = Gtk.Label()
-        self.lblComponentTags.set_markup('<b>Tags</b>')
-        self.lblComponentTags.set_margin_bottom(5)
-        self.gridComponentTags = Gtk.Grid()
-        self.boxComponentTags.append(self.lblComponentTags)
-        self.boxComponentTags.append(self.gridComponentTags)
+        self.boxComponentTags = TagBox(component=None, callback=self.__boxComponentTags_changed)
         self.boxComponentDetails.append(self.boxComponentTags)
-
-        # Widgets to add new tags
-        self.lblNewComponentTagHeader = Gtk.Label()
-        self.lblNewComponentTagHeader.set_markup('<b>New Tag</b>')
-        self.boxNewComponentTag = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.boxNewComponentTag.set_halign(Gtk.Align.CENTER)
-        self.boxNewComponentTag.set_spacing(5)
-        self.entryNewComponentTagKey = Gtk.Entry()
-        self.lblNewComponentTagEquals = Gtk.Label(label='=')
-        self.entryNewComponentTagValue = Gtk.Entry()
-        self.btnNewComponentTag = Gtk.Button()
-        self.btnNewComponentTag.set_icon_name('list-add')
-        self.boxNewComponentTag.append(self.entryNewComponentTagKey)
-        self.boxNewComponentTag.append(self.lblNewComponentTagEquals)
-        self.boxNewComponentTag.append(self.entryNewComponentTagValue)
-        self.boxNewComponentTag.append(self.btnNewComponentTag)
-        self.boxComponentDetails.append(self.lblNewComponentTagHeader)
-        self.boxComponentDetails.append(self.boxNewComponentTag)
-
 
         # Label for when there are no tags
         self.lblNoComponentTags = Gtk.Label(label='None')
@@ -1283,8 +1208,6 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.cboISNRecipeItem.connect_after(
                     'changed',
                     self.__cboISNRecipeItem_changed)),
-            (self.btnNewComponentTag,
-                self.btnNewComponentTag.connect('clicked', self.__btnNewComponentTag_clicked)),
 
             # Widgets in the "danger zone"
             (self.btnDeleteComponent,
@@ -1339,7 +1262,7 @@ class MainWindow(Gtk.ApplicationWindow):
             return True
         else:
             return False
-    
+
     def __discard_response_close_window(self, response):
         '''
         The user has tried to close the window, but they had unsaved changes. We asked them if it's
@@ -1768,48 +1691,12 @@ class MainWindow(Gtk.ApplicationWindow):
 
     # + Component tagging widget signal handlers
 
-    def __btnNewComponentTag_clicked(self, btn):
-        if self.blueprint and self.blueprint.selected:
-            key = self.entryNewComponentTagKey.get_buffer().get_text()
-            value = self.entryNewComponentTagValue.get_buffer().get_text()
-            if key == '':
-                dlgError = Gtk.AlertDialog()
-                dlgError.set_modal(True)
-                dlgError.set_message('The tag name cannot be empty.')
-                dlgError.choose(self)
-                return
-            if key in self.blueprint.selected.tags.keys():
-                dlgError = Gtk.AlertDialog()
-                dlgError.set_modal(True)
-                dlgError.set_message(f'A tag called "{key}" already exists')
-                dlgError.choose(self)
-                return
-            self.blueprint.selected.tags[key] = value
-            self.unsaved_changes = True
-            self.entryNewComponentTagKey.get_buffer().set_text('', -1)
-            self.entryNewComponentTagValue.get_buffer().set_text('', -1)
-            self.set_focus(self.entryNewComponentTagKey)
-            self.update_window()
-
-    def __btnRemoveComponentTag_clicked(self, button):
-        if self.blueprint and self.blueprint.selected:
-            del(self.blueprint.selected.tags[button.tags['tag_key']])
-            self.unsaved_changes = True
-            self.update_window()
-
-    def __entryComponentTagValue_changed(self, key, value):
-        if self.blueprint and self.blueprint.selected:
-            self.blueprint.selected.tags[key] = value
-            self.unsaved_changes = True
-            self.update_window(skip=[self.gridComponentTags])
-
-    def __entryComponentTagValue_deleted(self, buffer, position, chars):
-        self.__entryComponentTagValue_changed(buffer.tags['tag_key'], buffer.get_text())
-
-    def __entryComponentTagValue_inserted(self, buffer, position, chars, nchars):
-        self.__entryComponentTagValue_changed(buffer.tags['tag_key'], buffer.get_text())
+    def __boxComponentTags_changed(self):
+        self.unsaved_changes = True
+        self.update_window()
 
     # + Component danger zone signal handlers
+
     def __btnDeleteComponent_clicked(self, btn):
         if self.blueprint and self.blueprint.selected:
             dlgConfirmComponentDelete = ConfirmOrCancelWindow(
