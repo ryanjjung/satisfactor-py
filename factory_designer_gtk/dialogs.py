@@ -410,6 +410,12 @@ class ConnectionManagementWindow(Gtk.Window):
             if active_conveyance is not None:
                 conveyance_class = getattr(conveyances, active_conveyance)
 
+        if self.current_connection:
+            old_id = self.current_connection['component'].id
+            old_index = self.current_connection['connection_index']
+        else:
+            old_id = None
+            old_index = None
         self.callback(ConnectionManagementWindowResponse(
             True,
             source_component_id=self.component.id,
@@ -417,8 +423,8 @@ class ConnectionManagementWindow(Gtk.Window):
             source_connection_is_output=self.connection.is_output(),
             target_component_id=self.cboComponent.get_active_id(),
             target_connection_index=self.cboConnection.get_active_id(),
-            old_target_component_id=self.current_connection['component'].id,
-            old_target_connection_index=self.current_connection['connection_index'],
+            old_target_component_id=old_id,
+            old_target_connection_index=old_index,
             conveyance_class=conveyance_class))
 
 

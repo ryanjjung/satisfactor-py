@@ -201,9 +201,12 @@ class Base(object):
         availability: Availability = Availability(0, 0),
         wiki_path: str = '/Satisfactory_Wiki',
         image_path: str = None,
-        tags: dict[str, str] = dict(),
+        tags: dict[str, str] = None,
         **kwargs
     ):
+        if not tags:
+            tags = {}
+        logging.debug(f'tags: {tags}')
         if not id:
             self.id = generate_id()
         else:
@@ -726,7 +729,7 @@ class Input(Connection):
         # Connect them
         self.source = connection
         connection.target = self
-    
+
     def disconnect(self):
         self.source = None
 
@@ -791,7 +794,7 @@ class Output(Connection):
         # Connect them
         self.target = connection
         connection.source = self
-    
+
     def disconnect(self):
         self.target = None
 
