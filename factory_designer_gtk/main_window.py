@@ -564,8 +564,9 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.boxComponentErrors.append(lbl)
 
             # Update tags listing
-            self.boxComponentTags.component = self.blueprint.selected
-            self.boxComponentTags.repopulate()
+            if self.boxComponentTags not in skip:
+                self.boxComponentTags.component = self.blueprint.selected
+                self.boxComponentTags.repopulate()
 
             # Make sure everything is visible
             self.boxComponentDetails.set_visible(True)
@@ -1693,7 +1694,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __boxComponentTags_changed(self):
         self.unsaved_changes = True
-        self.update_window()
+        self.update_window(skip=[self.boxComponentTags])
 
     # + Component danger zone signal handlers
 

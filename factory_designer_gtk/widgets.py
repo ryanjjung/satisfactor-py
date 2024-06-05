@@ -334,7 +334,6 @@ class FactoryDesignerWidget(Gtk.Widget):
                 comp_x + offset_x,
                 comp_y + offset_y
             )
-            # import pdb; pdb.set_trace()
             self.component_grab_event.geometry.calculate(
                 label_height=None,
                 label_width=None,
@@ -500,11 +499,14 @@ class TagBox(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.callback = callback
         self.__component = component
+        self.__row_count = 0
 
         # Set up the outer box for packing
         self.set_halign(Gtk.Align.CENTER)
 
         self.__build()
+        if callback and component:
+            self.repopulate()
 
     @property
     def component(self):
@@ -565,11 +567,9 @@ class TagBox(Gtk.Box):
         which show component data.
         '''
 
-        logging.debug('Repopulate called')
         # Remove all rows in the grid
-        remove = 0
-        while remove is not None:
-            remove = self.gridTags.remove_row(0)
+        for i in range(self.__row_count):
+            self.gridTags.remove_row(0)
 
         if not self.component:
             return
@@ -609,6 +609,7 @@ class TagBox(Gtk.Box):
             self.gridTags.attach(lblKey, 1, i, 1, 1)
             self.gridTags.attach(lblEquals, 2, i, 1, 1)
             self.gridTags.attach(entryValue, 3, i, 1, 1)
+        self.__row_count = len(sorted_keys)
 
     def __btnNewTag_clicked(self, btn):
         key = self.entryNewTagKey.get_buffer().get_text()
@@ -628,6 +629,7 @@ class TagBox(Gtk.Box):
         self.component.tags[key] = value
         self.entryNewTagKey.get_buffer().set_text('', -1)
         self.entryNewTagValue.get_buffer().set_text('', -1)
+        self.repopulate()
         self.callback()
 
     def __btnRemoveTag_clicked(self, btn):
