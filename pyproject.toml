@@ -1,0 +1,22 @@
+[project]
+name = "satisfactorpy"
+version = "0.0.1"
+description = "A Python utility for planning factories in the video game Satisfactory"
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
+
+[project.urls]
+repository = "https://github.com/ryanjjung/satisfactor-py.git"
+issues = "https://github.com/ryanjjung/satisfactor-py/issues"
+
+[tool.setuptools]
+packages = [ 'satisfactory', 'factory_designer_gtk']
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[project.optional-dependencies]
+dev = [
+    "ipython",
+    "ruff",
+]
