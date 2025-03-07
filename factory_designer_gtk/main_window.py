@@ -1,7 +1,9 @@
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
 
 import gi
+
 gi.require_version('Gtk', '4.0')
 
 from gi.repository import Gtk, Gio, GObject
@@ -24,7 +26,6 @@ from satisfactory.buildings import (
     ConveyorSplitter,
     Miner,
 )
-from satisfactory.conveyances import get_all as get_all_conveyances
 from satisfactory.factories import Factory
 from satisfactory.items import (
     get_all as get_all_items,
@@ -41,9 +42,7 @@ from factory_designer_gtk.drawing import Blueprint
 from factory_designer_gtk.geometry import Coordinate2D
 from factory_designer_gtk.widgets import (
     FactoryDesignerWidget,
-    InteractionMode,
     TaggableButton,
-    TaggableEntryBuffer,
     TagBox,
 )
 
@@ -55,19 +54,20 @@ MAIN_WINDOW_TITLE_BASE = 'Satisfactory Designer'
 
 
 class MainWindow(Gtk.ApplicationWindow):
-    '''
+    """
     The main factory designer window.
 
       - filename: A file created by satisfactory.factories.Factory.save which the window is to be
             initialized with.
-    '''
+    """
 
-    def __init__(self,
+    def __init__(
+        self,
         *args,
         filename: str = None,
         width: int = MAIN_WINDOW_DEFAULT_WIDTH,
         height: int = MAIN_WINDOW_DEFAULT_HEIGHT,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
@@ -76,11 +76,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.buildings = []
         self.unsaved_changes = False
 
-        self.filters = {
-            'availability': True,
-            'building_category': False,
-            'name': False
-        }
+        self.filters = {'availability': True, 'building_category': False, 'name': False}
 
         self.set_default_size(width, height)
         self.__build_ui_helpers()
@@ -91,51 +87,47 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.update_window()
 
-
     # Common Functions
 
     def block_all_signals(self):
-        '''
+        """
         Places a block on all signal handlers, preventing them from emitting events until you run
         unblock_all_signals. For this to work, any signals you need to block need to be registered
         to `self.windowSignals`.
-        '''
+        """
 
         for handler in self.windowSignals:
             GObject.signal_handler_block(handler[0], handler[1])
 
     def confirm_discard(self, callback):
-        '''
+        """
         Presents a GTKDialog asking the user if it's okay to discard unsaved changes.
-        '''
+        """
 
-        dlgDiscardChanges = ConfirmOrCancelWindow(self,
-            'Discard Unsaved Changes?',
-            'You have unsaved changes. Proceed?',
-            callback)
+        dlgDiscardChanges = ConfirmOrCancelWindow(
+            self, 'Discard Unsaved Changes?', 'You have unsaved changes. Proceed?', callback
+        )
         dlgDiscardChanges.present()
 
     @staticmethod
     def get_building_options():
-        '''
+        """
         Returns a list of all buildings the library is aware of; caches the result for quick access.
-        '''
+        """
 
         global ALL_BUILDINGS
         if ALL_BUILDINGS is None:
-            ALL_BUILDINGS = [ ResourceNode(), InfiniteSupplyNode() ]
+            ALL_BUILDINGS = [ResourceNode(), InfiniteSupplyNode()]
             for bldg in get_all_buildings():
                 ALL_BUILDINGS.append(bldg())
-            #ALL_BUILDINGS.extend([ bldg() for bldg in get_all_buildings()])
-            ALL_BUILDINGS.extend([ bldg() for bldg in get_all_storages()])
+            # ALL_BUILDINGS.extend([ bldg() for bldg in get_all_buildings()])
+            ALL_BUILDINGS.extend([bldg() for bldg in get_all_storages()])
         return ALL_BUILDINGS
 
-    def load_blueprint(self,
-        filename: str
-    ):
-        '''
+    def load_blueprint(self, filename: str):
+        """
         Opens a factory blueprint file for use with the application and triggers a UI update.
-        '''
+        """
 
         try:
             # Load the blueprint and store it in the class as separate actions,
@@ -150,20 +142,16 @@ class MainWindow(Gtk.ApplicationWindow):
         except IOError as ex:
             dlgError = Gtk.AlertDialog()
             dlgError.set_modal(True)
-            dlgError.set_message(
-                f'An error occurred when loading a blueprint from file {filename}\n  {ex}')
+            dlgError.set_message(f'An error occurred when loading a blueprint from file {filename}\n  {ex}')
             dlgError.show(self)
 
-    def set_tier_and_upgrade(self,
-        tier: int = None,
-        upgrade: int = None
-    ):
-        '''
+    def set_tier_and_upgrade(self, tier: int = None, upgrade: int = None):
+        """
         Sets the active values in the combo boxes for tier and upgrade
 
             - tier: The tier to set the factory unlock level to
             - upgrade: The upgrade level to set in the factory
-        '''
+        """
 
         if self.blueprint:
             self.block_all_signals()
@@ -184,28 +172,28 @@ class MainWindow(Gtk.ApplicationWindow):
             self.unblock_all_signals()
 
     def set_window_title(self):
-        '''
+        """
         Update the window's title appropriately
-        '''
+        """
 
         title_prefix = f'{"*" if self.unsaved_changes else ""}'
-        title_suffix = f' ({self.blueprintFile.split('/')[-1]})' if self.blueprintFile else ''
+        title_suffix = f' ({self.blueprintFile.split("/")[-1]})' if self.blueprintFile else ''
         self.set_title(f'{title_prefix}{MAIN_WINDOW_TITLE_BASE}{title_suffix}')
 
     def unblock_all_signals(self):
-        '''
+        """
         Removes a block from all signal handlers, restoring their ability to emit signals. These
         signals were likely placed by block_all_signals. For this to work, any signal you wish to
         unblock must be registered with `self.windowSignals`.
-        '''
+        """
 
         for handler in self.windowSignals:
             GObject.signal_handler_unblock(handler[0], handler[1])
 
     def update_buildings_list(self):
-        '''
+        """
         Updates the list of buildings in the left panel, taking into account all filters.
-        '''
+        """
 
         if self.blueprint:
             # Determine the available buildings
@@ -223,13 +211,19 @@ class MainWindow(Gtk.ApplicationWindow):
 
             # Filter out anything that doesn't match the building category
             if self.filters['building_category'] and self.cboBuildingCategory.get_active() != -1:
-                avail_buildings = [ building for building in avail_buildings
-                    if building.building_category.name == self.cboBuildingCategory.get_active_text().upper() ]
+                avail_buildings = [
+                    building
+                    for building in avail_buildings
+                    if building.building_category.name == self.cboBuildingCategory.get_active_text().upper()
+                ]
 
             # Filter out anything that doesn't match the name
             if self.filters['name'] and self.entryNameFilter.get_buffer().get_text() != '':
-                avail_buildings = [ building for building in avail_buildings
-                    if self.entryNameFilter.get_buffer().get_text().lower() in building.name.lower() ]
+                avail_buildings = [
+                    building
+                    for building in avail_buildings
+                    if self.entryNameFilter.get_buffer().get_text().lower() in building.name.lower()
+                ]
 
             # Sort the list alphabetically
             avail_buildings = sorted(avail_buildings, key=lambda x: x.name)
@@ -239,22 +233,18 @@ class MainWindow(Gtk.ApplicationWindow):
             self.buildings = []
             listStore = Gtk.ListStore(Pixbuf, str)
             for building in avail_buildings:
-                listStore.append((
-                    self.pixelBuffers['building_options'][building.__class__.__name__],
-                    building.name))
+                listStore.append((self.pixelBuffers['building_options'][building.__class__.__name__], building.name))
                 self.buildings.append(building.__class__)
             self.lstBuildings = listStore
             self.icovwBuildings.set_model(self.lstBuildings)
             self.icovwBuildings.set_pixbuf_column(0)
             self.icovwBuildings.set_text_column(1)
 
-    def update_component_context(self,
-        skip: list = []
-    ):
-        '''
+    def update_component_context(self, skip: list = []):
+        """
         Populates the widgets in the component context panel which display read-only information
         about the state of the selected component.
-        '''
+        """
 
         if self.blueprint and self.blueprint.selected:
             # This makes the rest of this code read better
@@ -262,28 +252,28 @@ class MainWindow(Gtk.ApplicationWindow):
 
             # Update the building type
             if isinstance(c, Building):
-                self.lblComponentBuildingType.set_text(
-                    f'Building type: {c.building_type.name.title()}')
+                self.lblComponentBuildingType.set_text(f'Building type: {c.building_type.name.title()}')
                 self.lblComponentBuildingType.set_visible(True)
             else:
                 self.lblComponentBuildingType.set_visible(False)
 
             # Update the availability display
             self.lblComponentAvailability.set_text(
-                f'Available at Tier {c.availability.tier}, Upgrade {c.availability.upgrade}')
+                f'Available at Tier {c.availability.tier}, Upgrade {c.availability.upgrade}'
+            )
 
             # Update the dimensions
             if hasattr(c, 'dimensions'):
                 self.lblComponentDimensions.set_text(
-                    f'Dimensions: {c.dimensions.width} x {c.dimensions.length} x {c.dimensions.height}')
+                    f'Dimensions: {c.dimensions.width} x {c.dimensions.length} x {c.dimensions.height}'
+                )
                 self.lblComponentDimensions.set_visible(True)
             else:
                 self.lblComponentDimensions.set_visible(False)
 
             # Update the base power usage
             if hasattr(c, 'base_power_usage'):
-                self.lblComponentBasePowerUsage.set_text(
-                    f'Base Power Usage: {c.base_power_usage}W')
+                self.lblComponentBasePowerUsage.set_text(f'Base Power Usage: {c.base_power_usage}W')
                 self.lblComponentBasePowerUsage.set_visible(True)
             else:
                 self.lblComponentBasePowerUsage.set_visible(False)
@@ -297,13 +287,15 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.entryComponentName.get_buffer().set_text(c.name, -1)
 
             # Update the clock rate, but not everything has one
-            if isinstance(c, Building) \
-                and not isinstance(c, Conveyance) \
-                and not isinstance(c, ConveyorMerger) \
-                and not isinstance(c, ConveyorSplitter):
-                    if self.spinComponentClockRate not in skip:
-                        self.spinComponentClockRate.set_value(c.clock_rate)
-                    self.boxComponentClockRate.set_visible(True)
+            if (
+                isinstance(c, Building)
+                and not isinstance(c, Conveyance)
+                and not isinstance(c, ConveyorMerger)
+                and not isinstance(c, ConveyorSplitter)
+            ):
+                if self.spinComponentClockRate not in skip:
+                    self.spinComponentClockRate.set_value(c.clock_rate)
+                self.boxComponentClockRate.set_visible(True)
             else:
                 self.boxComponentClockRate.set_visible(False)
 
@@ -316,94 +308,107 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.chkComponentStandby.set_visible(False)
 
             # Update available and selected recipes
-            if isinstance(c, Building) \
-                and not isinstance(c, Conveyance) \
-                and not isinstance(c, Storage):
-                    # Always filter compatible recipes by building type
-                    compatible_recipes = [ (recipe_name, recipe) for recipe_name, recipe in get_all_recipes()
-                        if recipe.building_type == c.building_type]
-                    # If the user has availability filtering enabled, filter by that as well
-                    available_recipes = []
-                    if self.chkAvailability.get_active():
-                        for _, recipe in compatible_recipes:
-                            if (recipe.availability.tier is None
-                                or recipe.availability.tier < self.blueprint.factory.availability.tier):
-                                    available_recipes.append(recipe)
-                            elif recipe.availability.tier == self.blueprint.factory.availability.tier:
-                                if recipe.availability.upgrade is None \
-                                    or recipe.availability.upgrade <= self.blueprint.factory.availability.upgrade:
-                                        available_recipes.append(recipe)
-                    else:
-                        available_recipes = compatible_recipes
+            if isinstance(c, Building) and not isinstance(c, Conveyance) and not isinstance(c, Storage):
+                # Always filter compatible recipes by building type
+                compatible_recipes = [
+                    (recipe_name, recipe)
+                    for recipe_name, recipe in get_all_recipes()
+                    if recipe.building_type == c.building_type
+                ]
+                # If the user has availability filtering enabled, filter by that as well
+                available_recipes = []
+                if self.chkAvailability.get_active():
+                    for _, recipe in compatible_recipes:
+                        if (
+                            recipe.availability.tier is None
+                            or recipe.availability.tier < self.blueprint.factory.availability.tier
+                        ):
+                            available_recipes.append(recipe)
+                        elif recipe.availability.tier == self.blueprint.factory.availability.tier:
+                            if (
+                                recipe.availability.upgrade is None
+                                or recipe.availability.upgrade <= self.blueprint.factory.availability.upgrade
+                            ):
+                                available_recipes.append(recipe)
+                else:
+                    available_recipes = compatible_recipes
 
-                    compatible_recipes.sort(key=lambda x: x[0])
+                compatible_recipes.sort(key=lambda x: x[0])
 
-                    # Recreate the contents of the recipe selector
-                    if self.cboComponentSelectedRecipe not in skip:
-                        self.cboComponentSelectedRecipe.remove_all()
-                        for recipe_name, recipe in compatible_recipes:
-                            self.cboComponentSelectedRecipe.append(recipe_name, recipe.name)
-                        if c.recipe:
-                            current_recipe = c.recipe.programmatic_name()
-                            # Determine index of current recipe and set the recipe selector to that
-                            current_recipe_id = None
-                            for i in range(len(compatible_recipes)):
-                                if compatible_recipes[i][0] == current_recipe:
-                                    current_recipe_id = i
-                                    break
-                            if current_recipe is not None:
-                                self.cboComponentSelectedRecipe.set_active(current_recipe_id)
-
+                # Recreate the contents of the recipe selector
+                if self.cboComponentSelectedRecipe not in skip:
+                    self.cboComponentSelectedRecipe.remove_all()
+                    for recipe_name, recipe in compatible_recipes:
+                        self.cboComponentSelectedRecipe.append(recipe_name, recipe.name)
                     if c.recipe:
-                        consumes_store = Gtk.ListStore(Pixbuf, str)
-                        produces_store = Gtk.ListStore(Pixbuf, str)
-                        if c.recipe.consumes:
-                            for ingredient in c.recipe.consumes:
-                                ing_rate = ingredient.rate * c.clock_rate
-                                consumes_store.append((
+                        current_recipe = c.recipe.programmatic_name()
+                        # Determine index of current recipe and set the recipe selector to that
+                        current_recipe_id = None
+                        for i in range(len(compatible_recipes)):
+                            if compatible_recipes[i][0] == current_recipe:
+                                current_recipe_id = i
+                                break
+                        if current_recipe is not None:
+                            self.cboComponentSelectedRecipe.set_active(current_recipe_id)
+
+                if c.recipe:
+                    consumes_store = Gtk.ListStore(Pixbuf, str)
+                    produces_store = Gtk.ListStore(Pixbuf, str)
+                    if c.recipe.consumes:
+                        for ingredient in c.recipe.consumes:
+                            ing_rate = ingredient.rate * c.clock_rate
+                            consumes_store.append(
+                                (
                                     self.pixelBuffers['items'][ingredient.item.programmatic_name()],
-                                    f'{ing_rate}x {ingredient.item.name} /m'))
-                        if c.recipe.produces:
-                            for ingredient in c.recipe.produces:
-                                if isinstance(c, Miner):
-                                    if c.inputs[0].source and c.inputs[0].source.attached_to:
-                                        ing_rate = ingredient.rate * c.inputs[0].source.attached_to.purity.value
-                                    else:
-                                        ing_rate = ingredient.rate
+                                    f'{ing_rate}x {ingredient.item.name} /m',
+                                )
+                            )
+                    if c.recipe.produces:
+                        for ingredient in c.recipe.produces:
+                            if isinstance(c, Miner):
+                                if c.inputs[0].source and c.inputs[0].source.attached_to:
+                                    ing_rate = ingredient.rate * c.inputs[0].source.attached_to.purity.value
                                 else:
                                     ing_rate = ingredient.rate
-                                ing_rate *= c.clock_rate
-                                produces_store.append((
+                            else:
+                                ing_rate = ingredient.rate
+                            ing_rate *= c.clock_rate
+                            produces_store.append(
+                                (
                                     self.pixelBuffers['items'][ingredient.item.programmatic_name()],
-                                    f'{ing_rate}x {ingredient.item.name} /m'))
-                        self.icovwConsumes.set_model(consumes_store)
-                        self.icovwConsumes.set_pixbuf_column(0)
-                        self.icovwConsumes.set_text_column(1)
-                        self.icovwProduces.set_model(produces_store)
-                        self.icovwProduces.set_pixbuf_column(0)
-                        self.icovwProduces.set_text_column(1)
-                        self.boxSelectedRecipe.set_visible(True)
-                    else:
-                        self.boxSelectedRecipe.set_visible(False)
+                                    f'{ing_rate}x {ingredient.item.name} /m',
+                                )
+                            )
+                    self.icovwConsumes.set_model(consumes_store)
+                    self.icovwConsumes.set_pixbuf_column(0)
+                    self.icovwConsumes.set_text_column(1)
+                    self.icovwProduces.set_model(produces_store)
+                    self.icovwProduces.set_pixbuf_column(0)
+                    self.icovwProduces.set_text_column(1)
+                    self.boxSelectedRecipe.set_visible(True)
+                else:
+                    self.boxSelectedRecipe.set_visible(False)
 
-                    # Ensure it's visible
-                    self.boxResourceNodeRecipe.set_visible(False)
-                    self.boxComponentSelectedRecipe.set_visible(True)
-                    self.boxISNRecipe.set_visible(False)
+                # Ensure it's visible
+                self.boxResourceNodeRecipe.set_visible(False)
+                self.boxComponentSelectedRecipe.set_visible(True)
+                self.boxISNRecipe.set_visible(False)
             elif isinstance(c, InfiniteSupplyNode):
                 # Set the spin button up properly
                 if self.spinISNRecipeRate not in skip:
                     self.spinISNRecipeRate.set_value(c.rate or 0.0)
 
                 # Filter out items that can't be conveyed
-                items = [(item_name, item) for item_name, item in get_all_items()
-                    if item.conveyance_type is not None]
+                items = [(item_name, item) for item_name, item in get_all_items() if item.conveyance_type is not None]
 
                 # If the availability filter is on, filter those out, too
                 if self.chkAvailability.get_active():
-                    items = [(item_name, item) for item_name, item in items
+                    items = [
+                        (item_name, item)
+                        for item_name, item in items
                         if item.availability.tier <= self.blueprint.factory.availability.tier
-                        and item.availability.upgrade <= self.blueprint.factory.availability.upgrade]
+                        and item.availability.upgrade <= self.blueprint.factory.availability.upgrade
+                    ]
 
                 # Populate the combo box
                 if self.cboISNRecipeItem not in skip:
@@ -468,19 +473,18 @@ class MainWindow(Gtk.ApplicationWindow):
                 icovw = Gtk.IconView()
                 store = Gtk.ListStore(Pixbuf, str)
                 for ingredient in c.inputs[i].ingredients:
-                    store.append((
-                        self.pixelBuffers['items'][ingredient.item.programmatic_name()],
-                        f'{ingredient.rate}x {ingredient.item.name} /m'
-                    ))
+                    store.append(
+                        (
+                            self.pixelBuffers['items'][ingredient.item.programmatic_name()],
+                            f'{ingredient.rate}x {ingredient.item.name} /m',
+                        )
+                    )
                 icovw.set_model(store)
                 icovw.set_pixbuf_column(0)
                 icovw.set_text_column(1)
                 self.icovwInputs.append(icovw)
 
-                button = TaggableButton(tags={
-                    'component': c,
-                    'connection': c.inputs[i],
-                    'connection_index': i})
+                button = TaggableButton(tags={'component': c, 'connection': c.inputs[i], 'connection_index': i})
                 button.set_label('Manage...')
                 button.connect('clicked', self.__btnConnection_clicked)
                 self.btnConnectInputs.append(button)
@@ -500,19 +504,18 @@ class MainWindow(Gtk.ApplicationWindow):
                 icovw = Gtk.IconView()
                 store = Gtk.ListStore(Pixbuf, str)
                 for ingredient in c.outputs[i].ingredients:
-                    store.append((
-                        self.pixelBuffers['items'][ingredient.item.programmatic_name()],
-                        f'{ingredient.rate}x {ingredient.item.name} /m'
-                    ))
+                    store.append(
+                        (
+                            self.pixelBuffers['items'][ingredient.item.programmatic_name()],
+                            f'{ingredient.rate}x {ingredient.item.name} /m',
+                        )
+                    )
                 icovw.set_model(store)
                 icovw.set_pixbuf_column(0)
                 icovw.set_text_column(1)
                 self.icovwOutputs.append(icovw)
 
-                button = TaggableButton(tags={
-                    'component': c,
-                    'connection': c.outputs[i],
-                    'connection_index': i})
+                button = TaggableButton(tags={'component': c, 'connection': c.outputs[i], 'connection_index': i})
                 button.set_label('Manage...')
                 button.connect('clicked', self.__btnConnection_clicked)
                 self.btnConnectOutputs.append(button)
@@ -526,9 +529,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
             # Get the recipe to build the component so we can update the build cost
             try:
-                comp_recipe_name, comp_recipe = [ (name, recipe) for name, recipe
-                    in get_all_recipes()
-                    if name == c.__class__.__name__ ][0]
+                comp_recipe_name, comp_recipe = [
+                    (name, recipe) for name, recipe in get_all_recipes() if name == c.__class__.__name__
+                ][0]
             except IndexError:
                 logging.debug('Failed to get the component recipe')
                 comp_recipe = None
@@ -538,9 +541,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self.boxComponentRecipe.remove(self.icovwComponentRecipe)
             if comp_recipe:
                 for ingredient in comp_recipe.consumes:
-                    recipe_store.append((
-                        self.pixelBuffers['items'][ingredient.item.programmatic_name()],
-                        f'{ingredient.amount}x {ingredient.item.name}'))
+                    recipe_store.append(
+                        (
+                            self.pixelBuffers['items'][ingredient.item.programmatic_name()],
+                            f'{ingredient.amount}x {ingredient.item.name}',
+                        )
+                    )
                 self.icovwComponentRecipe.set_model(recipe_store)
                 self.icovwComponentRecipe.set_pixbuf_column(0)
                 self.icovwComponentRecipe.set_text_column(1)
@@ -574,13 +580,14 @@ class MainWindow(Gtk.ApplicationWindow):
             # If nothing is selected, just hide all these controls
             self.boxComponentDetails.set_visible(False)
 
-    def update_window(self,
+    def update_window(
+        self,
         skip: list = [],
     ):
-        '''
+        """
         When the factory context of the MainWindow changes, call this function to update all of the
         UI elements depending on that context.
-        '''
+        """
 
         self.block_all_signals()
         self.set_window_title()
@@ -602,16 +609,15 @@ class MainWindow(Gtk.ApplicationWindow):
         self.factoryDesigner.queue_draw()
         self.unblock_all_signals()
 
-
     # Layout Construction
 
     def __build_window(self):
-        '''
+        """
         Builds the contents of the main window. A strip of application/factory-level functions appear
         across the top. A column along the left displays building options. A column along the right
         displays info based on the current context. A space through the middle is the main factory
         designer area.
-        '''
+        """
 
         # Track all signals so we can block/unblock them easily
         self.windowSignals = []
@@ -653,10 +659,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.set_child(self.boxMain)
 
     def __build_buildings_options(self):
-        '''
+        """
         Builds the contents of the left-hand pane, primarily containing a list of buildings
         available to the user.
-        '''
+        """
 
         # Start with two vertical panes
         self.paneBuildingsOptions = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
@@ -721,9 +727,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneBuildingsOptions.set_end_child(self.boxBuildings)
 
     def __build_component_context_panel(self):
-        '''
+        """
         Builds the right-side panel containing info about the selected component.
-        '''
+        """
 
         # Wrap everything in a scrollable view
         self.scrollComponentDetails = Gtk.ScrolledWindow()
@@ -742,7 +748,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentDetails.append(self.lblComponentHeader)
 
         # Labels for basic details
-        self.lblComponentBuildingType = Gtk.Label(label=f'Building type:')
+        self.lblComponentBuildingType = Gtk.Label(label='Building type:')
         self.lblComponentAvailability = Gtk.Label(label='')
         self.lblComponentDimensions = Gtk.Label()
         self.lblComponentBasePowerUsage = Gtk.Label()
@@ -795,11 +801,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentClockRate = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.boxComponentClockRate.set_halign(Gtk.Align.CENTER)
         self.lblComponentClockRate = Gtk.Label(label='Clock rate:')
-        self.adjClockSpeed = Gtk.Adjustment(
-            lower=0.0,
-            upper=2.5,
-            step_increment=0.1,
-            page_increment=1.0)
+        self.adjClockSpeed = Gtk.Adjustment(lower=0.0, upper=2.5, step_increment=0.1, page_increment=1.0)
         self.adjClockSpeed.set_step_increment(0.1)
         self.spinComponentClockRate = Gtk.SpinButton(adjustment=self.adjClockSpeed)
         self.spinComponentClockRate.set_digits(2)
@@ -838,12 +840,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxISNRecipe.set_halign(Gtk.Align.CENTER)
         self.lblISNRecipe = Gtk.Label(label='Recipe:')
         self.spinISNRecipeRate = Gtk.SpinButton()
-        self.adjISNRecipeRate = Gtk.Adjustment(
-            lower=0,
-            upper=1000,
-            step_increment=1,
-            page_increment=10,
-            page_size=10)
+        self.adjISNRecipeRate = Gtk.Adjustment(lower=0, upper=1000, step_increment=1, page_increment=10, page_size=10)
         self.spinISNRecipeRate.set_adjustment(self.adjISNRecipeRate)
         self.cboISNRecipeItem = Gtk.ComboBoxText()
         self.boxISNRecipe.append(self.lblISNRecipe)
@@ -935,7 +932,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.boxComponentRecipe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.lblComponentRecipe = Gtk.Label()
         self.lblComponentRecipe.set_markup('<b>Component Build Cost</b>')
-        self.lblComponentRecipe.set_margin_top(10) # Put a little visual space here
+        self.lblComponentRecipe.set_margin_top(10)  # Put a little visual space here
         self.icovwComponentRecipe = Gtk.IconView()
         self.icovwComponentRecipe.set_item_orientation(Gtk.Orientation.HORIZONTAL)
         self.boxComponentRecipe.append(self.lblComponentRecipe)
@@ -959,10 +956,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.scrollComponentDetails.set_child(self.boxComponentDetails)
 
     def __build_context_panel(self):
-        '''
+        """
         Builds the right-hand panel showing context about the factory and selected component. This
         is made of two stacked panels showing factory and component details.
-        '''
+        """
 
         self.paneContext = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.__build_factory_context_panel()
@@ -973,9 +970,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.paneContext.set_position(100)
 
     def __build_factory_context_panel(self):
-        '''
+        """
         Builds the right-side panel containing factory details.
-        '''
+        """
 
         # Wrap everything in a scrollwindow
         self.scrollFactoryFunctions = Gtk.ScrolledWindow()
@@ -1034,18 +1031,18 @@ class MainWindow(Gtk.ApplicationWindow):
         self.scrollFactoryFunctions.set_child(self.boxFactoryFunctions)
 
     def __build_factory_designer(self):
-        '''
+        """
         Builds the middle panel with the factory designer display
-        '''
+        """
 
         self.scrollFactoryDesigner = Gtk.ScrolledWindow()
         self.factoryDesigner = FactoryDesignerWidget(self, self.blueprint)
         self.scrollFactoryDesigner.set_child(self.factoryDesigner)
 
     def __build_top_bar(self):
-        '''
+        """
         Builds the UI controls which run across the top bar of the window.
-        '''
+        """
 
         # The bar's top level object is a horizontal box with some padding
         self.boxTopBar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -1089,21 +1086,23 @@ class MainWindow(Gtk.ApplicationWindow):
         return self.boxTopBar
 
     def __build_ui_helpers(self):
-        '''
+        """
         Builds reusable items which are unique to this application
-        '''
+        """
 
         # Populate the special resource node settings widgets and show them.
         # Those items should be ones that can be produced by miner recipes.
-        miner_recipes = [ (recipe_name, recipe) for recipe_name, recipe in get_all_recipes()
-            if recipe.building_type == BuildingType.MINER ]
+        miner_recipes = [
+            (recipe_name, recipe)
+            for recipe_name, recipe in get_all_recipes()
+            if recipe.building_type == BuildingType.MINER
+        ]
         node_items = []
         for _, recipe in miner_recipes:
-            node_items.extend([ ingredient.item.programmatic_name() \
-                for ingredient in recipe.produces])
+            node_items.extend([ingredient.item.programmatic_name() for ingredient in recipe.produces])
         self.node_items = sorted(set(node_items))
 
-        self.purities = [ purity[1] for purity in Purity.__members__.items() ]
+        self.purities = [purity[1] for purity in Purity.__members__.items()]
 
         self.satFileFilter = Gtk.FileFilter()
         self.satFileFilter.set_name('Satisfactory Blueprints (*.sat)')
@@ -1113,112 +1112,113 @@ class MainWindow(Gtk.ApplicationWindow):
         self.__load_images()
 
     def __connect_handlers(self):
-        '''
+        """
         Connects signals for the widgets on this window. This is done as a separate task after the
         window has been fully constructed. This prevents signals from being emitted before the
         window is functional.
 
         Each signal is registered to the global windowSignals list so that the signals can be
         suppressed during widget updates, preventing infinite signal loops.
-        '''
+        """
 
-        self.windowSignals.extend([
-            # Signals for this window
-            (self, self.connect('close-request', self.__mainWindow_closeRequested)),
-
-            # Signals for widgets in the top bar containing factory-level options
-            (self.btnNewFactory,
-                self.btnNewFactory.connect('clicked', self.__btnNewFactory_clicked)),
-            (self.btnOpenFactory,
-                self.btnOpenFactory.connect('clicked', self.__btnOpenFactory_clicked)),
-            (self.btnSaveFactory,
-                self.btnSaveFactory.connect('clicked', self.__btnSaveFactory_clicked)),
-            (self.btnSaveFactoryAs,
-                self.btnSaveFactoryAs.connect('clicked', self.__btnSaveFactoryAs_clicked)),
-            (self.btnSimulate,
-                self.btnSimulate.connect('clicked', self.__btnSimulate_clicked)),
-            (self.btnPurge,
-                self.btnPurge.connect('clicked', self.__btnPurge_clicked)),
-
-            # Signals for the buildings panel
-            (self.chkAvailability,
-                self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)),
-            (self.chkBuildingCategory,
-                self.chkBuildingCategory.connect_after(
-                    'toggled',
-                    self.__chkBuildingCategory_toggled)),
-            (self.cboBuildingCategory,
-                self.cboBuildingCategory.connect_after(
-                    'changed',
-                    self.__cboBuildingCategory_changed)),
-            (self.chkNameFilter,
-                self.chkNameFilter.connect_after('toggled', self.__chkNameFilter_toggled)),
-            (self.entryNameFilter.get_buffer(),
-                self.entryNameFilter.get_buffer().connect_after('deleted-text',
-                    self.__entryNameFilter_deleted)),
-            (self.entryNameFilter.get_buffer(),
-                self.entryNameFilter.get_buffer().connect_after('inserted-text',
-                    self.__entryNameFilter_inserted)),
-            (self.btnBuild,
-                self.btnBuild.connect('clicked', self.__btnBuild_clicked)),
-
-            # Signals for component detail widgets
-            (self.entryFactoryName.get_buffer(),
-                self.entryFactoryName.get_buffer().connect_after('deleted-text',
-                    self.__entryFactoryName_deleted)),
-            (self.entryFactoryName.get_buffer(),
-                self.entryFactoryName.get_buffer().connect('inserted-text',
-                    self.__entryFactoryName_inserted)),
-            (self.cboTier,
-                self.cboTier.connect_after('changed', self.__cboTier_changed)),
-            (self.cboUpgrade,
-                self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)),
-            (self.entryComponentName.get_buffer(),
-                self.entryComponentName.get_buffer().connect_after('deleted-text',
-                    self.__entryComponentName_deleted)),
-            (self.entryComponentName.get_buffer(),
-                self.entryComponentName.get_buffer().connect_after('inserted-text',
-                    self.__entryComponentName_inserted)),
-            (self.spinComponentClockRate,
-                self.spinComponentClockRate.connect(
-                    'value-changed',
-                    self.__spinComponentClockRate_changed)),
-            (self.chkComponentConstructed,
-                self.chkComponentConstructed.connect_after('toggled',
-                    self.__chkComponentConstructed_toggled)),
-            (self.chkComponentStandby,
-                self.chkComponentStandby.connect_after('toggled',
-                    self.__chkComponentStandby_toggled)),
-            (self.cboComponentSelectedRecipe,
-                self.cboComponentSelectedRecipe.connect_after(
-                    'changed',
-                    self.__cboComponentSelectedRecipe_changed)),
-            (self.spinISNRecipeRate,
-                self.spinISNRecipeRate.connect_after(
-                    'value-changed',
-                    self.__spinISNRecipeRate_value_changed)),
-            (self.cboResourceNodeItem,
-                self.cboResourceNodeItem.connect_after(
-                    'changed',
-                    self.__cboResourceNodeItem_changed)),
-            (self.cboResourceNodePurity,
-                self.cboResourceNodePurity.connect_after(
-                    'changed',
-                    self.__cboResourceNodePurity_changed)),
-            (self.cboISNRecipeItem,
-                self.cboISNRecipeItem.connect_after(
-                    'changed',
-                    self.__cboISNRecipeItem_changed)),
-
-            # Widgets in the "danger zone"
-            (self.btnDeleteComponent,
-                self.btnDeleteComponent.connect('clicked', self.__btnDeleteComponent_clicked)),
-        ])
+        self.windowSignals.extend(
+            [
+                # Signals for this window
+                (self, self.connect('close-request', self.__mainWindow_closeRequested)),
+                # Signals for widgets in the top bar containing factory-level options
+                (self.btnNewFactory, self.btnNewFactory.connect('clicked', self.__btnNewFactory_clicked)),
+                (self.btnOpenFactory, self.btnOpenFactory.connect('clicked', self.__btnOpenFactory_clicked)),
+                (self.btnSaveFactory, self.btnSaveFactory.connect('clicked', self.__btnSaveFactory_clicked)),
+                (self.btnSaveFactoryAs, self.btnSaveFactoryAs.connect('clicked', self.__btnSaveFactoryAs_clicked)),
+                (self.btnSimulate, self.btnSimulate.connect('clicked', self.__btnSimulate_clicked)),
+                (self.btnPurge, self.btnPurge.connect('clicked', self.__btnPurge_clicked)),
+                # Signals for the buildings panel
+                (self.chkAvailability, self.chkAvailability.connect_after('toggled', self.__chkAvailability_toggled)),
+                (
+                    self.chkBuildingCategory,
+                    self.chkBuildingCategory.connect_after('toggled', self.__chkBuildingCategory_toggled),
+                ),
+                (
+                    self.cboBuildingCategory,
+                    self.cboBuildingCategory.connect_after('changed', self.__cboBuildingCategory_changed),
+                ),
+                (self.chkNameFilter, self.chkNameFilter.connect_after('toggled', self.__chkNameFilter_toggled)),
+                (
+                    self.entryNameFilter.get_buffer(),
+                    self.entryNameFilter.get_buffer().connect_after('deleted-text', self.__entryNameFilter_deleted),
+                ),
+                (
+                    self.entryNameFilter.get_buffer(),
+                    self.entryNameFilter.get_buffer().connect_after('inserted-text', self.__entryNameFilter_inserted),
+                ),
+                (self.btnBuild, self.btnBuild.connect('clicked', self.__btnBuild_clicked)),
+                # Signals for component detail widgets
+                (
+                    self.entryFactoryName.get_buffer(),
+                    self.entryFactoryName.get_buffer().connect_after('deleted-text', self.__entryFactoryName_deleted),
+                ),
+                (
+                    self.entryFactoryName.get_buffer(),
+                    self.entryFactoryName.get_buffer().connect('inserted-text', self.__entryFactoryName_inserted),
+                ),
+                (self.cboTier, self.cboTier.connect_after('changed', self.__cboTier_changed)),
+                (self.cboUpgrade, self.cboUpgrade.connect('changed', self.__cboUpgrade_changed)),
+                (
+                    self.entryComponentName.get_buffer(),
+                    self.entryComponentName.get_buffer().connect_after(
+                        'deleted-text', self.__entryComponentName_deleted
+                    ),
+                ),
+                (
+                    self.entryComponentName.get_buffer(),
+                    self.entryComponentName.get_buffer().connect_after(
+                        'inserted-text', self.__entryComponentName_inserted
+                    ),
+                ),
+                (
+                    self.spinComponentClockRate,
+                    self.spinComponentClockRate.connect('value-changed', self.__spinComponentClockRate_changed),
+                ),
+                (
+                    self.chkComponentConstructed,
+                    self.chkComponentConstructed.connect_after('toggled', self.__chkComponentConstructed_toggled),
+                ),
+                (
+                    self.chkComponentStandby,
+                    self.chkComponentStandby.connect_after('toggled', self.__chkComponentStandby_toggled),
+                ),
+                (
+                    self.cboComponentSelectedRecipe,
+                    self.cboComponentSelectedRecipe.connect_after('changed', self.__cboComponentSelectedRecipe_changed),
+                ),
+                (
+                    self.spinISNRecipeRate,
+                    self.spinISNRecipeRate.connect_after('value-changed', self.__spinISNRecipeRate_value_changed),
+                ),
+                (
+                    self.cboResourceNodeItem,
+                    self.cboResourceNodeItem.connect_after('changed', self.__cboResourceNodeItem_changed),
+                ),
+                (
+                    self.cboResourceNodePurity,
+                    self.cboResourceNodePurity.connect_after('changed', self.__cboResourceNodePurity_changed),
+                ),
+                (
+                    self.cboISNRecipeItem,
+                    self.cboISNRecipeItem.connect_after('changed', self.__cboISNRecipeItem_changed),
+                ),
+                # Widgets in the "danger zone"
+                (
+                    self.btnDeleteComponent,
+                    self.btnDeleteComponent.connect('clicked', self.__btnDeleteComponent_clicked),
+                ),
+            ]
+        )
 
     def __load_images(self):
-        '''
+        """
         Load all images that get used in this window from disk and store them in memory.
-        '''
+        """
 
         pixbuf = Pixbuf()
         self.pixelBuffers = {}
@@ -1230,7 +1230,7 @@ class MainWindow(Gtk.ApplicationWindow):
         for building in all_buildings:
             imageFile = Path(f'./static/images/components/{building.__class__.__name__}.png')
             if imageFile.exists():
-                #pb = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
+                # pb = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
                 pb = pixbuf.new_from_file_at_size(str(imageFile), 64, 64)
             else:
                 pb = None
@@ -1248,15 +1248,14 @@ class MainWindow(Gtk.ApplicationWindow):
             item_pixbufs[itemname] = pb
         self.pixelBuffers['items'] = item_pixbufs
 
-
     # Signal Handlers
 
     # + Signal handlers for this window
     def __mainWindow_closeRequested(self, window):
-        '''
+        """
         The user has clicked the "X" on this window or otherwise told it to close. We intercept that
         request and make sure no unsaved changes will be lost.
-        '''
+        """
 
         if self.unsaved_changes:
             self.confirm_discard(self.__discard_response_close_window)
@@ -1265,11 +1264,11 @@ class MainWindow(Gtk.ApplicationWindow):
             return False
 
     def __discard_response_close_window(self, response):
-        '''
+        """
         The user has tried to close the window, but they had unsaved changes. We asked them if it's
         okay to discard their changes, and they have given us a response. If it's okay, close the
         window, but otherwise return them to the designer so they can save.
-        '''
+        """
 
         if response:
             self.destroy()
@@ -1277,9 +1276,9 @@ class MainWindow(Gtk.ApplicationWindow):
     # + "New" button signal handlers
 
     def __btnNewFactory_clicked(self, btn):
-        '''
+        """
         The user has clicked the New Factory button
-        '''
+        """
 
         if self.unsaved_changes:
             self.confirm_discard(self.__discard_response_new_factory)
@@ -1287,11 +1286,11 @@ class MainWindow(Gtk.ApplicationWindow):
             self.__discard_response_new_factory(True)
 
     def __discard_response_new_factory(self, response):
-        '''
+        """
         The user has clicked the New Factory button, but they have unsaved changes. They have been
         given a warning to this effect, and have responded either "Okay" (True) or "Cancel" (False).
         Alternatively, there are no unsaved changes, and response is True anyway.
-        '''
+        """
 
         if response:
             self.blueprint = Blueprint(factory=Factory(name='New Factory'))
@@ -1302,9 +1301,9 @@ class MainWindow(Gtk.ApplicationWindow):
     # + "Open" button signal handlers
 
     def __btnOpenFactory_clicked(self, btn):
-        '''
+        """
         The user has clicked the Open Factory button
-        '''
+        """
 
         if self.unsaved_changes:
             self.confirm_discard(self.__discard_response_open_factory)
@@ -1312,11 +1311,11 @@ class MainWindow(Gtk.ApplicationWindow):
             self.__discard_response_open_factory(True)
 
     def __discard_response_open_factory(self, response):
-        '''
+        """
         The user has clicked the Open Factory button, but they have unsaved changes. They have been
         given a warning to this effect, and have responded either "Okay" (True) or "Cancel" (False).
         Alternatively, there are no unsaved changes, and response is True anyway.
-        '''
+        """
 
         if response:
             dlgOpenFactory = Gtk.FileDialog()
@@ -1326,22 +1325,22 @@ class MainWindow(Gtk.ApplicationWindow):
             dlgOpenFactory.open(self, None, self.__dlgOpenFactory_response)
 
     def __dlgOpenFactory_response(self, dlg, response):
-        '''
+        """
         The user has selected a factory file to open
-        '''
+        """
 
         try:
             blueprintFile = dlg.open_finish(response)
             self.load_blueprint(blueprintFile.get_path())
         except Exception as ex:
-            print(f'[DEBUG] Couldn\'t open the blueprint: {ex}')
+            print(f"[DEBUG] Couldn't open the blueprint: {ex}")
 
     # + "Save" button signal handlers
 
     def __btnSaveFactory_clicked(self, btn):
-        '''
+        """
         The user has clicked the "Save" button
-        '''
+        """
 
         if self.unsaved_changes:
             if self.blueprintFile:
@@ -1356,9 +1355,9 @@ class MainWindow(Gtk.ApplicationWindow):
                 dlgSaveFactory.save(self, None, self.__dlgSaveFactoryAs_response)
 
     def __btnSaveFactoryAs_clicked(self, btn):
-        '''
+        """
         The user cliked the "Save As" button.
-        '''
+        """
 
         dlgSaveFactoryAs = Gtk.FileDialog()
         dlgSaveFactoryAs.set_title('Save Factory As...')
@@ -1367,11 +1366,11 @@ class MainWindow(Gtk.ApplicationWindow):
         dlgSaveFactoryAs.save(self, None, self.__dlgSaveFactoryAs_response)
 
     def __dlgSaveFactoryAs_response(self, dlg, response):
-        '''
+        """
         The user either clicked "Save" without having an already active blueprint file, or they
         clicked "Save As". They then either selected a file (response is True) or canceled
         the window (response is False).
-        '''
+        """
 
         if response:
             try:
@@ -1419,10 +1418,10 @@ class MainWindow(Gtk.ApplicationWindow):
     # + "Tier" combo box signal handlers
 
     def __cboTier_changed(self, cbo):
-        '''
+        """
         The "Tier" combo box has had its value changed. We need to populate the "Upgrade" combo box
         accordingly.
-        '''
+        """
 
         self.set_tier_and_upgrade(tier=cbo.get_active())
         self.update_buildings_list()
@@ -1474,8 +1473,7 @@ class MainWindow(Gtk.ApplicationWindow):
             # Create a default instance of that kind of component and set it to be added to the
             # blueprint when the user clicks somewhere there.
             if self.buildings[selected] == ResourceNode:
-                new_component = self.buildings[selected](
-                    item=IronOre)
+                new_component = self.buildings[selected](item=IronOre)
             else:
                 new_component = self.buildings[selected]()
             self.blueprint.add_component(new_component, self.blueprint.viewport.region.location)
@@ -1510,9 +1508,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.blueprint.selected.constructed = chk.get_active()
             if not isinstance(self.blueprint.selected, Conveyance):
                 geo = self.blueprint.geometry.get(self.blueprint.selected.id)
-                geo.calculate(
-                    scale=self.blueprint.viewport.scale,
-                    translate=self.blueprint.viewport.region.location)
+                geo.calculate(scale=self.blueprint.viewport.scale, translate=self.blueprint.viewport.region.location)
                 # geo._ComponentGeometry__calculate_badges()
             self.unsaved_changes = True
             self.update_window()
@@ -1522,25 +1518,21 @@ class MainWindow(Gtk.ApplicationWindow):
             self.blueprint.selected.standby = chk.get_active()
             if not isinstance(self.blueprint.selected, Conveyance):
                 geo = self.blueprint.geometry.get(self.blueprint.selected.id)
-                geo.calculate(
-                    scale=self.blueprint.viewport.scale,
-                    translate=self.blueprint.viewport.region.location)
+                geo.calculate(scale=self.blueprint.viewport.scale, translate=self.blueprint.viewport.region.location)
                 # geo._ComponentGeometry__calculate_badges()
             self.unsaved_changes = True
             self.update_window()
 
     def __cboComponentSelectedRecipe_changed(self, cbo):
-        if self.blueprint and self.blueprint.selected \
-            and isinstance(self.blueprint.selected, Building):
-                recipe_name = cbo.get_active_text().title().replace(' ', '')
-                try:
-                    recipe = [ recipe for name, recipe in get_all_recipes() \
-                        if name == recipe_name ][0]
-                    self.blueprint.selected.recipe = recipe
-                    self.unsaved_changes = True
-                    self.update_window(skip=[self.cboComponentSelectedRecipe])
-                except IndexError:
-                    logging.debug(f'No recipe called {recipe_name} was found')
+        if self.blueprint and self.blueprint.selected and isinstance(self.blueprint.selected, Building):
+            recipe_name = cbo.get_active_text().title().replace(' ', '')
+            try:
+                recipe = [recipe for name, recipe in get_all_recipes() if name == recipe_name][0]
+                self.blueprint.selected.recipe = recipe
+                self.unsaved_changes = True
+                self.update_window(skip=[self.cboComponentSelectedRecipe])
+            except IndexError:
+                logging.debug(f'No recipe called {recipe_name} was found')
 
     def __spinISNRecipeRate_value_changed(self, spin):
         if self.blueprint and self.blueprint.selected:
@@ -1549,43 +1541,37 @@ class MainWindow(Gtk.ApplicationWindow):
             self.update_window(skip=[self.spinISNRecipeRate])
 
     def __cboISNRecipeItem_changed(self, cbo):
-        if self.blueprint and self.blueprint.selected \
-            and isinstance(self.blueprint.selected, InfiniteSupplyNode):
-                item_name = cbo.get_active_text().title().replace(' ', '')
-                try:
-                    item = [ item for name, item in get_all_items() \
-                        if name == item_name ][0]
-                    self.blueprint.selected.item = item
-                    self.unsaved_changes = True
-                    self.update_window(skip=[self.cboISNRecipeItem])
-                except IndexError:
-                    logging.debug(f'No item called {item_name} was found')
+        if self.blueprint and self.blueprint.selected and isinstance(self.blueprint.selected, InfiniteSupplyNode):
+            item_name = cbo.get_active_text().title().replace(' ', '')
+            try:
+                item = [item for name, item in get_all_items() if name == item_name][0]
+                self.blueprint.selected.item = item
+                self.unsaved_changes = True
+                self.update_window(skip=[self.cboISNRecipeItem])
+            except IndexError:
+                logging.debug(f'No item called {item_name} was found')
 
     def __cboResourceNodeItem_changed(self, cbo):
-        if self.blueprint and self.blueprint.selected \
-            and isinstance(self.blueprint.selected, ResourceNode):
-                item_name = cbo.get_active_id()
-                try:
-                    item = [ item for name, item in get_all_items() \
-                        if name == item_name][0]
-                    self.blueprint.selected.item = item
-                    self.unsaved_changes = True
-                    self.update_window(skip=[self.cboResourceNodeItem])
-                except IndexError:
-                    logging.debug(f'No item called {item_name} was found')
+        if self.blueprint and self.blueprint.selected and isinstance(self.blueprint.selected, ResourceNode):
+            item_name = cbo.get_active_id()
+            try:
+                item = [item for name, item in get_all_items() if name == item_name][0]
+                self.blueprint.selected.item = item
+                self.unsaved_changes = True
+                self.update_window(skip=[self.cboResourceNodeItem])
+            except IndexError:
+                logging.debug(f'No item called {item_name} was found')
 
     def __cboResourceNodePurity_changed(self, cbo):
-        if self.blueprint and self.blueprint.selected \
-            and isinstance(self.blueprint.selected, ResourceNode):
-                purity_name = cbo.get_active_id()
-                try:
-                    purity = [ purity for name, purity in Purity.__members__.items()
-                        if name == purity_name ][0]
-                    self.blueprint.selected.purity = purity
-                    self.unsaved_changes = True
-                    self.update_window(skip=[self.cboResourceNodePurity])
-                except IndexError:
-                    logging.debug(f'No item called {item_name} was found')
+        if self.blueprint and self.blueprint.selected and isinstance(self.blueprint.selected, ResourceNode):
+            purity_name = cbo.get_active_id()
+            try:
+                purity = [purity for name, purity in Purity.__members__.items() if name == purity_name][0]
+                self.blueprint.selected.purity = purity
+                self.unsaved_changes = True
+                self.update_window(skip=[self.cboResourceNodePurity])
+            except IndexError:
+                logging.debug(f'No item called {item_name} was found')
 
     def __btnConnection_clicked(self, btn):
         wdwConnection = ConnectionManagementWindow(
@@ -1593,7 +1579,8 @@ class MainWindow(Gtk.ApplicationWindow):
             btn.tags['component'],
             btn.tags['connection'],
             btn.tags['connection_index'],
-            self.__wdwConnection_closed)
+            self.__wdwConnection_closed,
+        )
 
     def __wdwConnection_closed(self, response: ConnectionManagementWindowResponse):
         # If a change is to be made, dig up the things the response indicates
@@ -1608,29 +1595,28 @@ class MainWindow(Gtk.ApplicationWindow):
 
             # Get the source component and connection objects
             if None not in [response.source_component_id, response.source_connection_index]:
-                source_component = self.blueprint.factory.get_component_by_id(
-                    response.source_component_id)
-                source_connections = source_component.outputs \
-                    if response.source_connection_is_output \
-                    else source_component.inputs
+                source_component = self.blueprint.factory.get_component_by_id(response.source_component_id)
+                source_connections = (
+                    source_component.outputs if response.source_connection_is_output else source_component.inputs
+                )
                 source_conn = source_connections[response.source_connection_index]
 
             # Get the target component and connection objects
             if None not in [response.target_component_id, response.target_connection_index]:
-                target_component = self.blueprint.factory.get_component_by_id(
-                    response.target_component_id)
-                target_connections = target_component.inputs \
-                    if response.source_connection_is_output \
-                    else target_component.outputs
+                target_component = self.blueprint.factory.get_component_by_id(response.target_component_id)
+                target_connections = (
+                    target_component.inputs if response.source_connection_is_output else target_component.outputs
+                )
                 target_conn = target_connections[response.target_connection_index]
 
             # Get the old target component and connection objects
             if None not in [response.old_target_component_id, response.old_target_connection_index]:
-                old_target_component = self.blueprint.factory.get_component_by_id(
-                    response.old_target_component_id)
-                old_target_connections = old_target_component.inputs \
-                    if response.source_connection_is_output \
-                        else old_target_component.outputs
+                old_target_component = self.blueprint.factory.get_component_by_id(response.old_target_component_id)
+                old_target_connections = (
+                    old_target_component.inputs
+                    if response.source_connection_is_output
+                    else old_target_component.outputs
+                )
                 old_target_conn = old_target_connections[response.old_target_connection_index]
 
             # If the connection hasn't changed...
@@ -1646,9 +1632,10 @@ class MainWindow(Gtk.ApplicationWindow):
             if old_target_component is not None:
                 # If the connection isn't between a miner and resource node, then there is a
                 # conveyance we need to delete before building the new connection.
-                if not (issubclass(source_component.__class__, Miner) and source_conn.is_input()) \
-                    and not isinstance(source_component, ResourceNode):
-                        old_conveyance, *_ = source_conn.connected_to()
+                if not (issubclass(source_component.__class__, Miner) and source_conn.is_input()) and not isinstance(
+                    source_component, ResourceNode
+                ):
+                    old_conveyance, *_ = source_conn.connected_to()
 
                 # Clear that conveyance out of everywhere we store info about it.
                 if old_conveyance is not None:
@@ -1668,12 +1655,10 @@ class MainWindow(Gtk.ApplicationWindow):
             # If the response indicates a connection to be made, create that connection
             if source_conn and target_conn:
                 # If the connection is between a miner and resource node, connect them directly
-                if issubclass(source_component.__class__, Miner) and \
-                    isinstance(target_component, ResourceNode):
-                        source_conn.connect(target_conn)
-                elif isinstance(source_component, ResourceNode) and \
-                    issubclass(target_component.__class__, Miner):
-                        source_conn.connect(target_conn)
+                if issubclass(source_component.__class__, Miner) and isinstance(target_component, ResourceNode):
+                    source_conn.connect(target_conn)
+                elif isinstance(source_component, ResourceNode) and issubclass(target_component.__class__, Miner):
+                    source_conn.connect(target_conn)
                 # If the connection is between any other kind of component, connect them using a conveyance
                 else:
                     new_conveyance = response.conveyance_class()
@@ -1704,7 +1689,8 @@ class MainWindow(Gtk.ApplicationWindow):
                 self,
                 'Delete Component?',
                 f'Delete {self.blueprint.selected.name}?',
-                self.__dlgConfirmComponentDelete_responded)
+                self.__dlgConfirmComponentDelete_responded,
+            )
 
     def __dlgConfirmComponentDelete_responded(self, confirmed: bool):
         if confirmed and self.blueprint and self.blueprint.selected:

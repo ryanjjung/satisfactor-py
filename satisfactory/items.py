@@ -1,33 +1,32 @@
-from satisfactory.base import (
-    Availability,
-    ConveyanceType,
-    Item
-)
+from satisfactory.base import Availability, ConveyanceType, Item
 
-'''
+"""
 Here are defined all of the items we care about.
-'''
+"""
 
 ALL = None
 
+
 def get_all():
-    '''
+    """
     Returns a list of all Items defined in this module; caches the results for quick access.
-    '''
+    """
 
     global ALL
     if ALL is None:
-        import inspect, sys
-        ALL = [ mbr for mbr in inspect.getmembers(sys.modules[__name__])
-            if isinstance(mbr[1], Item) ]
+        import inspect
+        import sys
+
+        ALL = [mbr for mbr in inspect.getmembers(sys.modules[__name__]) if isinstance(mbr[1], Item)]
     return ALL
 
-def get_all_unlockable():
-    '''
-    Returns a list of all Items which are unlockable through the MAM
-    '''
 
-    return [ item for item in get_all() if item[1].availability.mam ]
+def get_all_unlockable():
+    """
+    Returns a list of all Items which are unlockable through the MAM
+    """
+
+    return [item for item in get_all() if item[1].availability.mam]
 
 
 AlienProtein = Item(
@@ -57,7 +56,7 @@ AwesomeShop = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/AWESOME_Shop',
-    image_path='/b/b1/AWESOME_Shop.png'
+    image_path='/b/b1/AWESOME_Shop.png',
 )
 
 AwesomeSink = Item(
@@ -97,7 +96,7 @@ BasicWall1mFicsit = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Walls',
-    image_path='/3/32/Basic_Wall_4m_(FICSIT).png', # Can't find image of 1m wall
+    image_path='/3/32/Basic_Wall_4m_(FICSIT).png',  # Can't find image of 1m wall
 )
 
 BasicWall4mFicsit = Item(
@@ -157,8 +156,8 @@ BluePowerSlug = Item(
     stack_size=50,
     sink_value=None,
     wiki_path='/Power_Slug#Blue',
-    image_path='/1/1f/Dropped_Power_Slug.png', # The wiki_path has an animated gif as its image,
-        # which we don't support, so we use this "dropped" image instead.
+    image_path='/1/1f/Dropped_Power_Slug.png',  # The wiki_path has an animated gif as its image,
+    # which we don't support, so we use this "dropped" image instead.
 )
 
 Cable = Item(
@@ -357,7 +356,7 @@ DoubleWallOutletMk1 = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Wall_Outlets#Double_Wall_Outlets-0',
-    image_path='/2/21/Double_Wall_Outlet_Mk.1.png'
+    image_path='/2/21/Double_Wall_Outlet_Mk.1.png',
 )
 
 EquipmentWorkshop = Item(
@@ -367,7 +366,7 @@ EquipmentWorkshop = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Equipment_Workshop',
-    image_path='/d/d9/Equipment_Workshop.png'
+    image_path='/d/d9/Equipment_Workshop.png',
 )
 
 FlowerPetals = Item(
@@ -376,7 +375,7 @@ FlowerPetals = Item(
     stack_size=500,
     sink_value=10,
     wiki_path='/Flower_Petals',
-    image_path='/8/83/Flower_Petals.png'
+    image_path='/8/83/Flower_Petals.png',
 )
 
 FluidBuffer = Item(
@@ -385,7 +384,7 @@ FluidBuffer = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Fluid_Buffer#Normal-0',
-    image_path='/5/53/Fluid_Buffer.png'
+    image_path='/5/53/Fluid_Buffer.png',
 )
 
 Foundation1mFicsit = Item(
@@ -395,7 +394,7 @@ Foundation1mFicsit = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Foundations',
-    image_path='/0/00/Foundation_4m_(FICSIT).png'
+    image_path='/0/00/Foundation_4m_(FICSIT).png',
 )
 
 Foundation2mFicsit = Item(
@@ -405,7 +404,7 @@ Foundation2mFicsit = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Foundations',
-    image_path='/0/00/Foundation_4m_(FICSIT).png'
+    image_path='/0/00/Foundation_4m_(FICSIT).png',
 )
 
 Foundation4mFicsit = Item(
@@ -415,7 +414,7 @@ Foundation4mFicsit = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Foundations',
-    image_path='/0/00/Foundation_4m_(FICSIT).png'
+    image_path='/0/00/Foundation_4m_(FICSIT).png',
 )
 
 Foundry = Item(
@@ -425,7 +424,7 @@ Foundry = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Foundry',
-    image_path='/1/19/Foundry.png'
+    image_path='/1/19/Foundry.png',
 )
 
 HatcherRemains = Item(
@@ -434,7 +433,7 @@ HatcherRemains = Item(
     stack_size=50,
     sink_value=None,
     wiki_path='/Alien_Remains#Hatcher-0',
-    image_path='/4/4d/Hatcher_Remains.png'
+    image_path='/4/4d/Hatcher_Remains.png',
 )
 
 HeavyOilResidue = Item(
@@ -444,7 +443,7 @@ HeavyOilResidue = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/Heavy_Oil_Residue',
-    image_path='/b/bd/Heavy_Oil_Residue.png'
+    image_path='/b/bd/Heavy_Oil_Residue.png',
 )
 
 HogRemains = Item(
@@ -453,7 +452,7 @@ HogRemains = Item(
     stack_size=50,
     sink_value=None,
     wiki_path='/Alien_Remains#Hog-0',
-    image_path='/e/e0/Hog_Remains.png'
+    image_path='/e/e0/Hog_Remains.png',
 )
 
 Hub = Item(
@@ -462,7 +461,7 @@ Hub = Item(
     stack_size=None,
     sink_value=None,
     wiki_path='/The_HUB',
-    image_path='/5/5e/The_HUB.png'
+    image_path='/5/5e/The_HUB.png',
 )
 
 HubParts = Item(
@@ -471,7 +470,7 @@ HubParts = Item(
     stack_size=1,
     sink_value=None,
     wiki_path='/HUB_Parts',
-    image_path='/3/38/HUB_Parts.png'
+    image_path='/3/38/HUB_Parts.png',
 )
 
 IronIngot = Item(
@@ -480,7 +479,7 @@ IronIngot = Item(
     stack_size=100,
     sink_value=2,
     wiki_path='/Iron_Ingot',
-    image_path='/0/0a/Iron_Ingot.png'
+    image_path='/0/0a/Iron_Ingot.png',
 )
 
 IronOre = Item(
@@ -489,7 +488,7 @@ IronOre = Item(
     stack_size=100,
     sink_value=1,
     wiki_path='/Iron_Ore',
-    image_path='/8/87/Iron_Ore.png'
+    image_path='/8/87/Iron_Ore.png',
 )
 
 IronPlate = Item(
@@ -498,7 +497,7 @@ IronPlate = Item(
     stack_size=200,
     sink_value=6,
     wiki_path='/Iron_Plate',
-    image_path='/5/51/Iron_Plate.png'
+    image_path='/5/51/Iron_Plate.png',
 )
 
 IronRod = Item(
@@ -507,7 +506,7 @@ IronRod = Item(
     stack_size=200,
     sink_value=4,
     wiki_path='/Iron_Rod',
-    image_path='/5/5f/Iron_Rod.png'
+    image_path='/5/5f/Iron_Rod.png',
 )
 
 JumpPad = Item(
@@ -704,8 +703,8 @@ PurplePowerSlug = Item(
     stack_size=50,
     sink_value=None,
     wiki_path='/Power_Slug#Purple',
-    image_path='/1/1f/Dropped_Power_Slug.png', # The wiki_path has an animated gif as its image,
-        # which we don't support, so we use this "dropped" image instead.
+    image_path='/1/1f/Dropped_Power_Slug.png',  # The wiki_path has an animated gif as its image,
+    # which we don't support, so we use this "dropped" image instead.
 )
 
 Ramp1mFicsit = Item(
@@ -1001,6 +1000,6 @@ YellowPowerSlug = Item(
     stack_size=50,
     sink_value=None,
     wiki_path='/Power_Slug#Yellow',
-    image_path='/1/1f/Dropped_Power_Slug.png', # The wiki_path has an animated gif as its image,
-        # which we don't support, so we use this "dropped" image instead.
+    image_path='/1/1f/Dropped_Power_Slug.png',  # The wiki_path has an animated gif as its image,
+    # which we don't support, so we use this "dropped" image instead.
 )

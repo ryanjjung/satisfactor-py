@@ -10,47 +10,43 @@ from satisfactory.base import (
     Dimension,
     Ingredient,
     Input,
-    Item,
     NonProcessingBuilding,
     Output,
     Recipe,
-    ResourceNode
+    ResourceNode,
 )
-from satisfactory.items import (
-    AwesomeSinkPoint,
-    Water
-)
+from satisfactory.items import AwesomeSinkPoint
 
 
 ALL = None
 
+
 def get_all() -> list[Building]:
-    '''
+    """
     Returns a list of all Buildings defined in this module; caches the results for quick access.
-    '''
+    """
 
     global ALL
     unbuildable = [Conveyance, Miner, NonProcessingBuilding]
     if ALL is None:
         import inspect
         import sys
-        ALL = [ mbr[1] for mbr in inspect.getmembers(sys.modules[__name__], inspect.isclass)
-            if issubclass(mbr[1], Building)
-            and mbr[1] is not Building
-            and mbr[1] not in unbuildable ]
+
+        ALL = [
+            mbr[1]
+            for mbr in inspect.getmembers(sys.modules[__name__], inspect.isclass)
+            if issubclass(mbr[1], Building) and mbr[1] is not Building and mbr[1] not in unbuildable
+        ]
     return ALL
 
 
 class Assembler(Building):
-    '''
+    """
     A type of Building which combines two items into a single other item. Has two inputs and one
     output.
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Assembler',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Assembler', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.PRODUCTION,
@@ -59,55 +55,35 @@ class Assembler(Building):
             image_path='/a/ae/Assembler.png',
             availability=Availability(2, 1),
             base_power_usage=15,
-            dimensions=Dimension(
-                width=10,
-                length=15,
-                height=11
-            ),
-            inputs=[Input(
-                conveyance_type=ConveyanceType.BELT,
-                attached_to=self
-            ) for i in range(2)],
-            outputs=[Output(
-                conveyance_type=ConveyanceType.BELT,
-                attached_to=self
-            )],
-            **kwargs
+            dimensions=Dimension(width=10, length=15, height=11),
+            inputs=[Input(conveyance_type=ConveyanceType.BELT, attached_to=self) for i in range(2)],
+            outputs=[Output(conveyance_type=ConveyanceType.BELT, attached_to=self)],
+            **kwargs,
         )
 
 
 class AwesomeShop(NonProcessingBuilding):
-    '''
+    """
     That AWESOME Shop for spending your tickets
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'AWESOME Shop',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'AWESOME Shop', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.SPECIAL,
             availability=Availability(2, 4),
             wiki_path='/AWESOME_Shop',
             image_path='/b/b1/AWESOME_Shop.png',
-            dimensions=Dimension(
-                width=4,
-                length=6,
-                height=5
-            )
+            dimensions=Dimension(width=4, length=6, height=5),
         )
 
 
 class AwesomeSink(Building):
-    '''
+    """
     An AWESOME Sink
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'AWESOME Sink',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'AWESOME Sink', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.SPECIAL,
@@ -117,40 +93,32 @@ class AwesomeSink(Building):
             image_path='/8/85/AWESOME_Sink.png',
             recipe=None,
             overclockable=False,
-            dimensions=Dimension(
-                width=16,
-                length=13,
-                height=24
-            ),
-            inputs=[Input(
-                conveyance_type=ConveyanceType.BELT,
-                attached_to=self
-            )],
-            outputs=[Output(
-                conveyance_type=ConveyanceType.AWESOME_SINK,
-                attached_to=self
-            )]
+            dimensions=Dimension(width=16, length=13, height=24),
+            inputs=[Input(conveyance_type=ConveyanceType.BELT, attached_to=self)],
+            outputs=[Output(conveyance_type=ConveyanceType.AWESOME_SINK, attached_to=self)],
         )
 
     def can_process(self) -> bool:
-        '''
+        """
         Determine if this Sink can process
-        '''
+        """
 
         nondisposables = [ingredient for ingredient in self.ingredients if ingredient.item.sink_value == None]
         if len(nondisposables) > 0:
-            self.add_error(ComponentError(
-                ComponentErrorLevel.WARNING,
-                message=f'Non-disposable items ({nondisposables}) are being sent to an AWESOME Sink.'
-            ))
+            self.add_error(
+                ComponentError(
+                    ComponentErrorLevel.WARNING,
+                    message=f'Non-disposable items ({nondisposables}) are being sent to an AWESOME Sink.',
+                )
+            )
             return False
 
         return True
 
     def process(self) -> bool:
-        '''
+        """
         Convert items into points
-        '''
+        """
 
         if not self.can_process():
             return False
@@ -159,22 +127,18 @@ class AwesomeSink(Building):
             Ingredient(
                 item=AwesomeSinkPoint,
                 amount=None,
-                rate=sum([ingredient.item.sink_value * ingredient.rate
-                    for ingredient in self.ingredients])
+                rate=sum([ingredient.item.sink_value * ingredient.rate for ingredient in self.ingredients]),
             )
         ]
         return True
 
 
 class BiomassBurner(NonProcessingBuilding):
-    '''
+    """
     A type of Building where biomass can be burned into power
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Biomass Burner',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Biomass Burner', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.POWER,
@@ -182,24 +146,17 @@ class BiomassBurner(NonProcessingBuilding):
             wiki_path='/Biomass_Burner',
             image_path='/2/20/Biomass_Burner.png',
             availability=Availability(0, 6),
-            dimensions=Dimension(
-                width=8,
-                length=8,
-                height=7
-            ),
-            **kwargs
+            dimensions=Dimension(width=8, length=8, height=7),
+            **kwargs,
         )
 
 
 class CoalGenerator(Building):
-    '''
+    """
     A Building where various coal products can be converted to power
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Coal Generator',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Coal Generator', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.POWER,
@@ -207,41 +164,23 @@ class CoalGenerator(Building):
             wiki_path='/Coal_Generator',
             image_path='/b/ba/Coal_Generator.png',
             availability=Availability(3, 1),
-            dimensions=Dimension(
-                width=10,
-                length=26,
-                height=36
-            ),
+            dimensions=Dimension(width=10, length=26, height=36),
             inputs=[
-                Input(
-                    conveyance_type=ConveyanceType.BELT,
-                    attached_to=self
-                ),
-                Input(
-                    conveyance_type=ConveyanceType.PIPE,
-                    attached_to=self
-                )
+                Input(conveyance_type=ConveyanceType.BELT, attached_to=self),
+                Input(conveyance_type=ConveyanceType.PIPE, attached_to=self),
             ],
-            outputs=[
-                Output(
-                    conveyance_type=ConveyanceType.POWER_LINE,
-                    attached_to=self
-                )
-            ],
-            **kwargs
+            outputs=[Output(conveyance_type=ConveyanceType.POWER_LINE, attached_to=self)],
+            **kwargs,
         )
 
 
 class Constructor(Building):
-    '''
+    """
     A type of Building which converts an item of one type into an item of another. Has one input and
     one output.
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Constructor',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Constructor', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.PRODUCTION,
@@ -250,30 +189,19 @@ class Constructor(Building):
             image_path='/6/61/Constructor.png',
             availability=Availability(0, 3),
             base_power_usage=4,
-            dimensions=Dimension(
-                width=8,
-                length=10,
-                height=8
-            ),
-            inputs=[Input(
-                conveyance_type=ConveyanceType.BELT,
-                attached_to=self)],
-            outputs=[Output(
-                conveyance_type=ConveyanceType.BELT,
-                attached_to=self)],
-            **kwargs
+            dimensions=Dimension(width=8, length=10, height=8),
+            inputs=[Input(conveyance_type=ConveyanceType.BELT, attached_to=self)],
+            outputs=[Output(conveyance_type=ConveyanceType.BELT, attached_to=self)],
+            **kwargs,
         )
 
 
 class ConveyorMerger(Building):
-    '''
+    """
     A building which merges the contents of up to three inputs into a single output.
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Conveyor Merger',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Conveyor Merger', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.LOGISTICS,
@@ -281,44 +209,30 @@ class ConveyorMerger(Building):
             wiki_path='/Conveyor_Merger',
             image_path='/a/aa/Conveyor_Merger.png',
             availability=Availability(1, 2),
-            dimensions=Dimension(
-                width=4,
-                length=4,
-                height=3
-            ),
-            inputs=[Input(
-                conveyance_type=ConveyanceType.BELT,
-                attached_to=self
-            ) for i in range(3)],
-            outputs=[Output(
-                conveyance_type=ConveyanceType.BELT,
-                attached_to=self
-            )],
-            **kwargs
+            dimensions=Dimension(width=4, length=4, height=3),
+            inputs=[Input(conveyance_type=ConveyanceType.BELT, attached_to=self) for i in range(3)],
+            outputs=[Output(conveyance_type=ConveyanceType.BELT, attached_to=self)],
+            **kwargs,
         )
 
     def can_process(self, connected_inputs) -> bool:
         success = True
         if len(connected_inputs) == 0:
-            self.add_error(ComponentError(
-                ComponentErrorLevel.WARNING,
-                'Conveyor merge has no connected inputs'
-            ))
+            self.add_error(ComponentError(ComponentErrorLevel.WARNING, 'Conveyor merge has no connected inputs'))
             success = False
 
         if len(connected_inputs) > 3:
-            self.add_error(ComponentError(
-                ComponentErrorLevel.IMPOSSIBLE,
-                'Conveyor merger has more than three connected inputs'
-            ))
+            self.add_error(
+                ComponentError(ComponentErrorLevel.IMPOSSIBLE, 'Conveyor merger has more than three connected inputs')
+            )
             success = False
 
         return success
 
     def process(self) -> bool:
-        '''
+        """
         Merges the contents of the inputs onto the output proportionately.
-        '''
+        """
 
         connected_inputs = [input for input in self.inputs if input.source]
         if not self.can_process(connected_inputs):
@@ -327,19 +241,15 @@ class ConveyorMerger(Building):
         self._errors = []
 
         # Determine the ideal recipe by combining all inputs into one, combining like ingredients
-        working_recipe = Recipe(
-            building_type=BuildingType.CONVEYANCE,
-            produces=self.ingredients
-        )
+        working_recipe = Recipe(building_type=BuildingType.CONVEYANCE, produces=self.ingredients)
 
         # Determine if the output can handle the combined rate of input
         total_ingredient_rate = sum([ingredient.rate for ingredient in working_recipe.produces])
         output_rate = self.outputs[0].target.attached_to.rate
         if output_rate < total_ingredient_rate:
-            self.add_error(ComponentError(
-                ComponentErrorLevel.DEBUG,
-                "The merger's combined input rate is greater than its output"
-            ))
+            self.add_error(
+                ComponentError(ComponentErrorLevel.DEBUG, "The merger's combined input rate is greater than its output")
+            )
 
             # Determine the slowdown ratio and apply it to each ingredient
             slowdown_ratio = output_rate / total_ingredient_rate
@@ -352,14 +262,11 @@ class ConveyorMerger(Building):
 
 
 class ConveyorSplitter(Building):
-    '''
+    """
     A building which splits the contents of its single input evenly across up to three outputs.
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Conveyor Splitter',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Conveyor Splitter', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.LOGISTICS,
@@ -370,44 +277,37 @@ class ConveyorSplitter(Building):
             dimensions=Dimension(
                 width=4,
                 length=4,
-                height=3  # Should be 2n + 1, but who's counting?
+                height=3,  # Should be 2n + 1, but who's counting?
             ),
-            inputs=[Input(
-                conveyance_type=ConveyanceType.BELT,
-                attached_to=self)],
-            outputs=[Output(
-                    conveyance_type=ConveyanceType.BELT,
-                    attached_to=self
-                ) for i in range(3)],
-            **kwargs
+            inputs=[Input(conveyance_type=ConveyanceType.BELT, attached_to=self)],
+            outputs=[Output(conveyance_type=ConveyanceType.BELT, attached_to=self) for i in range(3)],
+            **kwargs,
         )
 
     def can_process(self, connected_outputs: list[Output]) -> bool:
-        '''
+        """
         Determines if the conditions required for processing are present.
-        '''
+        """
 
         success = True
         if len(connected_outputs) == 0:
-            self.add_error(ComponentError(
-                ComponentErrorLevel.WARNING,
-                'Conveyor splitter has no connected outputs.'
-            ))
+            self.add_error(ComponentError(ComponentErrorLevel.WARNING, 'Conveyor splitter has no connected outputs.'))
             success = False
 
         if len(connected_outputs) > 3:
-            self.add_error(ComponentError(
-                ComponentErrorLevel.IMPOSSIBLE,
-                'Conveyor splitter has more than three connected outputs.'
-            ))
+            self.add_error(
+                ComponentError(
+                    ComponentErrorLevel.IMPOSSIBLE, 'Conveyor splitter has more than three connected outputs.'
+                )
+            )
             success = False
 
         return success
 
     def process(self) -> bool:
-        '''
+        """
         Splits the contents of a single input across all outputs proportionately.
-        '''
+        """
 
         connected_outputs = [output for output in self.outputs if output.target]
         if not self.can_process(connected_outputs):
@@ -422,24 +322,21 @@ class ConveyorSplitter(Building):
         ingredient_pct = total_ingredient_rate * output_ratio
         working_recipe = Recipe(
             building_type=BuildingType.CONVEYANCE,
-            produces=[Ingredient(
-                item=ingredient.item,
-                rate=ingredient.rate * output_ratio,
-                amount=None
-            ) for ingredient in self.ingredients]
+            produces=[
+                Ingredient(item=ingredient.item, rate=ingredient.rate * output_ratio, amount=None)
+                for ingredient in self.ingredients
+            ],
         )
 
         # Determine if any of those connected outputs are too slow to take its portion of items
-        slow_outputs = [output for output in connected_outputs
-            if output.target.attached_to.rate < ingredient_pct]
+        slow_outputs = [output for output in connected_outputs if output.target.attached_to.rate < ingredient_pct]
         if len(slow_outputs) > 0:
             # Count through all connected outputs
             outputs_remaining = len(connected_outputs)
             for output in connected_outputs:
                 outputs_remaining -= 1
                 # Determine the total rate of all ingredients in the proportionate recipe
-                total_working_recipe_rate = sum(
-                    [ingredient.rate for ingredient in working_recipe.produces])
+                total_working_recipe_rate = sum([ingredient.rate for ingredient in working_recipe.produces])
 
                 # For any outputs that are too slow, determine how much of the recipe cannot be
                 # passed on to that output.
@@ -449,18 +346,16 @@ class ConveyorSplitter(Building):
                     for ingredient in working_recipe.produces:
                         slowed_rate = ingredient.rate * slowdown_ratio
                         remainder = ingredient.rate - new_rate
-                        slowed_ingredients.append(Ingredient(
-                            item=ingredient.item,
-                            rate=slowed_rate,
-                            amount=None
-                        ))
+                        slowed_ingredients.append(Ingredient(item=ingredient.item, rate=slowed_rate, amount=None))
                         if remainder:
                             # If there are leftover items but no leftover outputs, that's an issue
                             if outputs_remaining == 0:
-                                self.add_error(ComponentError(
-                                    ComponentErrorLevel.WARNING,
-                                    "The splitter's incoming rate is more than its total outgoing rate."
-                                ))
+                                self.add_error(
+                                    ComponentError(
+                                        ComponentErrorLevel.WARNING,
+                                        "The splitter's incoming rate is more than its total outgoing rate.",
+                                    )
+                                )
                                 ingredient.rate = remainder
                             # If there are leftover items and still some outputs, update the working
                             # recipe to include a proportion of the leftovers
@@ -481,14 +376,11 @@ class ConveyorSplitter(Building):
 
 
 class ConveyorPole(NonProcessingBuilding):
-    '''
+    """
     A building which supports a conveyor belt
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Conveyor Pole',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Conveyor Pole', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.LOGISTICS,
@@ -496,24 +388,17 @@ class ConveyorPole(NonProcessingBuilding):
             availability=Availability(0, 4),
             wiki_path='/Conveyor_Pole',
             image_path='/7/73/Conveyor_Pole.png',
-            dimensions=Dimension(
-                width=2,
-                length=1,
-                height=1
-            ),
-            **kwargs
+            dimensions=Dimension(width=2, length=1, height=1),
+            **kwargs,
         )
 
 
 class CraftBench(NonProcessingBuilding):
-    '''
+    """
     A building where you can process recipes by hand
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Craft Bench',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Craft Bench', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.PRODUCTION,
@@ -521,24 +406,17 @@ class CraftBench(NonProcessingBuilding):
             availability=Availability(0, 0),
             wiki_path='/Craft_Bench',
             image_path='/7/75/Craft_Bench.png',
-            dimensions=Dimension(
-                width=6,
-                length=3,
-                height=3
-            ),
-            **kwargs
+            dimensions=Dimension(width=6, length=3, height=3),
+            **kwargs,
         )
 
 
 class EquipmentWorkshop(NonProcessingBuilding):
-    '''
+    """
     A building where you can build equipment
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Equipment Workshop',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Equipment Workshop', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.PRODUCTION,
@@ -546,24 +424,17 @@ class EquipmentWorkshop(NonProcessingBuilding):
             availability=Availability(0, 1),
             wiki_path='/Equipment_Workshop',
             image_path='/d/d9/Equipment_Workshop.png',
-            dimensions=Dimension(
-                width=10,
-                length=7,
-                height=5
-            ),
-            **kwargs
+            dimensions=Dimension(width=10, length=7, height=5),
+            **kwargs,
         )
 
 
 class Foundry(Building):
-    '''
+    """
     A Foundry Building
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Foundry',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Foundry', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.PRODUCTION,
@@ -572,32 +443,19 @@ class Foundry(Building):
             image_path='/1/19/Foundry.png',
             base_power_usage=16,
             building_type=BuildingType.FOUNDRY,
-            dimensions=Dimension(
-                width=10,
-                length=9,
-                height=9
-            ),
-            inputs=[Input(
-                attached_to=self,
-                conveyance_type=ConveyanceType.BELT
-            ) for i in range(2)],
-            outputs=[Output(
-                attached_to=self,
-                conveyance_type=ConveyanceType.BELT
-            )],
-            **kwargs
+            dimensions=Dimension(width=10, length=9, height=9),
+            inputs=[Input(attached_to=self, conveyance_type=ConveyanceType.BELT) for i in range(2)],
+            outputs=[Output(attached_to=self, conveyance_type=ConveyanceType.BELT)],
+            **kwargs,
         )
 
 
 class Hub(NonProcessingBuilding):
-    '''
+    """
     A HUB building
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'HUB',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'HUB', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.SPECIAL,
@@ -609,44 +467,34 @@ class Hub(NonProcessingBuilding):
                 length=26,
                 height=28,
             ),
-            **kwargs
+            **kwargs,
         )
 
 
 class JumpPad(NonProcessingBuilding):
-    '''
+    """
     A Jump Pad for launching the pilgrim
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Jump Pad',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Jump Pad', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.TRANSPORT,
             availability=Availability(2, 3),
             wiki_path='/Jump_Pad',
             image_path='/4/4c/Jump_Pad.png',
-            dimensions=Dimension(
-                width=6,
-                length=6,
-                height=6
-            ),
+            dimensions=Dimension(width=6, length=6, height=6),
             power_connections=1,
-            base_power_usage=5
+            base_power_usage=5,
         )
 
 
 class MAM(NonProcessingBuilding):
-    '''
+    """
     MAM building for performing field research
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'MAM',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'MAM', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.SPECIAL,
@@ -654,26 +502,19 @@ class MAM(NonProcessingBuilding):
             wiki_path='/MAM',
             image_path='/b/b4/MAM.png',
             building_type=BuildingType.WORKSHOP,
-            dimensions=Dimension(
-                width=5,
-                length=9,
-                height=6
-            ),
+            dimensions=Dimension(width=5, length=9, height=6),
             power_connections=0,
-            **kwargs
+            **kwargs,
         )
 
 
 class PersonalStorageBox(NonProcessingBuilding):
-    '''
+    """
     Personal Storage Box for holding up to 25 items. This is not an automatable building, and has
     neither inputs nor outputs nor power connections.
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Personal Storage Box',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Personal Storage Box', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.ORGANIZATION,
@@ -681,28 +522,25 @@ class PersonalStorageBox(NonProcessingBuilding):
             wiki_path='/Personal_Storage_Box',
             image_path='/4/4d/Personal_Storage_Box.png',
             building_type=BuildingType.WORKSHOP,
-            dimensions=Dimension(
-                width=2,
-                length=1,
-                height=1
-            ),
+            dimensions=Dimension(width=2, length=1, height=1),
             power_connections=0,
-            **kwargs
+            **kwargs,
         )
 
 
 class Miner(Building):
-    '''
+    """
     A type of Building that takes input from a ResourceNode and outputs Items on a Conveyor Belt.
     Typically, you would rather build an implementation of this class instead, like a MinerMk1.
-    '''
+    """
 
-    def __init__(self,
+    def __init__(
+        self,
         image_path: str = '/c/cf/Miner_Mk.1.png',
         wiki_path: str = '/Miner',
         name: str = 'Miner',
         building_category: BuildingCategory = BuildingCategory.PRODUCTION,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             building_category=building_category,
@@ -710,26 +548,16 @@ class Miner(Building):
             image_path=image_path,
             wiki_path=wiki_path,
             name=name,
-            dimensions=Dimension(
-                width=6,
-                length=14,
-                height=18
-            ),
-            inputs=[Input(
-                conveyance_type=ConveyanceType.RESOURCE_NODE,
-                attached_to=self
-            )],
-            outputs=[Output(
-                conveyance_type=ConveyanceType.BELT,
-                attached_to=self
-            )],
-            **kwargs
+            dimensions=Dimension(width=6, length=14, height=18),
+            inputs=[Input(conveyance_type=ConveyanceType.RESOURCE_NODE, attached_to=self)],
+            outputs=[Output(conveyance_type=ConveyanceType.BELT, attached_to=self)],
+            **kwargs,
         )
 
     def can_process(self) -> bool:
-        '''
+        """
         Returns True if the conditions are right for processing the Miner recipe.
-        '''
+        """
 
         # All the basic building tests
         super().can_process()
@@ -754,57 +582,54 @@ class Miner(Building):
         return True
 
     def process(self):
-        '''
+        """
         Miners must additionally apply a purity factor to their outputs
-        '''
+        """
 
         self.can_process()
         super().process()
         self.outputs[0].ingredients = [self.recipe.produces[0]]
 
         # Apply resource node purity and clock rate
-        output_rate = \
-            self.outputs[0].ingredients[0].rate * self.inputs[0].source.attached_to.purity.value \
-                * self.clock_rate
+        output_rate = (
+            self.outputs[0].ingredients[0].rate * self.inputs[0].source.attached_to.purity.value * self.clock_rate
+        )
         self.outputs[0].ingredients[0].rate = output_rate
 
         if self.outputs[0].target and isinstance(self.outputs[0].target.attached_to, Conveyance):
             conveyance_rate = self.outputs[0].target.attached_to.rate
             if output_rate > conveyance_rate:
-                self.add_error(ComponentError(
-                    ComponentErrorLevel.WARNING,
-                    f'The output rate is {output_rate}/min, but the connected conveyance can ' \
-                        f'only carry {conveyance_rate}.'))
+                self.add_error(
+                    ComponentError(
+                        ComponentErrorLevel.WARNING,
+                        f'The output rate is {output_rate}/min, but the connected conveyance can '
+                        f'only carry {conveyance_rate}.',
+                    )
+                )
 
 
 class MinerMk1(Miner):
-    '''
+    """
     A first-tier Miner
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Miner Mk.1',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Miner Mk.1', **kwargs):
         super().__init__(
             name=name,
             availability=Availability(0, 5),
             wiki_path='/Miner#Mk.1-0',
             image_path='/c/cf/Miner_Mk.1.png',
             base_power_usage=5,
-            **kwargs
+            **kwargs,
         )
 
 
 class LookoutTower(NonProcessingBuilding):
-    '''
+    """
     A tall tower to build from
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Lookout Tower',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Lookout Tower', **kwargs):
         super().__init__(
             building_category=BuildingCategory.ORGANIZATION,
             building_type=BuildingType.OTHER,
@@ -812,26 +637,18 @@ class LookoutTower(NonProcessingBuilding):
             image_path='/c/cc/Lookout_Tower.png',
             name=name,
             availability=Availability(1, 1),
-            dimensions=Dimension(
-                width=9,
-                length=9,
-                height=24
-            ),
-            **kwargs
+            dimensions=Dimension(width=9, length=9, height=24),
+            **kwargs,
         )
 
+
 class PipelineJunctionCross(Building):
-    '''
+    """
     A combination splitter/merger for pipe networks. Has a configurable number of inputs and
     outputs, but the total must be no more than four.
-    '''
+    """
 
-    def __init__(self,
-        inputs: int = 1,
-        outputs: int = 1,
-        name: str = 'Pipeline Junction Cross',
-        **kwargs
-    ):
+    def __init__(self, inputs: int = 1, outputs: int = 1, name: str = 'Pipeline Junction Cross', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.LOGISTICS,
@@ -839,26 +656,19 @@ class PipelineJunctionCross(Building):
             wiki_path='/Pipeline_Junction_Cross',
             image_path='/8/8c/Pipeline_Junction_Cross.png',
             availability=Availability(3, 1),
-            dimensions=Dimension(
-                width=2,
-                length=1,
-                height=1
-            ),
+            dimensions=Dimension(width=2, length=1, height=1),
             inputs=[],
             outputs=[],
-            **kwargs
+            **kwargs,
         )
 
         self.set_connections(inputs, outputs)
 
-    def set_connections(self,
-        inputs: int = 1,
-        outputs: int = 1
-    ):
-        '''
+    def set_connections(self, inputs: int = 1, outputs: int = 1):
+        """
         Sets this junction's input and output counts. This breaks any connections that may have
         been placed before.
-        '''
+        """
 
         if inputs + outputs > 4:
             raise ValueError('Total number of connections exceeds 4')
@@ -872,27 +682,21 @@ class PipelineJunctionCross(Building):
         for i in self.inputs:
             if i.source:
                 i.source.target = None
-            del(i)
+            del i
 
         for o in self.outputs:
             if o.target:
                 o.target.source = None
-            del(o)
+            del o
 
-        self.inputs = [Input(
-            attached_to=self,
-            conveyance_type=ConveyanceType.PIPE
-        ) for i in range(inputs)]
+        self.inputs = [Input(attached_to=self, conveyance_type=ConveyanceType.PIPE) for i in range(inputs)]
 
-        self.outputs = [Output(
-            attached_to=self,
-            conveyance_type=ConveyanceType.PIPE
-        ) for o in range(outputs)]
+        self.outputs = [Output(attached_to=self, conveyance_type=ConveyanceType.PIPE) for o in range(outputs)]
 
     def can_process(self) -> bool:
-        '''
+        """
         Determines if the junction can process normally.
-        '''
+        """
 
         all_ingredients = []
         for i in self.inputs:
@@ -902,19 +706,20 @@ class PipelineJunctionCross(Building):
 
         ct = len(all_ingredients)
         if ct > 1:
-            self.add_error(ComponentError(
-                level=ComponentErrorLevel.WARNING,
-                message=f'There are {ct} ingredients in this pipeline, but there can be no more '
-                    'than 1.'
-            ))
+            self.add_error(
+                ComponentError(
+                    level=ComponentErrorLevel.WARNING,
+                    message=f'There are {ct} ingredients in this pipeline, but there can be no more than 1.',
+                )
+            )
             return False
 
         return True
 
     def process(self):
-        '''
+        """
         Splits the incoming fluid proportionately among the outputs.
-        '''
+        """
 
         self.clear_errors()
         if not self.can_process():
@@ -953,26 +758,26 @@ class PipelineJunctionCross(Building):
                     num_unprocessed -= 1
 
             # Reset the counters for the next pass
-            unfilled_outputs = [output for output in connected_outputs \
-                if output.ingredients[0].rate < output.target.attached_to.rate]
+            unfilled_outputs = [
+                output for output in connected_outputs if output.ingredients[0].rate < output.target.attached_to.rate
+            ]
             num_unfilled = len(unfilled_outputs)
 
         if remaining_rate > 0:
-            self.add_error(ComponentError(
-                level=ComponentErrorLevel.WARNING,
-                message=f'Input rate exceeds output rate by {remaining_rate} per minute'
-            ))
+            self.add_error(
+                ComponentError(
+                    level=ComponentErrorLevel.WARNING,
+                    message=f'Input rate exceeds output rate by {remaining_rate} per minute',
+                )
+            )
 
 
 class PipelineSupport(NonProcessingBuilding):
-    '''
+    """
     A building which supports a pipeline
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Pipeline Support',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Pipeline Support', **kwargs):
         super().__init__(
             building_category=BuildingCategory.LOGISTICS,
             building_type=BuildingType.OTHER,
@@ -980,24 +785,17 @@ class PipelineSupport(NonProcessingBuilding):
             image_path='/c/c5/Pipeline_Support.png',
             name=name,
             availability=Availability(3, 1),
-            dimensions=Dimension(
-                width=2,
-                length=1,
-                height=1
-            ),
-            **kwargs
+            dimensions=Dimension(width=2, length=1, height=1),
+            **kwargs,
         )
 
 
 class PowerPoleMk1(NonProcessingBuilding):
-    '''
+    """
     An entry level power pole
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Power Pole Mk.1',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Power Pole Mk.1', **kwargs):
         super().__init__(
             building_category=BuildingCategory.POWER,
             building_type=BuildingType.POWER_POLE,
@@ -1005,24 +803,17 @@ class PowerPoleMk1(NonProcessingBuilding):
             image_path='/a/af/Power_Pole_Mk.1.png',
             name=name,
             availability=Availability(0, 3),
-            dimensions=Dimension(
-                width=0.8,
-                length=0.8,
-                height=7
-            ),
-            **kwargs
+            dimensions=Dimension(width=0.8, length=0.8, height=7),
+            **kwargs,
         )
 
 
 class Smelter(Building):
-    '''
+    """
     A Smelter Building
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Smelter',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Smelter', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.PRODUCTION,
@@ -1031,32 +822,19 @@ class Smelter(Building):
             wiki_path='/Smelter',
             image_path='/4/45/Smelter.png',
             base_power_usage=4,
-            dimensions=Dimension(
-                width=6,
-                length=9,
-                height=9
-            ),
-            inputs=[Input(
-                attached_to=self,
-                conveyance_type=ConveyanceType.BELT
-            )],
-            outputs=[Output(
-                attached_to=self,
-                conveyance_type=ConveyanceType.BELT
-            )],
-            **kwargs
+            dimensions=Dimension(width=6, length=9, height=9),
+            inputs=[Input(attached_to=self, conveyance_type=ConveyanceType.BELT)],
+            outputs=[Output(attached_to=self, conveyance_type=ConveyanceType.BELT)],
+            **kwargs,
         )
 
 
 class SpaceElevator(Building):
-    '''
+    """
     A Space Elevator Building
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Space Elevator',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Space Elevator', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.SPECIAL,
@@ -1064,53 +842,37 @@ class SpaceElevator(Building):
             availability=Availability(0, 6),
             wiki_path='/Space_Elevator',
             image_path='/a/a4/Space_Elevator.png',
-            dimensions=Dimension(
-                width=54,
-                length=54,
-                height=118
-            ),
-            inputs=[Input(
-                attached_to=self,
-                conveyance_type=ConveyanceType.BELT) for i in range(6)],
+            dimensions=Dimension(width=54, length=54, height=118),
+            inputs=[Input(attached_to=self, conveyance_type=ConveyanceType.BELT) for i in range(6)],
             power_connections=0,
-            **kwargs
+            **kwargs,
         )
 
 
 class StackableConveyorPole(NonProcessingBuilding):
-    '''
+    """
     A stackable conveyor pole for organizing conveyor belts
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Stackable Conveyor Pole',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Stackable Conveyor Pole', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.LOGISTICS,
             availability=Availability(2, 5),
             wiki_path='Conveyor_Poles#Stackable-0',
             image_path='/4/49/Stackable_Conveyor_Pole.png',
-            dimensions=Dimension(
-                width=2,
-                length=1,
-                height=3
-            ),
+            dimensions=Dimension(width=2, length=1, height=3),
             power_connections=0,
-            **kwargs
+            **kwargs,
         )
 
 
 class TruckStation(Building):
-    '''
+    """
     A Truck Station Building
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Truck Station',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'Truck Station', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.TRANSPORT,
@@ -1118,28 +880,19 @@ class TruckStation(Building):
             availability=Availability(3, 2),
             wiki_path='/Truck_Station',
             image_path='/a/a6/Truck_Station.png',
-            dimensions=Dimension(
-                width=16,
-                length=22,
-                height=12
-            ),
-            inputs=[Input(
-                attached_to=self,
-                conveyance_type=ConveyanceType.BELT) for i in range(3)],
+            dimensions=Dimension(width=16, length=22, height=12),
+            inputs=[Input(attached_to=self, conveyance_type=ConveyanceType.BELT) for i in range(3)],
             power_connections=1,
-            **kwargs
+            **kwargs,
         )
 
 
 class UJellyLandingPad(NonProcessingBuilding):
-    '''
+    """
     A landing pad building
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'U-Jelly Landing Pad',
-        **kwargs
-    ):
+    def __init__(self, name: str = 'U-Jelly Landing Pad', **kwargs):
         super().__init__(
             name=name,
             building_category=BuildingCategory.TRANSPORT,
@@ -1147,29 +900,22 @@ class UJellyLandingPad(NonProcessingBuilding):
             availability=Availability(2, 3),
             wiki_path='/U-Jelly_Landing_Pad',
             image_path='/d/de/U-Jelly_Landing_Pad.png',
-            dimensions=Dimension(
-                width=10,
-                length=11,
-                height=5
-            ),
+            dimensions=Dimension(width=10, length=11, height=5),
             power_connections=1,
             base_power_usage=5,
-            **kwargs
+            **kwargs,
         )
 
 
 class WaterExtractor(Miner):
-    '''
+    """
     A kind of Miner that produces Water
-    '''
+    """
 
-    def __init__(self,
-        name: str = 'Water Extractor',
-        **kwargs
-    ):
-        '''
+    def __init__(self, name: str = 'Water Extractor', **kwargs):
+        """
         This should be, at a base level, a Miner, but we have to override some special things
-        '''
+        """
         super().__init__(
             name=name,
             building_category=BuildingCategory.PRODUCTION,
@@ -1177,19 +923,9 @@ class WaterExtractor(Miner):
             wiki_path='/Water_Extractor',
             image_path='/6/6b/Water_Extractor.png',
             base_power_usage=20,
-            **kwargs
+            **kwargs,
         )
         self.building_type = BuildingType.WATER_EXTRACTOR
-        self.dimensions = Dimension(
-            width=20,
-            length=19.5,
-            height=26
-        )
-        self.inputs=[Input(
-            conveyance_type=ConveyanceType.RESOURCE_NODE,
-            attached_to=self
-        )]
-        self.outputs=[Output(
-            conveyance_type=ConveyanceType.PIPE,
-            attached_to=self
-        )]
+        self.dimensions = Dimension(width=20, length=19.5, height=26)
+        self.inputs = [Input(conveyance_type=ConveyanceType.RESOURCE_NODE, attached_to=self)]
+        self.outputs = [Output(conveyance_type=ConveyanceType.PIPE, attached_to=self)]

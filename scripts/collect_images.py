@@ -1,10 +1,9 @@
 #!/bin/env python3
 
-'''
+"""
 This script iterates over every component defined
-'''
+"""
 
-import inspect
 import requests
 import satisfactory.base
 import satisfactory.buildings
@@ -15,12 +14,10 @@ import satisfactory.storages
 
 BASE_IMAGE_PATH = './static/images/components/'
 
+
 def get_all_classes():
     # Base
-    base = [
-        satisfactory.base.ResourceNode,
-        satisfactory.base.InfiniteSupplyNode
-    ]
+    base = [satisfactory.base.ResourceNode, satisfactory.base.InfiniteSupplyNode]
 
     # Buildings
     buildings = satisfactory.buildings.get_all()
@@ -39,6 +36,7 @@ def get_all_classes():
 
     return all_classes
 
+
 def get_all_instances():
     # Items
     items = satisfactory.items.get_all()
@@ -47,6 +45,7 @@ def get_all_instances():
     all_instances.extend(items)
 
     return all_instances
+
 
 def save_image(obj, filename):
     if hasattr(obj, 'image_path') and obj.image_path is not None:
@@ -72,6 +71,7 @@ def main():
         print()
         print(f'Inspecting instance {inst[0]}')
         save_image(inst[1], inst[0])
+
 
 if __name__ == '__main__':
     main()

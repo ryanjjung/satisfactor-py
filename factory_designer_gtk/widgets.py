@@ -1,56 +1,36 @@
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
 
 import gi
+
 gi.require_version('Gdk', '4.0')
 gi.require_version('Gtk', '4.0')
 
 from enum import Enum
-from gi.repository import Gdk, Gtk, Gio, GObject
+from gi.repository import Gdk, Gtk
 from pathlib import Path
-from satisfactory import (
-    base,
-    buildings,
-    conveyances,
-    items,
-    recipes,
-    storages
-)
-from factory_designer_gtk import (
-    drawing,
-    geometry
-)
+from satisfactory import base, buildings, conveyances, items, recipes, storages
+from factory_designer_gtk import drawing, geometry
 from typing import Any, Callable
 
 
 # These functions provide support for testing and the widgets in this file
 
+
 def build_test_blueprint():
-    '''
+    """
     Builds a simple blueprint that we can test with
-    '''
+    """
 
     # Build the factory components
-    oreSupply = base.ResourceNode(
-        purity=base.Purity.NORMAL,
-        name='Iron Ore Resource',
-        item=items.IronOre
-    )
+    oreSupply = base.ResourceNode(purity=base.Purity.NORMAL, name='Iron Ore Resource', item=items.IronOre)
     miner = buildings.MinerMk1(
         name='Iron Miner',
         recipe=recipes.IronOreMk1,
     )
-    smelter = buildings.Smelter(
-        name='Iron Ore Smelter',
-        recipe=recipes.IronIngot,
-        tags={
-            'foo': 'bar'
-        }
-    )
-    constructor = buildings.Constructor(
-        name='Iron Plate Constructor',
-        recipe=recipes.IronPlate
-    )
+    smelter = buildings.Smelter(name='Iron Ore Smelter', recipe=recipes.IronIngot, tags={'foo': 'bar'})
+    constructor = buildings.Constructor(name='Iron Plate Constructor', recipe=recipes.IronPlate)
     storage = storages.StorageContainer(name='Plate Storage')
 
     # Connect them up
@@ -74,10 +54,11 @@ def build_test_blueprint():
     blueprint.factory.simulate()
     return blueprint
 
+
 def get_texture_from_file(filename: str) -> Gdk.Texture:
-    '''
+    """
     Given the filename of an image, returns a Gdk.Texture object for it
-    '''
+    """
     if Path(filename).exists():
         texture = Gdk.Texture.new_from_filename(filename)
         return texture
@@ -87,14 +68,16 @@ def get_texture_from_file(filename: str) -> Gdk.Texture:
 
 # These classes provide support to the widgets in this file
 
-class ComponentGrabEvent(object):
-    '''
-    Contains the state we need to remember in order to complete a drag-n-drop of a component.
-    '''
 
-    def __init__(self,
-        component: base.Component,              # What component is being dragged?
-        geometry: geometry.ComponentGeometry,   # What does it look like when drawn?
+class ComponentGrabEvent(object):
+    """
+    Contains the state we need to remember in order to complete a drag-n-drop of a component.
+    """
+
+    def __init__(
+        self,
+        component: base.Component,  # What component is being dragged?
+        geometry: geometry.ComponentGeometry,  # What does it look like when drawn?
         pointer_position: geometry.Coordinate2D,  # How far away is the pointer from the origin?
     ):
         self.component = component
@@ -103,7 +86,7 @@ class ComponentGrabEvent(object):
 
 
 class InteractionMode(Enum):
-    '''
+    """
     Discrete set of states the widget can be in with regards to user interaction.
 
         - NORMAL: The "default" state of the app, as though it has just launched.
@@ -111,42 +94,40 @@ class InteractionMode(Enum):
             selected. Details of the component have been displayed.
         - EXISTING_COMPONENT_GRABBED: A component in the blueprint has had a mouse-down event, then
             a mouse-move event without a mouse-up, indicating we want to move the component.
-    '''
+    """
 
-    NORMAL                      = 0
+    NORMAL = 0
     EXISTING_COMPONENT_SELECTED = 1
-    EXISTING_COMPONENT_GRABBED  = 2
+    EXISTING_COMPONENT_GRABBED = 2
 
 
 class PointerState(Enum):
-    '''
+    """
     Represents the two states of a pointer: either up (not pressed) or down (pressed), used for
     tracking the state of things across events.
-    '''
+    """
 
-    UP   = 0
+    UP = 0
     DOWN = 1
 
 
 # Actual widgets follow here
 
+
 class FactoryDesignerWidget(Gtk.Widget):
-    '''
+    """
     A FactoryDesginerWidget is a GTK Widget that draws a factory's components in a 2D visible space
     and allows a user to interact with those components.
-    '''
+    """
 
-    def __init__(self,
-        window: Gtk.ApplicationWindow,
-        blueprint: drawing.Blueprint = None
-    ):
+    def __init__(self, window: Gtk.ApplicationWindow, blueprint: drawing.Blueprint = None):
         super().__init__()
 
         self.textures = {}  # Texture cache, to be populated as textures become necessary
         self.blueprint = blueprint if blueprint else drawing.Blueprint()
         self.mode = InteractionMode.NORMAL  # Always start in the "normal" state of user interaction
         self.window = window  # Reference to the GTK Window containing this widget, allowing us to
-                              # make calls back to its update_window function
+        # make calls back to its update_window function
 
         # Mouse pointer state tracking
         self.pointer_down_at = None
@@ -178,14 +159,15 @@ class FactoryDesignerWidget(Gtk.Widget):
         # A component created when user clicks "Build" and should be placed in the blueprint next
         self.new_component = None
 
-    def load_texture(self,
+    def load_texture(
+        self,
         filename: str,
         category: str,
         key: str,
     ) -> Gdk.Texture:
-        '''
+        """
         Loads an image into memory and stores it under the given key in the given category.
-        '''
+        """
 
         texture = get_texture_from_file(filename)
         if category not in self.textures.keys():
@@ -193,41 +175,36 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.textures[category][key] = texture
         return texture
 
-    def get_texture(self,
-        category: str,
-        key: str
-    ) -> Gdk.Texture:
-        '''
+    def get_texture(self, category: str, key: str) -> Gdk.Texture:
+        """
         Retrieves a texture from the cache, or returns None
-        '''
+        """
 
         if category in self.textures.keys() and key in self.textures[category]:
             return self.textures[category][key]
         return None
 
-    def do_snapshot(self,
-        snapshot: Gtk.Snapshot
-    ):
-        '''
+    def do_snapshot(self, snapshot: Gtk.Snapshot):
+        """
         Draws the entire factory designer widget
-        '''
+        """
 
         self.blueprint.viewport.region.size = drawing.Size2D(self.get_width(), self.get_height())
         self.blueprint.draw_frame(self, snapshot)
 
-    def __update_selection(self,
+    def __update_selection(
+        self,
         x: float,
         y: float,
     ):
-        '''
+        """
         Given the coordinates of a pointer, changes the widget's selected component. If no widgets
         exist at that coordinate, all components are deselected. If only one component exists there,
         it is be selected. If multiple components are present, multiple calls to this function will
         cycle through those components.
-        '''
+        """
 
-        components = self.blueprint.get_components_under_coordinate(
-            geometry.Coordinate2D(x, y))
+        components = self.blueprint.get_components_under_coordinate(geometry.Coordinate2D(x, y))
 
         if len(components) == 0:
             self.blueprint.selected = None
@@ -253,7 +230,8 @@ class FactoryDesignerWidget(Gtk.Widget):
     def on_leave(self, motion_controller):
         self.blueprint.pointer_position = None
 
-    def on_button_press(self,
+    def on_button_press(
+        self,
         gesture_click: Gtk.GestureClick,
         n_press: int,
         x: float,
@@ -269,7 +247,8 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.queue_draw()
         self.window.update_window()
 
-    def on_button_release(self,
+    def on_button_release(
+        self,
         gesture_click: Gtk.GestureClick,
         n_press: int,
         x: float,
@@ -286,7 +265,8 @@ class FactoryDesignerWidget(Gtk.Widget):
         self.window.unsaved_changes = True
         self.window.update_window()
 
-    def on_motion(self,
+    def on_motion(
+        self,
         motion_controller: Gtk.EventControllerMotion,
         x: float,
         y: float,
@@ -298,17 +278,19 @@ class FactoryDesignerWidget(Gtk.Widget):
         # If the mouse is moving and we've already got a component selected and the mouse button is
         # down, then we have to move a component. Set the current grab event to start tracking it.
         if self.mode == InteractionMode.EXISTING_COMPONENT_SELECTED:
-            if self.pointer_state == PointerState.DOWN \
-                and self.blueprint.selected \
-                and not isinstance(self.blueprint.selected, base.Conveyance):
-                    geo = self.blueprint.geometry[self.blueprint.selected.id]
-                    self.component_grab_event = ComponentGrabEvent(
-                        self.blueprint.selected,     # The selected component
-                        geo,                         # Geometry for the selected component
-                        geometry.Coordinate2D(x, y)  # Pixel location of the mouse event
-                    )
-                    self.mode = InteractionMode.EXISTING_COMPONENT_GRABBED
-                    redraw = True
+            if (
+                self.pointer_state == PointerState.DOWN
+                and self.blueprint.selected
+                and not isinstance(self.blueprint.selected, base.Conveyance)
+            ):
+                geo = self.blueprint.geometry[self.blueprint.selected.id]
+                self.component_grab_event = ComponentGrabEvent(
+                    self.blueprint.selected,  # The selected component
+                    geo,  # Geometry for the selected component
+                    geometry.Coordinate2D(x, y),  # Pixel location of the mouse event
+                )
+                self.mode = InteractionMode.EXISTING_COMPONENT_GRABBED
+                redraw = True
 
         # If the mouse is moving and a component has already been grabbed, then we have to move that
         # component.
@@ -331,14 +313,14 @@ class FactoryDesignerWidget(Gtk.Widget):
 
             # Update the component's canvas_location and force recalculation of its geometry
             self.component_grab_event.geometry.canvas_location = geometry.Coordinate2D(
-                comp_x + offset_x,
-                comp_y + offset_y
+                comp_x + offset_x, comp_y + offset_y
             )
             self.component_grab_event.geometry.calculate(
                 label_height=None,
                 label_width=None,
                 scale=self.blueprint.viewport.scale,
-                translate=self.blueprint.viewport.region.location)
+                translate=self.blueprint.viewport.region.location,
+            )
 
             # Update the grab event's coordinates
             self.component_grab_event.pointer_position = geometry.Coordinate2D(x, y)
@@ -368,8 +350,7 @@ class FactoryDesignerWidget(Gtk.Widget):
             shift_x = (x - self.pointer_down_at.x) / self.blueprint.viewport.scale
             shift_y = (y - self.pointer_down_at.y) / self.blueprint.viewport.scale
             self.blueprint.viewport.region.location = geometry.Coordinate2D(
-                self.blueprint.viewport.region.left - shift_x,
-                self.blueprint.viewport.region.top - shift_y
+                self.blueprint.viewport.region.left - shift_x, self.blueprint.viewport.region.top - shift_y
             )
 
             # Update the pointer position
@@ -379,16 +360,18 @@ class FactoryDesignerWidget(Gtk.Widget):
             self.blueprint.invalidate_geometry()
             redraw = True
 
-        if redraw: self.queue_draw()
+        if redraw:
+            self.queue_draw()
 
-    def on_scroll(self,
+    def on_scroll(
+        self,
         scroll_controller: Gtk.EventControllerScroll,
         x: float,
         y: float,
     ):
-        '''
+        """
         Handles scroll events, which change the viewport scale.
-        '''
+        """
 
         # When y is positive, we have a "scroll down" event, which means "zoom out" in this context
         zoom_out = True if y > 0 else False
@@ -413,31 +396,23 @@ class FactoryDesignerWidget(Gtk.Widget):
 
 
 class Taggable(object):
-    '''
+    """
     Because GObject bindings for Python do not allow access to the data layer and the get/set_data()
     functions in the underlying C library, we must implement that ourselves. This class is intended
     to be used as a mixin to create arbitrarily taggable widgets.
-    '''
+    """
 
-    def __init__(self,
-        tags: dict[str: str] = {}
-    ):
+    def __init__(self, tags: dict[str:str] = {}):
         self.tags = tags
 
-    def set_tag(self,
-        key: str,
-        value: Any,
-        value_type: type
-    ):
+    def set_tag(self, key: str, value: Any, value_type: type):
         try:
             val = value_type(value)
             self.tags[key] = value
         except:
             raise ValueError(f'Value {value} is not of type {value_type}')
 
-    def get_tag(self,
-        key: str
-    ) -> Any:
+    def get_tag(self, key: str) -> Any:
         if key in self.tags.keys():
             return self.tags[key]
         else:
@@ -445,31 +420,27 @@ class Taggable(object):
 
 
 class TaggableButton(Gtk.Button, Taggable):
-    '''
+    """
     An arbitrarily taggable GTK Button widget
-    '''
+    """
 
-    def __init__(self,
-        tags: dict[str: str] = {}
-    ):
+    def __init__(self, tags: dict[str:str] = {}):
         Gtk.Button.__init__(self)
         Taggable.__init__(self, tags=tags)
 
 
 class TaggableEntryBuffer(Gtk.EntryBuffer, Taggable):
-    '''
+    """
     An arbitrarily taggable GTK EntryBuffer
-    '''
+    """
 
-    def __init__(self,
-        tags: dict[str: str] = {}
-    ):
+    def __init__(self, tags: dict[str:str] = {}):
         Gtk.EntryBuffer.__init__(self)
         Taggable.__init__(self, tags=tags)
 
 
 class TagBox(Gtk.Box):
-    '''
+    """
     A TagGrid is a Gtk.Box containing a Gtk.Grid of controls built specifically to modify the tags
     for a component. The grid has four columns:
 
@@ -479,13 +450,10 @@ class TagBox(Gtk.Box):
         - A text entry for the tag value
 
     Surrounding the grid are some labels for clarity and controls to add new tags.
-    '''
+    """
 
-    def __init__(self,
-        component: base.Component = None,
-        callback: Callable = None
-    ):
-        '''
+    def __init__(self, component: base.Component = None, callback: Callable = None):
+        """
         Construct the tag grid based on the tags applied to the provided component.
 
             - component: The component whose tags are being viewed/edited
@@ -494,7 +462,7 @@ class TagBox(Gtk.Box):
 
         If either of these arguments is `None`, we construct an empty instance. This allows us to
         create a "blank" object at init time which gets fixed at update time.
-        '''
+        """
 
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.callback = callback
@@ -562,10 +530,10 @@ class TagBox(Gtk.Box):
         self.append(boxNewTag)
 
     def repopulate(self):
-        '''
+        """
         Call this function sometime after calling __build to force the reconstruction of all widgets
         which show component data.
-        '''
+        """
 
         # Remove all rows in the grid
         for i in range(self.__row_count):
@@ -635,7 +603,7 @@ class TagBox(Gtk.Box):
     def __btnRemoveTag_clicked(self, btn):
         # The button is a TaggableButton containing the key of the removed tag and the row of the
         # Grid that we need to remove.
-        del(self.component.tags[btn.tags['tag_key']])
+        del self.component.tags[btn.tags['tag_key']]
         self.gridTags.remove_row(btn.tags['row_id'])
         self.callback()
 

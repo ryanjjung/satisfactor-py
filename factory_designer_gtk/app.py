@@ -1,21 +1,23 @@
 #!/bin/env python3
 
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
 
 import gi
+
 gi.require_version('Gtk', '4.0')
 
 from gi.repository import Gtk, Gio
 from factory_designer_gtk.main_window import MainWindow
 
-GTK_APP_ID="com.github.ryanjjung.satisfactory.FactoryDesigner"
+GTK_APP_ID = 'com.github.ryanjjung.satisfactory.FactoryDesigner'
 
 
 class FactoryDesigner(Gtk.Application):
-    '''
+    """
     Top-level GTKApplication object for the factory designer
-    '''
+    """
 
     def __init__(self, **kwargs):
         super().__init__(application_id=GTK_APP_ID, **kwargs)
@@ -25,18 +27,18 @@ class FactoryDesigner(Gtk.Application):
         self.connect('open', self.on_open)
 
     def on_activate(self, app):
-        '''
+        """
         Create and display the application's main window
-        '''
+        """
 
         if not self.mainWindow:
             self.mainWindow = MainWindow(application=app)
         self.mainWindow.present()
 
     def on_open(self, app, files, n_files, hint):
-        '''
+        """
         Activate the main window, handling a file load at the same time
-        '''
+        """
 
         self.on_activate(app)
         if n_files > 1:
