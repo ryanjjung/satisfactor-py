@@ -1,11 +1,9 @@
-import json
-
-from satisfactory.items import Limestone
-from satisfactory.patterns import tier_0_concrete_factory
+import satisfactory.items as items
+from satisfactory.patterns import tier0
 
 
-def test_tier_0_concrete_factory():
-    factory = tier_0_concrete_factory()
+def test_():
+    factory = tier0.screw_factory()
 
     # Unpack components for ease of access
     (
@@ -27,9 +25,9 @@ def test_tier_0_concrete_factory():
     # Test status of the limestone miner
     assert len(limestoneMiner.outputs) == 1
     output = limestoneMiner.outputs[0]
-    assert output.ingredients[0].item == Limestone
+    assert output.ingredients[0].item == items.Limestone
     assert output.ingredients[0].rate == 60.0
-    assert output.ingredients[0].amount == None
+    assert output.ingredients[0].amount is None
 
     # Test for errors
     assert len(errors) == 1

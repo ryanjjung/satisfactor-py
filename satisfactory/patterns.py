@@ -48,64 +48,6 @@ from satisfactory.recipes import (
 from satisfactory.storages import StorageContainer
 
 
-def tier_0_screw_factory(purity: Purity = Purity.NORMAL) -> Factory:
-    """
-    Returns a simple factory containing a series of Tier 0 components that produces screws and
-    stores them as follows:
-        - Iron resource node (iron ore)
-        - Smelter (iron ingots)
-        - Constructor (iron rods)
-        - Constructor (screws)
-        - Storage container
-    """
-
-    factory = Factory(name='Tier 0 Screw Factory')
-    factory.tier = 0
-    factory.availability = 5
-
-    # Start by adding an iron resource node to the factory
-    ironSource = ResourceNode(name=f'{purity.name.title()} Iron Source', purity=purity, item=iIronOre)
-
-    # Connect it to a miner
-    ironMiner = MinerMk1(name='Iron Miner', recipe=rIronOreMk1)
-
-    # Uncomment the next line to produce an error
-    # ironMiner = MinerMk1(recipe=rCopperOreMk1)
-    ironSource.outputs[0].connect(ironMiner.inputs[0])
-
-    # Connect the miner to a smelter
-    ironSmelter = Smelter(name='Iron Smelter', recipe=rIronIngot)
-    convOreToSmelter = ironMiner.connect(ironSmelter, ConveyorBeltMk1)
-
-    # Connect the smelter to a constructor making rods
-    rodConstructor = Constructor(name='Rod Constructor', recipe=rIronRod)
-    convIngotsToConstructor = ironSmelter.connect(rodConstructor, ConveyorBeltMk1)
-
-    # Connect the rod constructor to a constructor making screws
-    screwConstructor = Constructor(name='Screw Constructor', recipe=rScrew)
-    convRodsToConstructor = rodConstructor.connect(screwConstructor, ConveyorBeltMk1)
-
-    # Connect the screw constructor to a storage container
-    screwStorage = StorageContainer(name='Screw Storage')
-    convScrewsToStorage = screwConstructor.connect(screwStorage, ConveyorBeltMk1)
-
-    # Add everything to the factory
-    factory.add(
-        [
-            ironSource,
-            ironMiner,
-            convOreToSmelter,
-            ironSmelter,
-            convIngotsToConstructor,
-            rodConstructor,
-            convRodsToConstructor,
-            screwConstructor,
-            convScrewsToStorage,
-            screwStorage,
-        ]
-    )
-    return factory
-
 
 def tier_0_cable_factory(purity: Purity = Purity.NORMAL) -> Factory:
     """
