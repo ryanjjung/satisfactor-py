@@ -17,7 +17,7 @@ dependencies = { file = ["requirements.txt"] }
 
 [project.optional-dependencies]
 dev = [
-    "ipython",
+    "bpython",
     "pytest",
     "pytest-cov",
     "ruff",

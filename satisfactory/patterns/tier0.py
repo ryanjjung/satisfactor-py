@@ -4,61 +4,91 @@ import satisfactory.conveyances as conveyances
 import satisfactory.factories as factories
 import satisfactory.items as items
 import satisfactory.recipes as recipes
+import satisfactory.storages as storages
 
 
-def screw_factory(purity: base.Purity = base.Purity.NORMAL) -> factories.Factory:
-    """Returns a simple factory containing a series of Tier 0 components that produces screws and
-    stores them as follows:
-        - Iron resource node (iron ore)
-        - Smelter (iron ingots)
-        - Constructor (iron rods)
-        - Constructor (screws)
-        - Storage container
+class IronSmelterFactory(factories.Factory):
+    """Returns a factory that draws Iron Ore from a ResourceNode of the given purity and connects it to a single
+    smelter.
     """
 
-    factory = factories.Factory(name='Tier 0 Screw Factory')
-    factory.tier = 0
-    factory.availability = 5
+    def __init__(self, purity: base.Purity = base.Purity.NORMAL):
+        super().__init__(name='Tier 0 Iron Smelter Factory')
+        self.tier = 0
+        self.availability = 5
 
-    # Start by adding an iron resource node to the factory
-    ironSource = base.ResourceNode(name=f'{purity.name.title()} Iron Source', purity=purity, item=items.IronOre)
+        self.ironSource = base.ResourceNode(
+            name=f'{purity.name.title()} Iron Source', purity=purity, item=items.IronOre
+        )
+        self.ironMiner = buildings.MinerMk1(name='Iron Miner Mk. 1', recipe=recipes.IronOreMk1)
+        self.ironSource.outputs[0].connect(connection=self.ironMiner.inputs[0])
+        self.ironSmelter = buildings.Smelter(name='Iron Smelter', recipe=recipes.IronIngot)
+        self.convOreToSmelter = self.ironMiner.connect(target=self.ironSmelter, conveyance=conveyances.ConveyorBeltMk1)
 
-    # Connect it to a miner
-    ironMiner = buildings.MinerMk1(name='Iron Miner', recipe=recipes.IronOreMk1)
+        self.add(components=[self.ironSource, self.ironMiner, self.convOreToSmelter, self.ironSmelter])
 
-    # Uncomment the next line to produce an error
-    # ironMiner = MinerMk1(recipe=rCopperOreMk1)
-    ironSource.outputs[0].connect(ironMiner.inputs[0])
 
-    # Connect the miner to a smelter
-    ironSmelter = buildings.Smelter(name='Iron Smelter', recipe=recipes.IronIngot)
-    convOreToSmelter = ironMiner.connect(ironSmelter, conveyances.ConveyorBeltMk1)
+class IronPlateFactory(factories.Factory):
+    def __init__(self, purity: base.Purity = base.Purity.NORMAL):
+        """Returns a factory that builds Iron Plates at Tier 0."""
 
-    # Connect the smelter to a constructor making rods
-    rodConstructor = buildings.Constructor(name='Rod Constructor', recipe=recipes.IronRod)
-    convIngotsToConstructor = ironSmelter.connect(rodConstructor, buildings.ConveyorBeltMk1)
+        super().__init__(name='Tier 0 Iron Plate Factory')
+        self.tier = 0
+        self.availability = 5
 
-    # Connect the rod constructor to a constructor making screws
-    screwConstructor = buildings.Constructor(name='Screw Constructor', recipe=recipes.Screw)
-    convRodsToConstructor = rodConstructor.connect(screwConstructor, conveyances.ConveyorBeltMk1)
+        self.smelter_factory = IronSmelterFactory(purity=purity)
+        (ironSource, ironMiner, convOreToSmelter, ironSmelter) = self.smelter_factory.components
 
-    # Connect the screw constructor to a storage container
-    screwStorage = buildings.StorageContainer(name='Screw Storage')
-    convScrewsToStorage = screwConstructor.connect(screwStorage, conveyances.ConveyorBeltMk1)
+        self.plateConstructor = buildings.Constructor(name='Iron Plate Constructor', recipe=recipes.IronPlate)
+        self.convIngotsToConstructor = ironSmelter.connect(
+            target=self.plateConstructor, conveyance=conveyances.ConveyorBeltMk1
+        )
+        self.add(
+            components=[
+                self.smelter_factory.components,
+                [
+                    self.convIngotsToConstructor,
+                    self.plateConstructor,
+                ],
+            ]
+        )
 
-    # Add everything to the factory
-    factory.add(
-        [
-            ironSource,
-            ironMiner,
-            convOreToSmelter,
-            ironSmelter,
-            convIngotsToConstructor,
-            rodConstructor,
-            convRodsToConstructor,
-            screwConstructor,
-            convScrewsToStorage,
-            screwStorage,
-        ]
-    )
-    return factory
+
+class IronRodFactory(factories.Factory):
+    def __init__(self, purity: base.Purity = base.Purity.NORMAL):
+        """Returns a factory that builds Iron Rods at Tier 0."""
+
+        super().__init__(name='Tier 0 Iron Rod Factory')
+        self.tier = 0
+        self.availability = 5
+
+        self.smelter_factory = IronSmelterFactory(purity=purity)
+        (ironSource, ironMiner, convOreToSmelter, ironSmelter) = self.smelter_factory.components
+
+        self.rodConstructor = buildings.Constructor(name='Iron Rod Constructor', recipe=recipes.IronRod)
+        self.convIngotsToConstructor = ironSmelter.connect(
+            target=self.rodConstructor, conveyance=conveyances.ConveyorBeltMk1
+        )
+        self.add(
+            components=[
+                self.smelter_factory.components,
+                [
+                    self.convIngotsToConstructor,
+                    self.rodConstructor,
+                ],
+            ]
+        )
+
+
+class StorageFactory(factories.Factory):
+    def __init__(self, source: base.Building):
+        """Returns a factory that routes items from the provided building into a storage container."""
+
+        super().__init__(name='Tier 0 Iron Rod Factory')
+        self.tier = 0
+        self.availability = 5
+
+        self.storage = storages.StorageContainer()
+        self.convToStorage = source.connect(target=self.storage, conveyance=conveyances.ConveyorBeltMk1)
+
+        self.add(components=[self.convToStorage, self.storage])

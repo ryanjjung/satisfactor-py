@@ -8,6 +8,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 import math
 
+from copy import deepcopy
 from enum import Enum
 from uuid import uuid4
 
@@ -193,7 +194,6 @@ class Base(object):
     ):
         if not tags:
             tags = {}
-        logging.debug(f'tags: {tags}')
         if not id:
             self.id = generate_id()
         else:
@@ -486,14 +486,14 @@ class ConveyanceRecipe(Recipe):
     def __init__(self, max_rate: int, ingredients: list[Ingredient] = []):
         super().__init__(building_type=BuildingType.CONVEYANCE)
         self.max_rate = max_rate
-        self.set_ingredients(ingredients)
+        self.set_ingredients(deepcopy(ingredients))
 
     def set_ingredients(self, ingredients: list[Ingredient]):
         self._ingredients = ingredients
         self.consumes = self._ingredients
         self.produces = self._ingredients
         for ingredient in self.produces:
-            ingredient.amout = None
+            ingredient.amount = None
             ingredient.rate = min(ingredient.rate, self.max_rate)
 
 
@@ -756,8 +756,7 @@ class Output(Connection):
 
 
 class ResourceNode(Component):
-    """
-    A ResourceNode is a place in the world which will produce Items if some kind of extraction
+    """A ResourceNode is a place in the world which will produce Items if some kind of extraction
     Building is placed on it. That Building's production rate will vary based on the purity.
 
         - purity: A multiplicative factor applied to the rate of production in Miners.
@@ -959,7 +958,7 @@ class Building(Component):
         super().__init__(**kwargs)
         self.building_category = building_category
         self.building_type = building_type
-        self.recipe = recipe
+        self.recipe = deepcopy(recipe)
         self.clock_rate = clock_rate
         self.standby = standby
         self.dimensions = dimensions

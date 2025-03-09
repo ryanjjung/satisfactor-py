@@ -27,9 +27,10 @@ class Factory(Base):
         - availability: A base.Availability describing the unlock level of the factory
     """
 
-    def __init__(self, components: list[Component] = list(), availability: Availability = Availability(0, 1), **kwargs):
+    def __init__(self, components: list[Component] = [], availability: Availability = Availability(0, 1), **kwargs):
         super().__init__(**kwargs)
-        self._components = components
+        self._components = []
+        self.add(components=components)
         self._errors = list()
         self.availability = availability
 
@@ -71,7 +72,7 @@ class Factory(Base):
             if issubclass(type(component), Component):
                 component.factory = self
                 self._components.append(component)
-            if type(component) == list:
+            if type(component) is list:
                 for comp in component:
                     comp.factory = self
                     self._components.append(comp)
@@ -401,7 +402,8 @@ def drain_component(component):
     component.clear_errors()
     component.traversed = False
     if hasattr(component, 'ingredients'):
-        component.ingredients.clear()
+        if component.ingredients is not None:
+            component.ingredients.clear()
 
 
 def simulate_component(component):
@@ -409,7 +411,7 @@ def simulate_component(component):
     Simulate the component, determining if it can process, and what the contents of its outputs are
     """
 
-    print(f'Simulating component {component}')
+    # print(f'Simulating component {component}')
     component.process()
 
 
